@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://de3u8ce1h7abb"]
+
+[ext_resource type="Script" uid="uid://dlea7fiafdu0g" path="res://entities/last_bullet/last_bullet.gd" id="1_6hh1f"]
+[ext_resource type="Texture2D" uid="uid://c2ho71np0ounl" path="res://entities/last_bullet/last_bullet.png" id="1_w6la0"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_6pmnr"]
+radius = 4.0
+height = 16.0
+
+[node name="LastBullet" type="RigidBody2D" unique_id=506944748]
+script = ExtResource("1_6hh1f")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=739889476]
+shape = SubResource("CapsuleShape2D_6pmnr")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1132485368]
+texture = ExtResource("1_w6la0")

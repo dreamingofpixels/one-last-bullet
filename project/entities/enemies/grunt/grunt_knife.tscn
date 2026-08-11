@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://doagtfaw80f82"]
+
+[ext_resource type="Script" uid="uid://pstg026o8wof" path="res://entities/enemies/grunt/grunt_knife.gd" id="1_ntsep"]
+[ext_resource type="Texture2D" uid="uid://wcun7ki1apo7" path="res://entities/enemies/grunt/grunt_knife.png" id="1_plv27"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_6pmnr"]
+radius = 11.0
+
+[node name="GruntKnife" type="CharacterBody2D" unique_id=2113864430]
+script = ExtResource("1_ntsep")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1215899697]
+position = Vector2(0, -1)
+shape = SubResource("CircleShape2D_6pmnr")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1970161269]
+texture = ExtResource("1_plv27")

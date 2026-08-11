@@ -1,0 +1,16 @@
+---
+description: Godot testing: do not look for an exported exe
+alwaysApply: true
+---
+
+# Godot testing: do not look for an exported `.exe`
+
+Do **not** attempt to test this project by:
+
+- searching for an exported Windows `.exe`
+- trying to run an exported build from the repo
+- asking the user to export/build an `.exe` so you can run it
+
+Assume there is **no exported executable** in the repo.
+
+If runtime testing is needed, the user will **run the game in the Godot editor** themselves and report results back. When suggesting a test plan, focus on **in-editor** steps (e.g., which scene to run, what to observe, what logs/errors to share).

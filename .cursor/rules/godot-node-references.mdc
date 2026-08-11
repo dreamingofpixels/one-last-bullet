@@ -1,0 +1,51 @@
+---
+description: Godot node reference rules (fail-fast required nodes, prefer % unique names)
+alwaysApply: true
+---
+
+# Godot node references: fail fast + prefer `%`
+
+## `%UniqueName` is the default
+
+For any **required** node reference in GDScript, use **`%NodeName`** (unique-name lookup), not `$Child` or `$"path/to/node"`.
+
+- When a script references a scene node, mark that node **Unique Name in Owner** in the `.tscn` in the same change.
+- `$Path` is only acceptable when the node cannot be unique (e.g. dynamically duplicated siblings sharing a name).
+
+## Required nodes must fail fast (no `has_node()` guards)
+
+When a script *requires* a child/descendant node to function, **do not** guard access with:
+
+- `if has_node("NodeName")`
+- `if get_node_or_null("NodeName") != null`
+
+Instead, reference the node directly so it **fails immediately** if the scene is missing the node.
+
+### Preferred patterns (GDScript)
+
+```gdscript
+@onready var interaction_area: Area2D = %InteractionArea
+```
+
+### Allowed exceptions (optional nodes only)
+
+Only use `has_node()` / `get_node_or_null()` when the node is **truly optional** and the script has a well-defined fallback behavior.
+
+- Optional node variables should be named to make optionality explicit (e.g. `optional_*`), and code must handle the `null` case.
+
+### Examples (GDScript)
+
+```gdscript
+# ❌ BAD: silently tolerates missing required node
+if has_node("InteractionArea"):
+    var area = get_node("InteractionArea")
+
+# ❌ BAD: fragile path when % is possible
+@onready var label: Label = $Panel/MarginContainer/VBox/Title
+
+# ✅ GOOD: required node should crash if missing
+@onready var interaction_area: Area2D = %InteractionArea
+
+# ✅ OK: optional node with fallback behavior
+@onready var optional_label: Label = get_node_or_null("%DebugLabel")
+```

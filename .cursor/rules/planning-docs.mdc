@@ -1,0 +1,35 @@
+---
+description: Always consult and maintain the One Last Bullet planning docs
+alwaysApply: true
+---
+
+# Planning docs: read first, update when it matters
+
+Before doing substantive work in this repo — answering design questions, proposing changes, editing code in `project/`, adding systems — **read these three files first**:
+
+- `planning/GAME_BRIEF.md` — what the game is (story, loop, bullet/redirect, shop, saloon stages, open questions)
+- `planning/DECISIONS.md` — why the codebase looks the way it does (gameplay + technical decisions)
+- `planning/PROJECT_MAP.md` — where things live (autoloads, key scenes/scripts, groups, conventions)
+
+`planning/One Last Bullet.txt` is the source-of-truth design document. If it and the planning docs conflict, ask which to trust before acting.
+
+## When to update the planning docs
+
+Update them **in the same change** whenever your work does any of the following:
+
+- **GAME_BRIEF.md** — changes any gameplay rule, loop step, economy number the brief lists, bullet/redirect/shop/stage semantics, or moves an item out of "open questions" into "decided".
+- **DECISIONS.md** — introduces or reverses an architectural or design decision (new autoload, replacing a system, changing data model, new failure condition, upgrade model chosen, etc.). Add a new entry in the existing format (`Decision` / `Why` / `Alternatives` / `Status`).
+- **PROJECT_MAP.md** — adds/removes/renames an autoload, scene, script, group, or physics layer; changes an entry point; or establishes a new convention.
+
+If a change touches multiple categories, update all of them.
+
+## How to update
+
+- Keep the existing headings and tone. These are living docs, not changelogs.
+- Prefer editing the right section in place over appending to the bottom.
+- When recording a decision, include what was *not* chosen and why.
+- Reflect reality: don't mark something "decided" in DECISIONS.md unless the code or design actually matches.
+
+## Reply etiquette
+
+After substantive work, briefly mention which planning doc(s) you updated (or note that none needed updating). Don't narrate reading them — just do it.

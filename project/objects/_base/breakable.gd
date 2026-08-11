@@ -15,5 +15,7 @@ func destroy() -> void:
 	if _is_destroyed:
 		return
 	_is_destroyed = true
+	collision_shape.set_deferred("disabled", true)
 	destroyed.emit(global_position)
+	DestructionEffect.play_from_sprite(sprite)
 	queue_free()

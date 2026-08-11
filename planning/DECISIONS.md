@@ -25,9 +25,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (design)
 
 ### Redirect via proximity + button, brief slow-mo, then choose direction
-- **Decision**: Get close to the bullet, press Space, time slows briefly, player picks a new direction with A/D or mouse. Opening shot uses the same aim UX for 3 real-time seconds; redirects use 1.5s. Player movement is locked while aiming.
+- **Decision**: Get close to the bullet, press Space, time slows briefly, player picks a new direction with the mouse. Opening shot uses the same aim UX for 3 real-time seconds; redirects use 1.5s. Player movement is locked while aiming.
 - **Why**: Gives agency without removing the skill of positioning and timing; shared aim UX keeps the opening shot teachable.
-- **Alternatives**: Always-on aim control — removes tension; automatic wall-aim assist — too passive; allow walking while aiming — conflicts with A/D rotation.
+- **Alternatives**: Always-on aim control — removes tension; automatic wall-aim assist — too passive; keyboard rotation (A/D) — removed in favor of mouse-only aim.
 - **Status**: decided (in-codebase)
 
 ### Single basic enemy: chase + contact kill
@@ -73,14 +73,14 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Redirect limits**: cooldown vs charges vs unlimited?
 - **Gold vanish duration**: how long before drops disappear?
 - **Shop draft size and reroll rules**: how many offers, costs, rerolls?
-- **Camera / view perspective**: side-view character sprites in a flat arena; confirm long-term camera.
+- **Camera / view perspective**: side-view character sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena.
 
 ---
 
 ## Technical decisions (from current codebase)
 
-### Engine: Godot 4.7, Forward Plus, viewport stretch
-- **Decision**: Godot project at `project/` uses Godot **4.7**, Forward Plus, `window/stretch/mode="viewport"` with `aspect="expand"`, nearest-neighbour canvas texture filter, 640x360 base resolution.
+### Engine: Godot 4.7, Forward Plus, canvas_items stretch + integer scale
+- **Decision**: Godot project at `project/` uses Godot **4.7**, Forward Plus, `window/stretch/mode="canvas_items"` with `aspect="expand"`, `scale_mode="integer"`, nearest-neighbour canvas texture filter, snap 2D transforms to pixel, 640x360 base resolution.
 - **Why**: Matches the current `project.godot` scaffold and keeps pixel art crisp.
 - **Alternatives**: `canvas_items` stretch — softer scaling; filtered textures — blurry sprites.
 - **Status**: decided (in-codebase)
@@ -125,4 +125,22 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Breakables (cactus) live on the `world` physics layer like rocks/walls. The bullet destroys them via its `RigidBody2D.body_entered` contact (not the leading capsule `Hitbox` area), so the bounce impulse is solved before `queue_free()`.
 - **Why**: Props should reshape bullet paths; using the leading hitbox would destroy the body before bounce. No fifth physics layer needed.
 - **Alternatives**: Punch-through (no bounce) — less spatial play; dedicated `breakable` layer + hitbox area — destroys before bounce; multi-hit health — deferred.
+- **Status**: decided (in-codebase)
+
+### Pixel art rendering: smooth pixel shader + aligned bullet speed
+- **Decision**: Character sprites (player, enemies, bullet) use shared `smooth_pixel_material.tres` (CptPotato-style derivative filtering) with **Linear** sprite filter. Bullet speed is **180 px/s** (3 px/frame at 60 Hz). Physics interpolation is **off**.
+- **Why**: Nearest-neighbor + sub-pixel motion/rotation caused visible shimmer; the smooth pixel shader antialiases rotated/scaled sampling without blurring integer-scale art as badly as plain Linear. Disabling physics interpolation avoids in-between sub-pixel draw frames.
+- **Alternatives**: `%VisualOffset` pixel snap — removed; fought the shader; 8-way rotation snap — removed; physics interpolation on — reintroduced jitter on pixel art; snap 2D transforms to pixel on — fights smooth pixel filtering.
+- **Status**: decided (in-codebase)
+
+### Fixed Camera2D centered on the arena
+- **Decision**: `desert.tscn` uses a static `Camera2D` at `(320, 180)` — arena center for the 640×360 viewport. No smoothing, no player follow.
+- **Why**: The prototype arena matches the viewport; a fixed camera shows the full playfield without sub-pixel pan jitter.
+- **Alternatives**: Player-following camera with pixel rounding — useful for larger scrolling levels later; no camera — same outcome when the root is the view.
+- **Status**: decided (in-codebase)
+
+### Destruction VFX: detached sprite + canvas pixel-fall shader
+- **Decision**: On breakable/enemy/player death, disable collision, emit gameplay signals immediately, spawn a detached `Sprite2D` copy with `pixel_fall.gdshader`, then `queue_free()` the entity. `DestructionEffect.play_from_sprite()` owns the FX life cycle (tween `progress` → free).
+- **Why**: Gameplay stays snappy (win/lose and bounce timing unchanged) while pixels crumble visually; one helper works for props and characters without delaying entity teardown.
+- **Alternatives**: Animate in-place and delay `queue_free()` — risks leftover collision and win-count timing bugs; GPU particles of colored quads — heavier setup and less 1:1 with sprite art; CPU `Image` pixel scatter — more code for the same look.
 - **Status**: decided (in-codebase)

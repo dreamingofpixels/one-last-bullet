@@ -10,9 +10,8 @@ const PHYSICS_LAYER_PLAYER := 2
 const PHYSICS_LAYER_ENEMY := 4
 const PHYSICS_LAYER_BULLET := 8
 
-@export var speed: float = 200.0
+@export var speed: float = 180.0
 @export var slow_mo_scale: float = 0.15
-@export var aim_rotate_speed: float = 3.0
 @export var player_grace_seconds: float = 0.3
 @export var arrow_length: float = 28.0
 
@@ -22,12 +21,10 @@ const PHYSICS_LAYER_BULLET := 8
 
 var state: State = State.HELD
 var aim_direction: Vector2 = Vector2.RIGHT
-var using_mouse_aim: bool = false
 var aim_deadline_msec: int = 0
 var player_grace_until_msec: int = 0
 var _player: Node2D = null
 var _ignore_confirm_until_msec: int = 0
-var _last_aim_tick_msec: int = 0
 
 
 func _ready() -> void:
@@ -128,11 +125,9 @@ func _enter_aiming(duration_seconds: float, start_direction: Vector2) -> void:
 	linear_velocity = Vector2.ZERO
 	hitbox.monitoring = false
 	aim_direction = start_direction.normalized() if start_direction.length_squared() > 0.0001 else Vector2.RIGHT
-	using_mouse_aim = false
 	aim_arrow.visible = true
 	var now := Time.get_ticks_msec()
 	aim_deadline_msec = now + int(duration_seconds * 1000.0)
-	_last_aim_tick_msec = now
 	# Prevent the same SPACE press that started redirect from instantly confirming.
 	_ignore_confirm_until_msec = now + 200
 	Engine.time_scale = slow_mo_scale
@@ -145,7 +140,8 @@ func _launch() -> void:
 	freeze = false
 	aim_arrow.visible = false
 	Engine.time_scale = 1.0
-	linear_velocity = aim_direction.normalized() * speed
+	aim_direction = aim_direction.normalized() if aim_direction.length_squared() > 0.0001 else Vector2.RIGHT
+	linear_velocity = aim_direction * speed
 	player_grace_until_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
 	hitbox.monitoring = true
 	_apply_heading()
@@ -163,28 +159,9 @@ func _wants_confirm() -> bool:
 
 
 func _update_aim() -> void:
-	var now := Time.get_ticks_msec()
-	var real_delta := clampf(float(now - _last_aim_tick_msec) / 1000.0, 0.0, 0.05)
-	_last_aim_tick_msec = now
-
-	if Input.get_last_mouse_velocity().length_squared() > 4.0:
-		using_mouse_aim = true
-
-	var key_rotate := 0.0
-	if Input.is_action_pressed("aim_ccw"):
-		key_rotate -= 1.0
-		using_mouse_aim = false
-	if Input.is_action_pressed("aim_cw"):
-		key_rotate += 1.0
-		using_mouse_aim = false
-
-	if using_mouse_aim:
-		var to_mouse := get_global_mouse_position() - global_position
-		if to_mouse.length_squared() > 0.0001:
-			aim_direction = to_mouse.normalized()
-	elif key_rotate != 0.0:
-		aim_direction = aim_direction.rotated(key_rotate * aim_rotate_speed * real_delta)
-
+	var to_mouse := get_global_mouse_position() - global_position
+	if to_mouse.length_squared() > 0.0001:
+		aim_direction = to_mouse.normalized()
 	_apply_heading()
 	aim_arrow.queue_redraw()
 

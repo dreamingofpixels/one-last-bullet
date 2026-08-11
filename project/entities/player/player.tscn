@@ -16,6 +16,7 @@ script = ExtResource("1_abrql")
 
 [node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1025188038]
 unique_name_in_owner = true
+texture_filter = 1
 texture = ExtResource("1_symyc")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1971696649]

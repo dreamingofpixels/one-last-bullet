@@ -12,7 +12,7 @@ Dodge your own bullet while aiming it at enemies. Risk the floor for vanishing g
 ## Core loop
 - **Level start**: player stands center-bottom; **3 real-time seconds** of slow-mo free aim, then the bullet launches in the chosen direction.
 - **Combat**: bullet travels and bounces indefinitely. Enemies chase the player (contact kill). Solid props and breakables bounce the bullet; breakables are destroyed on that hit. Obstacles can interact further later (e.g. TNT barrels explode). Breakables can later drop powerups.
-- **Redirect**: get close to the bullet, press **Space** → **1.5 real-time seconds** of slow-mo → aim a new direction (A/D rotate, mouse aim). Player movement is locked while aiming.
+- **Redirect**: get close to the bullet, press **Space** → **1.5 real-time seconds** of slow-mo → aim a new direction with the mouse. Player movement is locked while aiming.
 - **Loot**: enemies drop gold that must be picked up quickly before it disappears. *(not in prototype yet)*
 - **Clear**: kill all enemies → level win.
 - **Shop**: spend gold on randomized upgrades (bullet / player / enemy curses). Synergies are a design pillar. *(not in prototype yet)*
@@ -33,7 +33,7 @@ Dodge your own bullet while aiming it at enemies. Risk the floor for vanishing g
 ## Input (prototype)
 - **Move**: WASD
 - **Redirect**: Space (when near the bullet)
-- **Aim rotate**: A (counter-clockwise) / D (clockwise); mouse motion switches to mouse aim
+- **Aim**: mouse
 - **Confirm aim early**: Space or left click (otherwise window auto-locks)
 - **Restart**: R
 

@@ -57,7 +57,10 @@ func die() -> void:
 		return
 	is_dead = true
 	velocity = Vector2.ZERO
+	set_deferred("collision_layer", 0)
+	contact_area.set_deferred("monitoring", false)
 	died.emit()
+	DestructionEffect.play_from_sprite(sprite)
 	queue_free()
 
 

@@ -1,0 +1,27 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://objects/_base/breakable.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://drhfrb8p8xdsb" path="res://objects/cactai/cactus_1.png" id="2_tex"]
+[ext_resource type="Resource" path="res://objects/cactai/variants/cactus_1.tres" id="3_v1"]
+[ext_resource type="Resource" path="res://objects/cactai/variants/cactus_2.tres" id="4_v2"]
+[ext_resource type="Resource" path="res://objects/cactai/variants/cactus_3.tres" id="5_v3"]
+[ext_resource type="Resource" path="res://objects/cactai/variants/cactus_4.tres" id="6_v4"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_placeholder"]
+size = Vector2(14, 24)
+
+[node name="Cactus" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+variants = Array[LevelObjectVariant]([ExtResource("3_v1"), ExtResource("4_v2"), ExtResource("5_v3"), ExtResource("6_v4")])
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+offset = Vector2(0, -16)
+texture = ExtResource("2_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -12)
+shape = SubResource("RectangleShape2D_placeholder")

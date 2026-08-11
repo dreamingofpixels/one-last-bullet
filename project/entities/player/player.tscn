@@ -7,11 +7,25 @@
 radius = 6.0
 height = 26.0
 
-[node name="Player" type="CharacterBody2D" unique_id=800035105]
+[sub_resource type="CircleShape2D" id="CircleShape2D_redirect"]
+radius = 26.0
+
+[node name="Player" type="CharacterBody2D" unique_id=1425830609 groups=["player"]]
+collision_layer = 2
 script = ExtResource("1_abrql")
 
-[node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1440823758]
+[node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1025188038]
+unique_name_in_owner = true
 texture = ExtResource("1_symyc")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=126838467]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1971696649]
 shape = SubResource("CapsuleShape2D_6pmnr")
+
+[node name="RedirectRange" type="Area2D" parent="." unique_id=200826919]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 8
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RedirectRange" unique_id=1631348040]
+shape = SubResource("CircleShape2D_redirect")

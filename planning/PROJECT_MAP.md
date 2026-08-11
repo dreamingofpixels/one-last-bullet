@@ -8,7 +8,7 @@ One Last Bullet/
 ├── planning/
 │   ├── One Last Bullet.txt     Source-of-truth design document
 │   ├── One Last Bullet.docx    Word export of the design doc
-│   ├── GAME_BRIEF.md           Living brief (this project)
+│   ├── GAME_BRIEF.md           Living brief
 │   ├── DECISIONS.md            Living decision log
 │   └── PROJECT_MAP.md          Living project map (this file)
 ├── marketing/                  Promotional art / store assets (empty for now)
@@ -19,49 +19,81 @@ One Last Bullet/
     ├── icon.svg
     ├── areas/
     │   └── level/
+    │       ├── desert.tscn     Main playable arena
+    │       ├── level.gd        Level director (spawn, aim start, win/lose)
     │       └── desert_tilemap.png
-    ├── data/                   (empty)
-    └── entities/
-        ├── enemies/
-        │   └── grunt/          (empty)
-        └── player/
-            ├── player.aseprite
-            └── player.png
+    ├── data/                   (empty; upgrades later)
+    ├── entities/
+    │   ├── last_bullet/
+    │   │   ├── last_bullet.tscn / .gd / .png
+    │   │   └── aim_arrow.gd
+    │   ├── player/
+    │   │   ├── player.tscn / .gd / .png
+    │   │   └── player.aseprite
+    │   └── enemies/
+    │       ├── grunt/
+    │       │   ├── grunt_knife.tscn / .gd / .png
+    │       └── brute/
+    │           └── brute.png   (deferred)
+    └── objects/
+        ├── _base/
+        │   ├── level_object_variant.gd   Per-variant texture + collision Resource
+        │   ├── level_object.gd           Solid prop base (world layer, random variant)
+        │   └── breakable.gd              Breakable props (destroy on bullet bounce)
+        ├── cactai/
+        │   ├── cactus.tscn               Breakable; picks cactus_1..4 at runtime
+        │   ├── cactus_1..4.png
+        │   └── variants/                 LevelObjectVariant .tres per art
+        └── rocks/
+            ├── rock.tscn                 Solid; picks from rock variants at runtime
+            ├── rock_1.png
+            └── variants/
 ```
 
 ## Godot project entry
 - **Project config**: `project/project.godot`
-- **Main scene**: not set yet (`run/main_scene` unset)
-- **Engine**: Godot 4.7, Forward+ (default), stretch `canvas_items` + `expand`
-- **Physics**: 3D physics engine set to Jolt (2D gameplay TBD)
-- **Editor plugins**: none yet
+- **Main scene**: `res://areas/level/desert.tscn` (`uid://drul7vfq10oin`)
+- **Engine**: Godot 4.7, Forward+, stretch `viewport` + `expand`, base 640x360
+- **Texture filter**: nearest (`default_texture_filter=0`)
+- **Physics**: 3D uses Jolt; 2D gameplay uses built-in Godot 2D physics
+- **Editor plugins**: none
 
 ## Autoloads (from `project/project.godot`)
-None yet. Add rows here when autoloads are registered.
+None yet.
 
 | Name | Path | Purpose |
 |------|------|---------|
-| — | — | TBD |
+| — | — | — |
 
 ## Physics layers (from `project/project.godot`)
-Not configured yet. Document named layers here when added (e.g. player, enemy, bullet, world).
 
 | Layer | Name |
 |-------|------|
-| — | TBD |
+| 1 | world |
+| 2 | player |
+| 3 | enemy |
+| 4 | bullet |
 
 ---
 
 ## Key scenes & scripts (high-signal)
 
-No `.tscn` or `.gd` gameplay files yet. Existing scaffolding:
-
 ### Areas
-- `project/areas/level/desert_tilemap.png` — tile art for levels (saloon/desert look)
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, bullet, HUD)
+- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart
 
 ### Entities
-- `project/entities/player/player.png` (+ `player.aseprite`) — player sprite source
-- `project/entities/enemies/grunt/` — reserved for the basic chase enemy (empty)
+- `project/entities/player/player.tscn` + `player.gd` — WASD move, redirect range, death
+- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — HELD/AIMING/FLYING bullet + slow-mo aim; body contact destroys breakables
+- `project/entities/last_bullet/aim_arrow.gd` — drawn aim arrow during aim windows
+- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + contact kill
+
+### Objects
+- `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
+- `project/objects/_base/breakable.gd` — breakable props (`breakables` group + `destroy()`)
+- `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
+- `project/objects/cactai/cactus.tscn` — breakable cactus (4 art variants)
+- `project/objects/rocks/rock.tscn` — solid rock (1 art variant for now)
 
 ### Data
 - `project/data/` — reserved for game data (upgrades, enemies, etc.); empty
@@ -69,11 +101,25 @@ No `.tscn` or `.gd` gameplay files yet. Existing scaffolding:
 ---
 
 ## Groups
-None yet. Document Godot groups here when introduced.
+
+| Group | Used by |
+|-------|---------|
+| `player` | Player root |
+| `enemies` | GruntKnife root |
+| `bullet` | LastBullet root |
+| `breakables` | Breakable props (cactus, etc.) |
+
+## Input actions
+- `move_up/down/left/right` — W/A/S/D
+- `redirect` — Space
+- `aim_ccw` / `aim_cw` — A / D
+- `aim_confirm` — Space + left click
+- `restart` — R
 
 ## Conventions
 - Prefer `%UniqueName` for required node references; fail fast on missing required nodes (see `.cursor/rules/godot-node-references.mdc`).
 - Do not hunt for an exported `.exe` to test; use in-editor play (see `.cursor/rules/godot-testing.mdc`).
+- Level objects: origin is **bottom-center** of the art; collision size/offset lives in a per-variant `LevelObjectVariant` Resource; shapes are built in code so instances do not share a mutated sub-resource.
 - Keep this file updated when autoloads, scenes, scripts, groups, or physics layers change.
 
 ## Scratch / experimental

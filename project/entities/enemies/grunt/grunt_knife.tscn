@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://doagtfaw80f82"]
+[gd_scene load_steps=4 format=3 uid="uid://doagtfaw80f82"]
 
 [ext_resource type="Script" uid="uid://pstg026o8wof" path="res://entities/enemies/grunt/grunt_knife.gd" id="1_ntsep"]
 [ext_resource type="Texture2D" uid="uid://wcun7ki1apo7" path="res://entities/enemies/grunt/grunt_knife.png" id="1_plv27"]
@@ -6,12 +6,28 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_6pmnr"]
 radius = 11.0
 
-[node name="GruntKnife" type="CharacterBody2D" unique_id=2113864430]
+[sub_resource type="CircleShape2D" id="CircleShape2D_contact"]
+radius = 11.0
+
+[node name="GruntKnife" type="CharacterBody2D" groups=["enemies"]]
+collision_layer = 4
+collision_mask = 5
 script = ExtResource("1_ntsep")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1215899697]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -1)
 shape = SubResource("CircleShape2D_6pmnr")
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1970161269]
+[node name="Sprite2D" type="Sprite2D" parent="."]
+unique_name_in_owner = true
 texture = ExtResource("1_plv27")
+
+[node name="ContactArea" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactArea"]
+position = Vector2(0, -1)
+shape = SubResource("CircleShape2D_contact")

@@ -45,8 +45,9 @@ shape = SubResource("CapsuleShape2D_body")
 unique_name_in_owner = true
 script = ExtResource("2_handler")
 
-[node name="HealthComponent" type="Node2D" parent="Components" unique_id=1298444502]
+[node name="HealthComponent" type="Node2D" parent="Components" unique_id=1298444502 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("3_health")
+destroy_component = NodePath("../DestroyComponent")
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=789470835]
 script = ExtResource("4_damage")

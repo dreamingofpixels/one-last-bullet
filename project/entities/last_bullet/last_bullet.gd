@@ -12,12 +12,15 @@ const PHYSICS_LAYER_WORLD := 1
 var COMPONENTS: Dictionary = {}
 
 @export var speed: float = 180.0
+@export var max_speed: float = 1500.0
 @export var slow_mo_scale: float = 0.15
 @export var player_grace_seconds: float = 0.3
 @export var arrow_length: float = 28.0
 @export var rotate_heading: bool = true
 @export var tether_speed_scale: float = 1.0
 @export var tether_auto_release_turns: float = 1.0
+## Multiplier applied to speed and damage on every tether release (1.1 = +10%).
+@export var tether_release_boost: float = 1.1
 
 @onready var heading: Node2D = %Heading
 @onready var aim_arrow: Node2D = %AimArrow
@@ -185,6 +188,7 @@ func release_tether() -> void:
 	var by: Node = _tether_player
 	var tangent := _tether_tangent()
 	aim_direction = tangent
+	_apply_tether_release_boost()
 	state = BulletState.FLYING
 	freeze = false
 	linear_velocity = aim_direction * speed
@@ -290,6 +294,11 @@ func _clear_tether_vars() -> void:
 	_tether_angle = 0.0
 	_tether_dir = 1.0
 	_tether_swept = 0.0
+
+
+func _apply_tether_release_boost() -> void:
+	speed = minf(speed * tether_release_boost, max_speed)
+	damage_component.damage *= tether_release_boost
 
 
 func _apply_heading() -> void:

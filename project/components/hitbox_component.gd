@@ -6,24 +6,42 @@ class_name HitboxComponent extends Area2D
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
+	body_entered.connect(_on_body_entered)
 
 
-## Disable monitoring while invulnerable so area overlaps deal no damage.
+## Disable monitoring while invulnerable so overlaps deal no damage.
 ## Deferred because callers often toggle from _physics_process.
 func set_invulnerable(value: bool) -> void:
 	set_deferred("monitoring", not value)
 
 
 func _on_area_entered(area: Area2D) -> void:
-	# `area.owner` is the scene-owner metadata; depending on how the scene was saved/instanced
-	# it may not be the entity root that holds `COMPONENTS`.
-	# Walk up the tree until we find a node with a COMPONENTS dictionary.
-	var attacker: Node = area.owner
-	if attacker == null or not is_instance_valid(attacker):
-		attacker = area as Node
-	while attacker != null and (attacker.get("COMPONENTS") == null):
+	_try_apply_damage_from(_resolve_attacker_root(area))
+
+
+func _on_body_entered(body: Node2D) -> void:
+	_try_apply_damage_from(_resolve_attacker_root(body))
+
+
+## Walk up from a collider until we find the entity root that holds `COMPONENTS`.
+func _resolve_attacker_root(collider: Node) -> Node:
+	if collider == null or not is_instance_valid(collider):
+		return null
+
+	var attacker: Node = collider
+	if collider is Area2D:
+		# `owner` is scene metadata; it may not be the entity root that holds `COMPONENTS`.
+		attacker = collider.owner
+		if attacker == null or not is_instance_valid(attacker):
+			attacker = collider
+
+	while attacker != null and attacker.get("COMPONENTS") == null:
 		attacker = attacker.get_parent()
 
+	return attacker
+
+
+func _try_apply_damage_from(attacker: Node) -> void:
 	if attacker == null or not is_instance_valid(attacker):
 		return
 

@@ -20,19 +20,25 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Bullet damages enemies; kills player on contact
 - **Decision**: The same projectile is a weapon against enemies and an instant-death hazard for the player.
-- **Why**: Forces constant spatial awareness; every redirect is a risk trade.
+- **Why**: Forces constant spatial awareness; every deflect is a risk trade.
 - **Alternatives**: Bullet only hurts enemies — loses the dodge fantasy; damage-over-time to player — less arcade-readable.
 - **Status**: decided (design)
 
 ### Redirect via proximity + button, brief slow-mo, then choose direction
 - **Decision**: Get close to the bullet, press Space, time slows briefly, player picks a new direction with the mouse. Opening shot uses the same aim UX for 3 real-time seconds; redirects use 1.5s. Player movement is locked while aiming.
-- **Why**: Gives agency without removing the skill of positioning and timing; shared aim UX keeps the opening shot teachable.
+- **Why**: Gave agency without removing positioning/timing skill; shared aim UX kept the opening shot teachable.
 - **Alternatives**: Always-on aim control — removes tension; automatic wall-aim assist — too passive; keyboard rotation (A/D) — removed in favor of mouse-only aim.
+- **Status**: superseded — mid-combat redirect replaced by arc attack (see below). Opening aim (3s slow-mo) remains.
+
+### Arc attack deflects the orb; knocks enemies back
+- **Decision**: Mid-combat steering is a mouse-aimed 90° melee arc (radius 16 px, 6-frame AnimationPlayer). The orb reflects off the radial normal when it overlaps the active hitbox; enemies hit by the same arc receive knockback (no melee damage). Opening shot still uses the 3s slow-mo aim window.
+- **Why**: One action, two jobs; more arcade and readable than proximity slow-mo redirect; removes global mid-combat `Engine.time_scale` pauses; keeps player control of orb direction via aim + contact point.
+- **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — too many steps / harder to read; keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker sheriff fantasy.
 - **Status**: decided (in-codebase)
 
 ### Single basic enemy: chase + contact kill
 - **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. Prototype spawns 3.
-- **Why**: Simple pressure while the bullet/redirect loop is proven.
+- **Why**: Simple pressure while the bullet/attack loop is proven.
 - **Alternatives**: Ranged enemies first — more systems before the core loop is solid; brute enemy — deferred.
 - **Status**: decided (in-codebase)
 
@@ -56,7 +62,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Minimal story; gameplay-first arcade
 - **Decision**: Story is lean (Sheriff defending the saloon). No deep narrative required for v1.
-- **Why**: Focus production on the bullet/redirect/shop loop.
+- **Why**: Focus production on the bullet/attack/shop loop.
 - **Alternatives**: Heavy campaign narrative — distracts from the arcade core.
 - **Status**: decided (design)
 
@@ -70,10 +76,11 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ## Open design tensions
 
-- **Redirect limits**: cooldown vs charges vs unlimited?
+- **Attack cooldown / charges**: current cooldown is 0.35s; revisit if spam-steering feels too strong.
 - **Gold vanish duration**: how long before drops disappear?
 - **Shop draft size and reroll rules**: how many offers, costs, rerolls?
 - **Camera / view perspective**: side-view character sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena.
+- **Co-op opening aim**: `Engine.time_scale` during the level-start aim is still global.
 
 ---
 
@@ -109,7 +116,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Instigator-based player grace (replaces timestamp check)
 
 - **Decision**: On `_launch()`, `DamageComponent.instigator` is set to the player who aimed and cleared after `player_grace_seconds`. `HitboxComponent` skips damage when `instigator == owner`. This replaces the previous `player_grace_until_msec` wall-clock guard in `_resolve_hit`.
-- **Why**: Co-op correctness — only the redirecting player is briefly immune, not all players; the logic lives in data rather than in a custom branch inside `_resolve_hit`.
+- **Why**: Co-op correctness — only the aiming/deflecting player is briefly immune, not all players; the logic lives in data rather than in a custom branch inside `_resolve_hit`.
 - **Alternatives**: Timestamp guard — correct for single-player but breaks for multi-player (which player to protect?).
 - **Status**: decided (in-codebase)
 
@@ -118,11 +125,11 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Player states are `Node` children of `StateMachine`. Each state emits `signal finished(next_state_name)` (lowercase child name, or `"previous"`). The machine maps child names to nodes at `_ready`; all state lifecycle calls go through `update(delta)` / `handle_input(event)` / `enter()` / `exit()`. A `State` base class with `class_name` provides typed virtuals.
 - **Why**: Decouples transition logic from the machine; states are scene-tree nodes (easy to inspect/debug); `"previous"` enables one-level undo without a full stack.
 - **Alternatives**: Return-value transitions — state must know the machine's state set; full stack — over-engineered for 3 states; node-group polling — no explicit lifecycle.
-- **Status**: decided (in-codebase); states: Idle, Walk, Redirect (more to come)
+- **Status**: decided (in-codebase); states: Idle, Walk, Aim, Attack
 
 ### Per-player input: static action duplication + runtime suffix
 
-- **Decision**: P1 actions (`move_up`, `redirect`, etc.) are authored in `project.godot` with keyboard/mouse + gamepad device 0. P2 duplicates (`move_up_2`, etc.) are hand-authored in `project.godot` with gamepad device 1 only. At runtime, `Controls.apply_player_index(n)` appends `""` / `"_2"` suffix to every `PlayerAction.action`. P3/P4 action sets (`_3`, `_4`) are added in the same pattern when needed.
+- **Decision**: P1 actions (`move_up`, `attack`, etc.) are authored in `project.godot` with keyboard/mouse + gamepad device 0. P2 duplicates (`move_up_2`, etc.) are hand-authored in `project.godot` with gamepad device 1 only. At runtime, `Controls.apply_player_index(n)` appends `""` / `"_2"` suffix to every `PlayerAction.action`. P3/P4 action sets (`_3`, `_4`) are added in the same pattern when needed.
 - **Why**: No autoload needed; all bindings visible in Project Settings → Input Map; Godot's built-in action system handles device filtering.
 - **Alternatives**: Runtime duplication autoload (clone base actions to `_2/_3/_4` at startup) — adds an autoload and makes bindings invisible in Project Settings; plain `InputEvent.device` filtering in every script — more per-script boilerplate.
 - **Status**: decided (in-codebase); P1 + P2 authored; P3/P4 not yet authored
@@ -146,15 +153,21 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Aim windows measured in real time under Engine.time_scale
-- **Decision**: Opening aim is 3.0s and redirect aim is 1.5s of **wall-clock** time via `Time.get_ticks_msec()`, while `Engine.time_scale = 0.15` during aim.
+- **Decision**: Opening aim is 3.0s of **wall-clock** time via `Time.get_ticks_msec()`, while `Engine.time_scale = 0.15` during aim. Mid-combat redirect aim windows are gone.
 - **Why**: Slow-mo must not stretch the intended aim deadline.
 - **Alternatives**: Use scaled `delta` timers — windows become much longer than designed.
 - **Status**: decided (in-codebase)
 
 ### Post-launch player grace
-- **Decision**: After every launch (opening or redirect), the bullet ignores the player for 0.3s.
-- **Why**: Redirect requires proximity; without grace the player dies on the same frame they fire.
-- **Alternatives**: Teleport bullet away on redirect — less readable; disable player hit forever until leave range — easier to cheese.
+- **Decision**: After every launch (opening or deflect), the bullet ignores the player for 0.3s.
+- **Why**: Deflecting requires proximity; without grace the player dies on the same frame they bat the orb.
+- **Alternatives**: Teleport bullet away on deflect — less readable; disable player hit forever until leave range — easier to cheese.
+- **Status**: decided (in-codebase)
+
+### KnockbackComponent for shove without damage
+- **Decision**: `KnockbackComponent` applies a decaying shove to its owner (`CharacterBody2D` via velocity + `move_and_slide`, `RigidBody2D` via impulse, plain `Node2D` via position). Enemies yield chase AI while knockback is active. Built generic so breakables/objects can reuse it later.
+- **Why**: Attack needs a non-damage response for enemies; keeps shove logic out of MovementComponent and entity scripts.
+- **Alternatives**: Bake knockback into MovementComponent — couples walk and shove; one-off velocity in grunt script — not reusable for props.
 - **Status**: decided (in-codebase)
 
 ### Level objects: shared script + per-variant Resource

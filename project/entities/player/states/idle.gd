@@ -10,21 +10,18 @@ func exit() -> void:
 
 
 func update(_delta: float) -> void:
+	var controls: Controls = owner.controls
+	# Poll held keys — is_action_pressed only fires on the rising edge, so returning
+	# here after attack while still holding WASD would otherwise soft-lock movement.
+	if controls.get_move_vector() != Vector2.ZERO:
+		emit_signal("finished", "walk")
+		return
 	owner.movement_component.stop()
 
 
 func handle_input(event: InputEvent) -> void:
 	var controls: Controls = owner.controls
 
-	# Any movement key → walk
-	if event.is_action_pressed(controls.move_up_action.action) \
-	or event.is_action_pressed(controls.move_down_action.action) \
-	or event.is_action_pressed(controls.move_left_action.action) \
-	or event.is_action_pressed(controls.move_right_action.action):
-		emit_signal("finished", "walk")
-		return
-
-	# Redirect press near bullet → redirect state
-	if event.is_action_pressed(controls.redirect_action.action):
-		if owner.redirect_component.can_redirect():
-			emit_signal("finished", "redirect")
+	if event.is_action_pressed(controls.attack_action.action):
+		if owner.attack_component.can_attack():
+			emit_signal("finished", "attack")

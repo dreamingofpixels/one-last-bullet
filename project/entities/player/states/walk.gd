@@ -20,6 +20,6 @@ func update(_delta: float) -> void:
 
 func handle_input(event: InputEvent) -> void:
 	var controls: Controls = owner.controls
-	if event.is_action_pressed(controls.redirect_action.action):
-		if owner.redirect_component.can_redirect():
-			emit_signal("finished", "redirect")
+	if event.is_action_pressed(controls.attack_action.action):
+		if owner.attack_component.can_attack():
+			emit_signal("finished", "attack")

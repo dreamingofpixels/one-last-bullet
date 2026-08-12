@@ -7,7 +7,8 @@ extends CharacterBody2D
 var COMPONENTS: Dictionary = {}
 
 @onready var movement_component: MovementComponent = %MovementComponent
-@onready var redirect_component: RedirectComponent = %RedirectComponent
+@onready var opening_aim_component: OpeningAimComponent = %OpeningAimComponent
+@onready var attack_component: AttackComponent = %AttackComponent
 @onready var destroy_component: DestroyComponent = %DestroyComponent
 @onready var controls: Controls = %Controls
 @onready var state_machine: StateMachine = %StateMachine
@@ -21,12 +22,11 @@ func _ready() -> void:
 # ── Public API (called from level.gd) ─────────────────────────────────────────
 
 func bind_bullet(bullet: RigidBody2D) -> void:
-	redirect_component.bind_bullet(bullet)
+	opening_aim_component.bind_bullet(bullet)
 
 
 func begin_opening_aim(bullet: RigidBody2D, duration_seconds: float) -> void:
-	redirect_component.bind_bullet(bullet)
-	redirect_component.begin_opening_aim(duration_seconds)
-	# During the opening aim the bullet drives its own slow-mo; the Redirect state
-	# will detect can_aim() == true and keep feeding aim until the window closes.
-	state_machine.force_state("redirect")
+	opening_aim_component.bind_bullet(bullet)
+	opening_aim_component.begin_opening_aim(duration_seconds)
+	# Opening aim drives its own slow-mo; the Aim state feeds aim until the window closes.
+	state_machine.force_state("aim")

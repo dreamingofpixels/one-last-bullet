@@ -4,6 +4,7 @@ var COMPONENTS: Dictionary = {}
 
 @onready var movement_component: MovementComponent = %MovementComponent
 @onready var destroy_component: DestroyComponent = %DestroyComponent
+@onready var knockback_component: KnockbackComponent = %KnockbackComponent
 
 var _player: Node2D = null
 
@@ -14,6 +15,9 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if knockback_component.is_active():
+		return
+
 	if not is_instance_valid(_player):
 		_find_player()
 		movement_component.stop()

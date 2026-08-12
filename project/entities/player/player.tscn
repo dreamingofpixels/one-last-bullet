@@ -7,143 +7,141 @@
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="4_damage"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_destroy"]
 [ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="6_movement"]
-[ext_resource type="Script" uid="uid://cbs3c33rnhpln" path="res://components/redirect_component.gd" id="7_redirect"]
+[ext_resource type="PackedScene" path="res://components/opening_aim_component.tscn" id="7_opening"]
+[ext_resource type="PackedScene" uid="uid://cu310m38frq6t" path="res://components/attack_component.tscn" id="8_attack"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
 [ext_resource type="Script" uid="uid://ckyag5seiljcb" path="res://entities/player/controls.gd" id="9_controls"]
 [ext_resource type="Script" uid="uid://di63cvw2wmcm0" path="res://entities/player/player_action.gd" id="10_action"]
 [ext_resource type="Script" uid="uid://bahr53w7vvpv6" path="res://entities/_base/state_machine.gd" id="11_sm"]
 [ext_resource type="Script" uid="uid://dxp6dkx7p1vmg" path="res://entities/player/states/idle.gd" id="12_idle"]
 [ext_resource type="Script" uid="uid://b4rxpo1dkquso" path="res://entities/player/states/walk.gd" id="13_walk"]
-[ext_resource type="Script" uid="uid://dwfaccg0qrnk4" path="res://entities/player/states/redirect.gd" id="14_redirect"]
+[ext_resource type="Script" uid="uid://d0vute03i6ubx" path="res://entities/player/states/aim.gd" id="14_aim"]
+[ext_resource type="Script" uid="uid://dv4orhnn3e1d1" path="res://entities/player/states/attack.gd" id="15_attack"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 6.0
 height = 26.0
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_redirect"]
-radius = 26.0
-
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hitbox"]
 radius = 6.0
 height = 26.0
 
-[node name="Player" type="CharacterBody2D" unique_id=850815924]
+[node name="Player" type="CharacterBody2D" unique_id=2057158373]
 collision_layer = 2
 script = ExtResource("1_abrql")
 
-[node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1445708199]
+[node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1508902462]
 unique_name_in_owner = true
 texture_filter = 1
 texture = ExtResource("1_symyc")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=986912507]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=565534729]
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="Components" type="Node2D" parent="." unique_id=2144310183]
+[node name="Components" type="Node2D" parent="." unique_id=101523298]
 unique_name_in_owner = true
 script = ExtResource("2_handler")
 
-[node name="HealthComponent" type="Node2D" parent="Components" unique_id=1500557449]
+[node name="HealthComponent" type="Node2D" parent="Components" unique_id=1298444502]
 script = ExtResource("3_health")
 
-[node name="DamageComponent" type="Node2D" parent="Components" unique_id=983134577]
+[node name="DamageComponent" type="Node2D" parent="Components" unique_id=789470835]
 script = ExtResource("4_damage")
 damage = 0.0
 
-[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=543294829 node_paths=PackedStringArray("sprite")]
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=56402172 node_paths=PackedStringArray("sprite")]
 unique_name_in_owner = true
 script = ExtResource("5_destroy")
 sprite = NodePath("../../PlayerSprite")
 
-[node name="MovementComponent" type="Node2D" parent="Components" unique_id=1547406836]
+[node name="MovementComponent" type="Node2D" parent="Components" unique_id=1815320275]
 unique_name_in_owner = true
 script = ExtResource("6_movement")
 sprite = NodePath("../../PlayerSprite")
 
-[node name="RedirectComponent" type="Area2D" parent="Components" unique_id=1726936873]
+[node name="OpeningAimComponent" parent="Components" unique_id=96348510 instance=ExtResource("7_opening")]
 unique_name_in_owner = true
-collision_layer = 0
-collision_mask = 8
-monitorable = false
-script = ExtResource("7_redirect")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/RedirectComponent" unique_id=217039569]
-shape = SubResource("CircleShape2D_redirect")
+[node name="AttackComponent" parent="Components" unique_id=2121984031 instance=ExtResource("8_attack")]
+unique_name_in_owner = true
 
-[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1430472881 node_paths=PackedStringArray("health_component")]
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1647528013 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true
 collision_layer = 2
 collision_mask = 12
 script = ExtResource("8_hitbox")
 health_component = NodePath("../HealthComponent")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1636533193]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1095677379]
 shape = SubResource("CapsuleShape2D_hitbox")
 
-[node name="Controls" type="Node" parent="." unique_id=559342136]
+[node name="Controls" type="Node" parent="." unique_id=700935364]
 unique_name_in_owner = true
 script = ExtResource("9_controls")
 
-[node name="MoveUpAction" type="Node" parent="Controls" unique_id=1230871750]
+[node name="MoveUpAction" type="Node" parent="Controls" unique_id=1769018618]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "move_up"
 
-[node name="MoveDownAction" type="Node" parent="Controls" unique_id=1514911540]
+[node name="MoveDownAction" type="Node" parent="Controls" unique_id=1991837156]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "move_down"
 
-[node name="MoveLeftAction" type="Node" parent="Controls" unique_id=705393692]
+[node name="MoveLeftAction" type="Node" parent="Controls" unique_id=98532041]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "move_left"
 
-[node name="MoveRightAction" type="Node" parent="Controls" unique_id=822952154]
+[node name="MoveRightAction" type="Node" parent="Controls" unique_id=1260427354]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "move_right"
 
-[node name="AimUpAction" type="Node" parent="Controls" unique_id=1370175257]
+[node name="AimUpAction" type="Node" parent="Controls" unique_id=268958608]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "aim_up"
 
-[node name="AimDownAction" type="Node" parent="Controls" unique_id=1819509289]
+[node name="AimDownAction" type="Node" parent="Controls" unique_id=1121598369]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "aim_down"
 
-[node name="AimLeftAction" type="Node" parent="Controls" unique_id=619492789]
+[node name="AimLeftAction" type="Node" parent="Controls" unique_id=1687861979]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "aim_left"
 
-[node name="AimRightAction" type="Node" parent="Controls" unique_id=359336436]
+[node name="AimRightAction" type="Node" parent="Controls" unique_id=1066381281]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "aim_right"
 
-[node name="RedirectAction" type="Node" parent="Controls" unique_id=822271225]
+[node name="AttackAction" type="Node" parent="Controls" unique_id=1429299997]
 unique_name_in_owner = true
 script = ExtResource("10_action")
-action = "redirect"
+action = "attack"
 
-[node name="AimConfirmAction" type="Node" parent="Controls" unique_id=1718101476]
+[node name="AimConfirmAction" type="Node" parent="Controls" unique_id=551642541]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "aim_confirm"
 
-[node name="StateMachine" type="Node" parent="." unique_id=1698345394]
+[node name="StateMachine" type="Node" parent="." unique_id=1222181441]
 unique_name_in_owner = true
 script = ExtResource("11_sm")
 start_state = NodePath("Idle")
 
-[node name="Idle" type="Node" parent="StateMachine" unique_id=170572165]
+[node name="Idle" type="Node" parent="StateMachine" unique_id=1580580551]
 script = ExtResource("12_idle")
 
-[node name="Walk" type="Node" parent="StateMachine" unique_id=541195135]
+[node name="Walk" type="Node" parent="StateMachine" unique_id=1234487413]
 script = ExtResource("13_walk")
 
-[node name="Redirect" type="Node" parent="StateMachine" unique_id=2127881404]
-script = ExtResource("14_redirect")
+[node name="Aim" type="Node" parent="StateMachine" unique_id=259465949]
+script = ExtResource("14_aim")
+
+[node name="Attack" type="Node" parent="StateMachine" unique_id=149531413]
+script = ExtResource("15_attack")

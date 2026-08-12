@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_destroy"]
 [ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="6_movement"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
+[ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="8_knockback"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0
@@ -49,6 +50,9 @@ unique_name_in_owner = true
 script = ExtResource("6_movement")
 move_speed = 55.0
 sprite = NodePath("../../Sprite2D")
+
+[node name="KnockbackComponent" parent="Components" instance=ExtResource("8_knockback")]
+unique_name_in_owner = true
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=487823933 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true

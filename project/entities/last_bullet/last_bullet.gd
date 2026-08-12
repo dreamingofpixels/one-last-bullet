@@ -1,7 +1,7 @@
 extends RigidBody2D
 
 signal launched
-signal redirected
+signal deflected(by: Node)
 
 enum BulletState { HELD, AIMING, FLYING }
 
@@ -81,7 +81,7 @@ func _process(_delta: float) -> void:
 		_launch()
 
 
-# ── Aim window API (driven externally by RedirectComponent/player states) ─────
+# ── Aim window API (driven externally by OpeningAimComponent/player states) ─────
 
 func set_aim_direction(direction: Vector2) -> void:
 	if state != BulletState.AIMING:
@@ -118,14 +118,17 @@ func begin_opening_aim(player: Node2D, duration_seconds: float = 3.0) -> void:
 	_enter_aiming(duration_seconds, Vector2.UP)
 
 
-func begin_redirect(duration_seconds: float = 1.5) -> void:
+func deflect(new_velocity: Vector2, instigator: Node) -> void:
 	if state != BulletState.FLYING:
 		return
-	var start_dir := aim_direction
-	if linear_velocity.length_squared() > 0.0001:
-		start_dir = linear_velocity.normalized()
-	_enter_aiming(duration_seconds, start_dir)
-	redirected.emit()
+	aim_direction = new_velocity.normalized() if new_velocity.length_squared() > 0.0001 else Vector2.RIGHT
+	linear_velocity = aim_direction * speed
+	if is_instance_valid(instigator):
+		damage_component.instigator = instigator
+		_player = instigator as Node2D
+	_grace_clear_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
+	_apply_heading()
+	deflected.emit(instigator)
 
 
 func is_aiming() -> bool:

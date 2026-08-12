@@ -29,7 +29,9 @@ One Last Bullet/
     │   ├── hitbox_component.gd / .tscn    Area2D; on area_entered reads attacker COMPONENTS[DamageComponent]
     │   ├── destroy_component.gd / .tscn   Disables collisions, plays pixel-fall FX, emits destroyed(node)
     │   ├── movement_component.gd / .tscn  move(dir) / stop() with optional sprite flip
-    │   └── redirect_component.gd / .tscn  Player-only Area2D; tracks bullet proximity, drives aim windows
+    │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D)
+    │   ├── attack_component.gd / .tscn   Player arc swing; deflects orb, knocks enemies
+    │   └── opening_aim_component.gd / .tscn  Level-start aim window driver
     ├── data/                   (empty; upgrades later)
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
@@ -44,13 +46,15 @@ One Last Bullet/
     │   │   └── aim_arrow.gd
     │   ├── player/
     │   │   ├── player.tscn / .gd / .png
+    │   │   ├── attack_texture.png / .aseprite  6-frame 16x16 arc (96x16 sheet)
     │   │   ├── player.aseprite
     │   │   ├── player_action.gd    Per-action node; action string suffixed at runtime
-    │   │   ├── controls.gd         Per-player input abstraction (move/aim vectors, is_redirect etc.)
+    │   │   ├── controls.gd         Per-player input abstraction (move/aim/attack vectors)
     │   │   └── states/
     │   │       ├── idle.gd
     │   │       ├── walk.gd
-    │   │       └── redirect.gd
+    │   │       ├── aim.gd
+    │   │       └── attack.gd
     │   └── enemies/
     │       ├── grunt/
     │       │   ├── grunt_knife.tscn / .gd / .png
@@ -100,7 +104,7 @@ None.
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
-- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart; connects `DestroyComponent.destroyed` for player and enemy death
+- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -109,23 +113,26 @@ None.
 - `project/components/hitbox_component.gd` — `Area2D`; `area_entered` reads attacker's `COMPONENTS[DamageComponent]`, skips if instigator == owner
 - `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `DestructionEffect`, frees owner
 - `project/components/movement_component.gd` — `move(dir)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h`
-- `project/components/redirect_component.gd` — player-only `Area2D`; tracks bullet proximity; `can_redirect()`, `begin_redirect()`, `begin_opening_aim()`, `set_aim_direction()`, `confirm_aim()`, `can_aim()`
+- `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`
+- `project/components/attack_component.gd` — player `Area2D` pie wedge; AnimationPlayer swing; reflects orb via `deflect()`, knocks enemies via `KnockbackComponent`
+- `project/components/opening_aim_component.gd` — binds bullet; `begin_opening_aim()`, `set_aim_direction()`, `confirm_aim()`, `can_aim()`
 
 ### State machine base
 - `project/entities/_base/state.gd` — `class_name State extends Node`; `signal finished(next_state_name)`; virtual `enter/exit/update/handle_input`
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `bind_bullet()`, `begin_opening_aim()`; tree: Components (Health/Damage/Destroy/Movement/Redirect/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Redirect)
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `bind_bullet()`, `begin_opening_aim()`; tree: Components (Health/Damage/Destroy/Movement/OpeningAim/Attack/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Aim/Attack)
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
-- `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_redirect_just_pressed()`, `is_confirm_just_pressed()`
-- `project/entities/player/states/idle.gd` — stops movement; transitions to walk or redirect
-- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle or redirect
-- `project/entities/player/states/redirect.gd` — feeds aim direction from `controls.get_aim_vector()`; leaves when `redirect_component.can_aim()` is false
-- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent` under `Components`; `set_aim_direction()` / `confirm_aim()` API; instigator-based player grace
+- `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_confirm_just_pressed()`
+- `project/entities/player/states/idle.gd` — stops movement; transitions to walk or attack
+- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle or attack
+- `project/entities/player/states/aim.gd` — opening-shot aim only; feeds aim until `opening_aim_component.can_aim()` is false
+- `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
+- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; `set_aim_direction()` / `confirm_aim()` / `deflect()` API; instigator-based player grace; `signal deflected(by)`
 - `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); Components under `%Heading`
 - `project/entities/last_bullet/aim_arrow.gd` — drawn aim arrow during aim windows
-- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; `COMPONENTS` dict; Health/Damage/Destroy/Movement/HitboxComponent
+- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health/Damage/Destroy/Movement/Knockback/HitboxComponent
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
@@ -162,7 +169,7 @@ None.
 | `move_down` | S, gamepad left-stick down, D-pad down | gamepad device 1 |
 | `move_left` | A, gamepad left-stick left, D-pad left | gamepad device 1 |
 | `move_right` | D, gamepad left-stick right, D-pad right | gamepad device 1 |
-| `redirect` | Space, gamepad A (device 0) | gamepad A device 1 |
+| `attack` | left click, Space, gamepad A (device 0) | gamepad A device 1 |
 | `aim_confirm` | Space, left click, gamepad A (device 0) | gamepad A device 1 |
 | `aim_up/down/left/right` | gamepad right-stick (device 0) | gamepad right-stick device 1 |
 | `restart` | R | — |

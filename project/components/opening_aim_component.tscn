@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://components/opening_aim_component.gd" id="1_opening"]
+
+[node name="OpeningAimComponent" type="Node2D"]
+script = ExtResource("1_opening")

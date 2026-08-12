@@ -22,7 +22,7 @@ func _ready() -> void:
 	status_label.text = "Aim your last bullet"
 
 	last_bullet.launched.connect(_on_bullet_launched)
-	last_bullet.redirected.connect(_on_bullet_redirected)
+	last_bullet.deflected.connect(_on_bullet_deflected)
 
 	var player_destroy: DestroyComponent = player.COMPONENTS.get(DestroyComponent)
 	if player_destroy:
@@ -68,10 +68,10 @@ func _on_bullet_launched() -> void:
 	status_label.text = "Clear the saloon"
 
 
-func _on_bullet_redirected() -> void:
+func _on_bullet_deflected(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
-	status_label.text = "Redirecting..."
+	status_label.text = "Deflected!"
 
 
 func _on_enemy_died(_node: Node = null) -> void:

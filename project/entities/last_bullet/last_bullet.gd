@@ -14,6 +14,7 @@ const PHYSICS_LAYER_BULLET := 8
 @export var slow_mo_scale: float = 0.15
 @export var player_grace_seconds: float = 0.3
 @export var arrow_length: float = 28.0
+@export var rotate_heading: bool = true
 
 @onready var heading: Node2D = %Heading
 @onready var hitbox: Area2D = %Hitbox
@@ -167,7 +168,8 @@ func _update_aim() -> void:
 
 
 func _apply_heading() -> void:
-	heading.rotation = aim_direction.angle() + PI / 2.0
+	if rotate_heading:
+		heading.rotation = aim_direction.angle() + PI / 2.0
 	aim_arrow.rotation = aim_direction.angle()
 
 

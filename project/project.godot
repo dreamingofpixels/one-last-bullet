@@ -17,10 +17,12 @@ config/icon="res://icon.svg"
 
 [display]
 
-window/size/viewport_width=640
-window/size/viewport_height=360
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/size/mode=2
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/stretch/scale=3.0
 window/stretch/scale_mode="integer"
 
 [gui]
@@ -85,6 +87,7 @@ restart={
 
 [physics]
 
+common/physics_ticks_per_second=200
 3d/physics_engine="Jolt Physics"
 
 [rendering]

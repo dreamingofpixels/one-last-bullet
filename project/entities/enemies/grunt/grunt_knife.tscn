@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://pstg026o8wof" path="res://entities/enemies/grunt/grunt_knife.gd" id="1_ntsep"]
 [ext_resource type="Texture2D" uid="uid://wcun7ki1apo7" path="res://entities/enemies/grunt/grunt_knife.png" id="1_plv27"]
-[ext_resource type="Material" uid="uid://xd8op6ggc1kr" path="res://effects/smooth_pixel_material.tres" id="2_smooth"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_6pmnr"]
 radius = 11.0
@@ -21,8 +20,7 @@ shape = SubResource("CircleShape2D_6pmnr")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=449508408]
 unique_name_in_owner = true
-texture_filter = 2
-material = ExtResource("2_smooth")
+texture_filter = 1
 texture = ExtResource("1_plv27")
 
 [node name="ContactArea" type="Area2D" parent="." unique_id=601351839]

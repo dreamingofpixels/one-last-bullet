@@ -28,7 +28,8 @@ One Last Bullet/
     │   └── destruction_effect.gd     Spawns detached sprite FX on destroy/die
     ├── entities/
     │   ├── last_bullet/
-    │   │   ├── last_bullet.tscn / .gd / .png
+    │   │   ├── last_orb.tscn / orb.png   (active desert projectile)
+    │   │   ├── last_bullet.tscn / .gd / .png  (kept as alternate)
     │   │   └── aim_arrow.gd
     │   ├── player/
     │   │   ├── player.tscn / .gd / .png
@@ -81,12 +82,13 @@ None yet.
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, bullet, HUD, fixed `Camera2D`)
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
 - `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart
 
 ### Entities
 - `project/entities/player/player.tscn` + `player.gd` — WASD move, redirect range, death (+ pixel-fall FX); smooth pixel material
-- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — HELD/AIMING/FLYING bullet + slow-mo aim; smooth pixel material; 180 px/s; body contact destroys breakables
+- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile (desert); no visual rotation; circle body + circle hitbox
+- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); rotates `%Heading` with flight
 - `project/entities/last_bullet/aim_arrow.gd` — drawn aim arrow during aim windows
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + contact kill (+ pixel-fall FX on die); smooth pixel material
 
@@ -114,7 +116,7 @@ None yet.
 |-------|---------|
 | `player` | Player root |
 | `enemies` | GruntKnife root |
-| `bullet` | LastBullet root |
+| `bullet` | LastBullet / LastOrb root (shared `last_bullet.gd`) |
 | `breakables` | Breakable props (cactus, etc.) |
 
 ## Input actions

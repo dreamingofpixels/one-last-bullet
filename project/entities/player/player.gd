@@ -85,7 +85,7 @@ func _try_redirect() -> void:
 func _on_redirect_range_body_entered(body: Node2D) -> void:
 	if body == _bullet or (is_instance_valid(_bullet) and body == _bullet):
 		_bullet_in_range = true
-	elif body.is_in_group("bullet") or body.name == "LastBullet":
+	elif body.is_in_group("bullet") or body.name == "LastBullet" or body.name == "LastOrb":
 		_bullet = body as RigidBody2D
 		_bullet_in_range = true
 

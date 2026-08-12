@@ -31,9 +31,15 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — mid-combat redirect replaced by arc attack (see below). Opening aim (3s slow-mo) remains.
 
 ### Arc attack deflects the orb; knocks enemies back
-- **Decision**: Mid-combat steering is a mouse-aimed 90° melee arc (radius 16 px, 6-frame AnimationPlayer). The orb reflects off the radial normal when it overlaps the active hitbox; enemies hit by the same arc receive knockback (no melee damage). Opening shot still uses the 3s slow-mo aim window.
-- **Why**: One action, two jobs; more arcade and readable than proximity slow-mo redirect; removes global mid-combat `Engine.time_scale` pauses; keeps player control of orb direction via aim + contact point.
-- **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — too many steps / harder to read; keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker sheriff fantasy.
+- **Decision**: Mid-combat steering is a mouse-aimed melee arc (authored `CollisionPolygon2D` on `AttackComponent`, 6-frame AnimationPlayer). The orb reflects off the radial normal when it overlaps the active hitbox; enemies hit by the same arc receive knockback (no melee damage). Opening shot still uses the 3s slow-mo aim window.
+- **Why**: One action, two jobs; more arcade and readable than proximity slow-mo redirect; removes global mid-combat `Engine.time_scale` pauses; keeps player control of orb direction via aim + contact point; scene-authored polygon is easier to tune against the arc art than a procedurally rebuilt wedge.
+- **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — too many steps / harder to read; keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker sheriff fantasy; runtime `ConvexPolygonShape2D` from radius/degrees exports — replaced by authored polygon.
+- **Status**: decided (in-codebase)
+
+### Same-direction chase hits push along aim
+- **Decision**: When the orb's velocity aligns with the player→orb radial normal (dot above a tunable threshold, default 0.5), skip `Vector2.bounce` and set exit velocity to the attack aim direction. Side and inbound hits still use radial bounce.
+- **Why**: Pure radial bounce flips ~180° when chasing from behind, which feels like the bat reversed the orb instead of carrying it forward along the swing.
+- **Alternatives**: Always bounce on radial normal — unrealistic chase reversals; always set velocity to aim — loses readable glancing deflections; blend bounce + aim — more tuning for little gain; arc-surface contact normal — more accurate physically but harder to author and debug for a small polygon.
 - **Status**: decided (in-codebase)
 
 ### Single basic enemy: chase + contact kill
@@ -125,7 +131,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Player states are `Node` children of `StateMachine`. Each state emits `signal finished(next_state_name)` (lowercase child name, or `"previous"`). The machine maps child names to nodes at `_ready`; all state lifecycle calls go through `update(delta)` / `handle_input(event)` / `enter()` / `exit()`. A `State` base class with `class_name` provides typed virtuals.
 - **Why**: Decouples transition logic from the machine; states are scene-tree nodes (easy to inspect/debug); `"previous"` enables one-level undo without a full stack.
 - **Alternatives**: Return-value transitions — state must know the machine's state set; full stack — over-engineered for 3 states; node-group polling — no explicit lifecycle.
-- **Status**: decided (in-codebase); states: Idle, Walk, Aim, Attack
+- **Status**: decided (in-codebase); states: Idle, Walk, Aim, Attack, Dash
 
 ### Per-player input: static action duplication + runtime suffix
 
@@ -168,6 +174,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: `KnockbackComponent` applies a decaying shove to its owner (`CharacterBody2D` via velocity + `move_and_slide`, `RigidBody2D` via impulse, plain `Node2D` via position). Enemies yield chase AI while knockback is active. Built generic so breakables/objects can reuse it later.
 - **Why**: Attack needs a non-damage response for enemies; keeps shove logic out of MovementComponent and entity scripts.
 - **Alternatives**: Bake knockback into MovementComponent — couples walk and shove; one-off velocity in grunt script — not reusable for props.
+- **Status**: decided (in-codebase)
+
+### Dash: fixed distance with i-frames and phase-through
+- **Decision**: Player dashes 50 px toward aim direction (mouse / right stick) at 400 px/s via `DashComponent` + `Dash` state. While dashing: hitbox monitoring off (immune to bullet and enemies), body `collision_layer`/`collision_mask` cleared so the player phases through props/enemies/walls, no movement input, no attacking. 0.5 s cooldown. Starts only from Idle/Walk (does not cancel an attack swing). Space is `dash`; attack keeps left click / gamepad A.
+- **Why**: Readable dodge through the orb, chasers, and clutter; fixed distance is easy to learn and tune; aim-direction dash matches the attack arc mental model; phase-through keeps the dash reliable in a prop-filled arena.
+- **Alternatives**: Reuse `KnockbackComponent`'s decaying shove — wrong curve (fade-out vs constant speed) and no i-frame API; velocity-based dodge that keeps movement control — less committed and harder to read; interrupt attack with dash — too many cancel options for prototype; keep world collision during dash — props truncate the dash unpredictably; separate prop vs wall physics layers so walls still block — extra layer setup before it is needed.
 - **Status**: decided (in-codebase)
 
 ### Level objects: shared script + per-variant Resource

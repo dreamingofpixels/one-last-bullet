@@ -8,6 +8,12 @@ func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 
 
+## Disable monitoring while invulnerable so area overlaps deal no damage.
+## Deferred because callers often toggle from _physics_process.
+func set_invulnerable(value: bool) -> void:
+	set_deferred("monitoring", not value)
+
+
 func _on_area_entered(area: Area2D) -> void:
 	# `area.owner` is the scene-owner metadata; depending on how the scene was saved/instanced
 	# it may not be the entity root that holds `COMPONENTS`.

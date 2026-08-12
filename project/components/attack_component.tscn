@@ -3,12 +3,9 @@
 [ext_resource type="Script" uid="uid://bytfh14k6y8sn" path="res://components/attack_component.gd" id="1_attack"]
 [ext_resource type="Texture2D" uid="uid://2ox1kpauodu1" path="res://entities/player/attack_texture.png" id="2_tex"]
 
-[sub_resource type="ConvexPolygonShape2D" id="ConvexPolygonShape2D_placeholder"]
-points = PackedVector2Array(0, 0, 16, -16, 16, 16)
-
 [sub_resource type="Animation" id="Animation_attack"]
 resource_name = "attack"
-length = 0.9
+length = 0.3
 step = 0.05
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -67,14 +64,27 @@ script = ExtResource("1_attack")
 [node name="AttackSprite" type="Sprite2D" parent="." unique_id=689370773]
 unique_name_in_owner = true
 texture_filter = 1
+position = Vector2(0.20000029, -4.799999)
 texture = ExtResource("2_tex")
 centered = false
 offset = Vector2(0, -16)
 hframes = 6
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=934311382]
+[node name="AttackSpriteHint" type="Sprite2D" parent="." unique_id=1949250684]
 unique_name_in_owner = true
-shape = SubResource("ConvexPolygonShape2D_placeholder")
+self_modulate = Color(1, 1, 1, 0.3254902)
+texture_filter = 1
+position = Vector2(0.20000029, -4.799999)
+texture = ExtResource("2_tex")
+centered = false
+offset = Vector2(0, -16)
+hframes = 6
+frame = 2
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="." unique_id=1610840802]
+unique_name_in_owner = true
+position = Vector2(0.20000029, -4.799999)
+polygon = PackedVector2Array(0, -12, 0, -19, 9, -17, 19, -9, 24, 5, 17, 5, 10, -6)
 disabled = true
 
 [node name="AttackAnimation" type="AnimationPlayer" parent="." unique_id=2130073236]

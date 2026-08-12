@@ -20,6 +20,12 @@ func update(_delta: float) -> void:
 
 func handle_input(event: InputEvent) -> void:
 	var controls: Controls = owner.controls
+
+	if event.is_action_pressed(controls.dash_action.action):
+		if owner.dash_component.can_dash():
+			emit_signal("finished", "dash")
+			return
+
 	if event.is_action_pressed(controls.attack_action.action):
 		if owner.attack_component.can_attack():
 			emit_signal("finished", "attack")

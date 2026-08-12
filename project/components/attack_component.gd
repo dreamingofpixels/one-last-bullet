@@ -1,22 +1,22 @@
 class_name AttackComponent extends Area2D
 
-## Player melee arc: 90-degree pie wedge that reflects the orb and knocks enemies.
+## Player melee arc: authored CollisionPolygon2D that reflects the orb and knocks enemies.
 
 const PHYSICS_LAYER_ENEMY := 4
 const PHYSICS_LAYER_BULLET := 8
 
-@export var arc_radius: float = 16.0
-@export var arc_degrees: float = 90.0
-@export var wedge_point_count: int = 10
 @export var knockback_force: float = 220.0
 @export var attack_cooldown: float = 0.35
+## When orb velocity aligns with player→orb (dot > this), push along aim instead of bouncing.
+@export var same_direction_dot_threshold: float = 0.5
 ## Visual-only rotation: art is a NE quarter-arc; +45° puts its midline on parent +X (aim).
 @export var sprite_angle_offset: float = PI / 4.0
 @export var lock_movement: bool = false
 
 @onready var attack_sprite: Sprite2D = %AttackSprite
+@onready var attack_sprite_hint: Sprite2D = %AttackSpriteHint
 @onready var attack_animation: AnimationPlayer = %AttackAnimation
-@onready var collision_shape: CollisionShape2D = %CollisionShape2D
+@onready var collision_polygon: CollisionPolygon2D = %CollisionPolygon2D
 
 var _aim_direction: Vector2 = Vector2.RIGHT
 var _attacking: bool = false
@@ -30,7 +30,7 @@ func _ready() -> void:
 	collision_mask = PHYSICS_LAYER_ENEMY | PHYSICS_LAYER_BULLET
 	monitoring = false
 	monitorable = false
-	_build_wedge_shape()
+	collision_polygon.disabled = true
 	attack_sprite.visible = false
 	attack_sprite.hframes = 6
 	attack_sprite.vframes = 1
@@ -38,8 +38,30 @@ func _ready() -> void:
 	# Arc art's circle center sits at the bottom-left of each 16x16 frame.
 	attack_sprite.offset = Vector2(0.0, -16.0)
 	attack_sprite.rotation = sprite_angle_offset
+	attack_sprite_hint.hframes = 6
+	attack_sprite_hint.vframes = 1
+	attack_sprite_hint.centered = false
+	attack_sprite_hint.offset = Vector2(0.0, -16.0)
+	attack_sprite_hint.rotation = sprite_angle_offset
+	attack_sprite_hint.frame = 2
 	body_entered.connect(_on_body_entered)
 	attack_animation.animation_finished.connect(_on_animation_finished)
+
+
+func _process(_delta: float) -> void:
+	if _attacking or owner.opening_aim_component.can_aim():
+		attack_sprite_hint.visible = false
+		return
+
+	var aim: Vector2 = owner.controls.get_aim_vector(owner.global_position)
+	if aim.length_squared() < 0.0001:
+		attack_sprite_hint.visible = false
+		return
+
+	_aim_direction = aim.normalized()
+	rotation = _aim_direction.angle()
+	attack_sprite_hint.rotation = sprite_angle_offset
+	attack_sprite_hint.visible = true
 
 
 func start(aim_direction: Vector2) -> void:
@@ -51,6 +73,7 @@ func start(aim_direction: Vector2) -> void:
 	_hit_enemies.clear()
 	rotation = _aim_direction.angle()
 	attack_sprite.rotation = sprite_angle_offset
+	attack_sprite_hint.visible = false
 	attack_sprite.visible = true
 	attack_sprite.frame = 0
 	attack_animation.play("attack")
@@ -67,7 +90,7 @@ func can_attack() -> bool:
 ## Called from AnimationPlayer method tracks.
 func set_hitbox_active(active: bool) -> void:
 	monitoring = active
-	collision_shape.disabled = not active
+	collision_polygon.disabled = not active
 	if active:
 		# Catch bodies already overlapping when the hitbox turns on.
 		for body in get_overlapping_bodies():
@@ -106,13 +129,14 @@ func _try_deflect_orb(orb: Node) -> void:
 		n = from_player.normalized()
 
 	var v: Vector2 = (orb as RigidBody2D).linear_velocity
-	# Skip if already leaving the arc (outbound).
-	if v.dot(n) >= 0.0:
-		return
-
-	var reflected := v.bounce(n)
-	if reflected.length_squared() < 0.0001:
-		reflected = n
+	var reflected: Vector2
+	# Chasing from behind: radial bounce would flip ~180°; push along the aimed arc instead.
+	if v.length_squared() > 0.0001 and v.normalized().dot(n) > same_direction_dot_threshold:
+		reflected = _aim_direction
+	else:
+		reflected = v.bounce(n)
+		if reflected.length_squared() < 0.0001:
+			reflected = _aim_direction
 	_hit_orb = true
 	orb.deflect(reflected, owner)
 
@@ -139,20 +163,3 @@ func _on_animation_finished(anim_name: StringName) -> void:
 	attack_sprite.visible = false
 	_attacking = false
 	_cooldown_until_msec = Time.get_ticks_msec() + int(attack_cooldown * 1000.0)
-
-
-func _build_wedge_shape() -> void:
-	var poly := ConvexPolygonShape2D.new()
-	var points := PackedVector2Array()
-	points.append(Vector2.ZERO)
-
-	var half := deg_to_rad(arc_degrees) * 0.5
-	var count := maxi(2, wedge_point_count)
-	for i in count:
-		var t := float(i) / float(count - 1)
-		var angle := -half + t * (half * 2.0)
-		points.append(Vector2(cos(angle), sin(angle)) * arc_radius)
-
-	poly.points = points
-	collision_shape.shape = poly
-	collision_shape.disabled = true

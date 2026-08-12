@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="6_movement"]
 [ext_resource type="PackedScene" path="res://components/opening_aim_component.tscn" id="7_opening"]
 [ext_resource type="PackedScene" uid="uid://cu310m38frq6t" path="res://components/attack_component.tscn" id="8_attack"]
+[ext_resource type="PackedScene" path="res://components/dash_component.tscn" id="8_dash"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
 [ext_resource type="Script" uid="uid://ckyag5seiljcb" path="res://entities/player/controls.gd" id="9_controls"]
 [ext_resource type="Script" uid="uid://di63cvw2wmcm0" path="res://entities/player/player_action.gd" id="10_action"]
@@ -17,6 +18,7 @@
 [ext_resource type="Script" uid="uid://b4rxpo1dkquso" path="res://entities/player/states/walk.gd" id="13_walk"]
 [ext_resource type="Script" uid="uid://d0vute03i6ubx" path="res://entities/player/states/aim.gd" id="14_aim"]
 [ext_resource type="Script" uid="uid://dv4orhnn3e1d1" path="res://entities/player/states/attack.gd" id="15_attack"]
+[ext_resource type="Script" uid="uid://ceaw37m3x00mu" path="res://entities/player/states/dash.gd" id="16_dash"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 6.0
@@ -57,6 +59,7 @@ sprite = NodePath("../../PlayerSprite")
 [node name="MovementComponent" type="Node2D" parent="Components" unique_id=1815320275]
 unique_name_in_owner = true
 script = ExtResource("6_movement")
+move_speed = 200.0
 sprite = NodePath("../../PlayerSprite")
 
 [node name="OpeningAimComponent" parent="Components" unique_id=96348510 instance=ExtResource("7_opening")]
@@ -64,6 +67,11 @@ unique_name_in_owner = true
 
 [node name="AttackComponent" parent="Components" unique_id=2121984031 instance=ExtResource("8_attack")]
 unique_name_in_owner = true
+
+[node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("sprite", "hitbox_component") instance=ExtResource("8_dash")]
+unique_name_in_owner = true
+sprite = NodePath("../../PlayerSprite")
+hitbox_component = NodePath("../HitboxComponent")
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1647528013 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true
@@ -124,6 +132,11 @@ unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "attack"
 
+[node name="DashAction" type="Node" parent="Controls" unique_id=520390759]
+unique_name_in_owner = true
+script = ExtResource("10_action")
+action = "dash"
+
 [node name="AimConfirmAction" type="Node" parent="Controls" unique_id=551642541]
 unique_name_in_owner = true
 script = ExtResource("10_action")
@@ -145,3 +158,6 @@ script = ExtResource("14_aim")
 
 [node name="Attack" type="Node" parent="StateMachine" unique_id=149531413]
 script = ExtResource("15_attack")
+
+[node name="Dash" type="Node" parent="StateMachine" unique_id=11608327]
+script = ExtResource("16_dash")

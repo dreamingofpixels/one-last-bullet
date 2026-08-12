@@ -9,7 +9,9 @@ var COMPONENTS: Dictionary = {}
 @onready var movement_component: MovementComponent = %MovementComponent
 @onready var opening_aim_component: OpeningAimComponent = %OpeningAimComponent
 @onready var attack_component: AttackComponent = %AttackComponent
+@onready var dash_component: DashComponent = %DashComponent
 @onready var destroy_component: DestroyComponent = %DestroyComponent
+@onready var player_sprite: Sprite2D = %PlayerSprite
 @onready var controls: Controls = %Controls
 @onready var state_machine: StateMachine = %StateMachine
 
@@ -17,6 +19,11 @@ var COMPONENTS: Dictionary = {}
 func _ready() -> void:
 	add_to_group("player")
 	controls.apply_player_index(player_index)
+
+
+## Facing fallback used by dash when aim vector is zero.
+func is_sprite_flipped() -> bool:
+	return player_sprite.flip_h
 
 
 # ── Public API (called from level.gd) ─────────────────────────────────────────

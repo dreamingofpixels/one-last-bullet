@@ -18,6 +18,7 @@ var player_index: int = 1
 @onready var aim_left_action: PlayerAction = %AimLeftAction
 @onready var aim_right_action: PlayerAction = %AimRightAction
 @onready var attack_action: PlayerAction = %AttackAction
+@onready var dash_action: PlayerAction = %DashAction
 @onready var aim_confirm_action: PlayerAction = %AimConfirmAction
 
 
@@ -64,6 +65,12 @@ func is_attack_just_pressed() -> bool:
 	if attack_action.action.is_empty():
 		return false
 	return Input.is_action_just_pressed(attack_action.action)
+
+
+func is_dash_just_pressed() -> bool:
+	if dash_action.action.is_empty():
+		return false
+	return Input.is_action_just_pressed(dash_action.action)
 
 
 func is_confirm_just_pressed() -> bool:

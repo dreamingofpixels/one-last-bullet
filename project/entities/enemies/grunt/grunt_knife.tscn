@@ -2,33 +2,61 @@
 
 [ext_resource type="Script" uid="uid://pstg026o8wof" path="res://entities/enemies/grunt/grunt_knife.gd" id="1_ntsep"]
 [ext_resource type="Texture2D" uid="uid://wcun7ki1apo7" path="res://entities/enemies/grunt/grunt_knife.png" id="1_plv27"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="2_handler"]
+[ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="3_health"]
+[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="4_damage"]
+[ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_destroy"]
+[ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="6_movement"]
+[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_6pmnr"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_contact"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
 radius = 11.0
 
-[node name="GruntKnife" type="CharacterBody2D" unique_id=720884848 groups=["enemies"]]
+[node name="GruntKnife" type="CharacterBody2D" unique_id=955394887 groups=["enemies"]]
 collision_layer = 4
 collision_mask = 5
 script = ExtResource("1_ntsep")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=737782935]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=21770520]
 position = Vector2(0, -1)
-shape = SubResource("CircleShape2D_6pmnr")
+shape = SubResource("CircleShape2D_body")
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=449508408]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=496389160]
 unique_name_in_owner = true
 texture_filter = 1
 texture = ExtResource("1_plv27")
 
-[node name="ContactArea" type="Area2D" parent="." unique_id=601351839]
-unique_name_in_owner = true
-collision_layer = 0
-collision_mask = 2
-monitorable = false
+[node name="Components" type="Node2D" parent="." unique_id=1708509998]
+script = ExtResource("2_handler")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactArea" unique_id=757779334]
+[node name="HealthComponent" type="Node2D" parent="Components" unique_id=1216674096 node_paths=PackedStringArray("destroy_component")]
+script = ExtResource("3_health")
+destroy_component = NodePath("../DestroyComponent")
+
+[node name="DamageComponent" type="Node2D" parent="Components" unique_id=1772677854]
+script = ExtResource("4_damage")
+
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=415019116 node_paths=PackedStringArray("sprite")]
+unique_name_in_owner = true
+script = ExtResource("5_destroy")
+sprite = NodePath("../../Sprite2D")
+
+[node name="MovementComponent" type="Node2D" parent="Components" unique_id=62013091]
+unique_name_in_owner = true
+script = ExtResource("6_movement")
+move_speed = 55.0
+sprite = NodePath("../../Sprite2D")
+
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=487823933 node_paths=PackedStringArray("health_component")]
+unique_name_in_owner = true
+collision_layer = 4
+collision_mask = 10
+script = ExtResource("7_hitbox")
+health_component = NodePath("../HealthComponent")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1562674629]
 position = Vector2(0, -1)
-shape = SubResource("CircleShape2D_contact")
+shape = SubResource("CircleShape2D_hitbox")

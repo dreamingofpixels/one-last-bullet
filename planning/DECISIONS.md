@@ -85,6 +85,48 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: `canvas_items` stretch — softer scaling; filtered textures — blurry sprites.
 - **Status**: decided (in-codebase)
 
+### Component architecture: COMPONENTS dict + ComponentHandler
+
+- **Decision**: Every combat/movable entity root declares `var COMPONENTS: Dictionary = {}`. A child `Node2D` running `component_handler.gd` registers every grandchild component into that dict keyed by its GDScript class reference (e.g. `COMPONENTS[HealthComponent]`). Same-entity refs use `@export` NodePaths; cross-entity refs use `area.owner.COMPONENTS[SomeComponent]` at collision time. No base `Component` class.
+- **Why**: Composition over inheritance; components stay independent; easy to add/remove per entity type without changing a class hierarchy.
+- **Alternatives**: Inheritance (`Enemy extends Character`) — becomes flag soup for diverse entities; NodePath exports without dict — O(n) get_node calls; signal bus — more indirection than needed for a small game.
+- **Status**: decided (in-codebase)
+
+### Health: one-hit-kill expressed as max_health = 1.0
+
+- **Decision**: `HealthComponent.max_health` defaults to `1.0`. Player, grunt, and cactus all have `max_health = 1.0`, preserving the one-hit-kill design. Multi-HP entities will just set a higher value.
+- **Why**: Keeps gameplay rules encoded in data rather than special-casing HP logic; multi-hit enemies are a future slider, not a code change.
+- **Alternatives**: A bool `is_one_shot` — extra flag for something already handled by the value itself.
+- **Status**: decided (in-codebase)
+
+### Damage flow: HitboxComponent area-vs-area
+
+- **Decision**: Hit detection uses `HitboxComponent` (`Area2D`) on both attackers and victims. `area_entered` on the victim's hitbox reads `area.owner.COMPONENTS[DamageComponent]` to get damage and instigator, then calls the victim's `HealthComponent.take_damage()`. Breakables are the exception: they stay body-contact (bullet `body_entered`) so the bounce impulse resolves before `queue_free()`.
+- **Why**: Decouples hit registration from physics; friendly-fire filter is a single instigator check; no new physics layers.
+- **Alternatives**: Area-vs-body — can't filter on DamageComponent; signal bus — extra indirection.
+- **Status**: decided (in-codebase)
+
+### Instigator-based player grace (replaces timestamp check)
+
+- **Decision**: On `_launch()`, `DamageComponent.instigator` is set to the player who aimed and cleared after `player_grace_seconds`. `HitboxComponent` skips damage when `instigator == owner`. This replaces the previous `player_grace_until_msec` wall-clock guard in `_resolve_hit`.
+- **Why**: Co-op correctness — only the redirecting player is briefly immune, not all players; the logic lives in data rather than in a custom branch inside `_resolve_hit`.
+- **Alternatives**: Timestamp guard — correct for single-player but breaks for multi-player (which player to protect?).
+- **Status**: decided (in-codebase)
+
+### Signal-based player state machine (finished signal + 2-deep stack)
+
+- **Decision**: Player states are `Node` children of `StateMachine`. Each state emits `signal finished(next_state_name)` (lowercase child name, or `"previous"`). The machine maps child names to nodes at `_ready`; all state lifecycle calls go through `update(delta)` / `handle_input(event)` / `enter()` / `exit()`. A `State` base class with `class_name` provides typed virtuals.
+- **Why**: Decouples transition logic from the machine; states are scene-tree nodes (easy to inspect/debug); `"previous"` enables one-level undo without a full stack.
+- **Alternatives**: Return-value transitions — state must know the machine's state set; full stack — over-engineered for 3 states; node-group polling — no explicit lifecycle.
+- **Status**: decided (in-codebase); states: Idle, Walk, Redirect (more to come)
+
+### Per-player input: static action duplication + runtime suffix
+
+- **Decision**: P1 actions (`move_up`, `redirect`, etc.) are authored in `project.godot` with keyboard/mouse + gamepad device 0. P2 duplicates (`move_up_2`, etc.) are hand-authored in `project.godot` with gamepad device 1 only. At runtime, `Controls.apply_player_index(n)` appends `""` / `"_2"` suffix to every `PlayerAction.action`. P3/P4 action sets (`_3`, `_4`) are added in the same pattern when needed.
+- **Why**: No autoload needed; all bindings visible in Project Settings → Input Map; Godot's built-in action system handles device filtering.
+- **Alternatives**: Runtime duplication autoload (clone base actions to `_2/_3/_4` at startup) — adds an autoload and makes bindings invisible in Project Settings; plain `InputEvent.device` filtering in every script — more per-script boilerplate.
+- **Status**: decided (in-codebase); P1 + P2 authored; P3/P4 not yet authored
+
 ### Main scene is desert level; no autoloads yet
 - **Decision**: `run/main_scene` is `areas/level/desert.tscn`. Level logic lives on the scene root (`level.gd`). No autoloads yet.
 - **Why**: Prototype is a single scene; avoid global state until shop/run flow needs it.

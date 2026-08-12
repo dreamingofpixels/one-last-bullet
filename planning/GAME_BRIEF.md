@@ -30,12 +30,13 @@ Dodge your own bullet while aiming it at enemies. Risk the floor for vanishing g
 - Speed should be slow enough to interact with (redirect) but fast enough that avoiding it is a challenge.
 - Redirect: proximity + Space → 1.5s slow-mo → pick new direction. Brief post-launch grace so redirecting does not instantly kill the player. Limits (cooldown, charges, unlimited) are still open — see open questions.
 
-## Input (prototype)
-- **Move**: WASD
-- **Redirect**: Space (when near the bullet)
-- **Aim**: mouse
-- **Confirm aim early**: Space or left click (otherwise window auto-locks)
+## Input
+- **Move**: WASD (keyboard) or left stick / D-pad (gamepad)
+- **Redirect**: Space (keyboard) or A button (gamepad)
+- **Aim**: mouse for the keyboard player; right stick for gamepad players
+- **Confirm aim early**: Space, left click, or A button
 - **Restart**: R
+- **Co-op**: up to 4 local players supported by the input system; P1 uses keyboard + mouse + gamepad device 0; P2 uses gamepad device 1; P3/P4 action bindings not yet authored in project.godot
 
 ## Stage
 - Every stage is a saloon with **randomized** enemies and obstacles.
@@ -69,3 +70,4 @@ Dodge your own bullet while aiming it at enemies. Risk the floor for vanishing g
 - **Powerup types**: what breakables drop, and how they stack with shop upgrades.
 - **Camera / view**: side-view sprites in a top-down-ish arena; confirm long-term camera.
 - **Difficulty curve**: how enemy count, obstacles, and layout pressure scale across 10 levels.
+- **Co-op slow-mo**: `Engine.time_scale` redirect slow-mo is global — one player's redirect slows all players. Options: per-player time dilation (not natively supported), shorter/no slow-mo in co-op, or accept it as a co-op feature.

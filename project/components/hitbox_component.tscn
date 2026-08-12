@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://components/hitbox_component.gd" id="1_hitbox"]
+
+[node name="HitboxComponent" type="Area2D"]
+monitoring = true
+monitorable = true
+script = ExtResource("1_hitbox")

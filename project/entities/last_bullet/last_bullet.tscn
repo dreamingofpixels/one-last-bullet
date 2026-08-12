@@ -4,6 +4,9 @@
 [ext_resource type="Texture2D" uid="uid://c2ho71np0ounl" path="res://entities/last_bullet/last_bullet.png" id="1_w6la0"]
 [ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/last_bullet/aim_arrow.gd" id="2_aim"]
 [ext_resource type="Material" path="res://effects/smooth_pixel_material.tres" id="3_smooth"]
+[ext_resource type="Script" path="res://components/component_handler.gd" id="5_handler"]
+[ext_resource type="Script" path="res://components/damage_component.gd" id="6_damage"]
+[ext_resource type="Script" path="res://components/hitbox_component.gd" id="7_hitbox"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
 friction = 0.0
@@ -16,7 +19,7 @@ radius = 4.0
 radius = 4.0
 height = 16.0
 
-[node name="LastBullet" type="RigidBody2D" unique_id=2110713818]
+[node name="LastBullet" type="RigidBody2D"]
 collision_layer = 8
 mass = 0.1
 physics_material_override = SubResource("PhysicsMaterial_bounce")
@@ -26,27 +29,36 @@ continuous_cd = 2
 linear_damp_mode = 1
 script = ExtResource("1_6hh1f")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=104775711]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_body")
 
-[node name="Heading" type="Node2D" parent="." unique_id=1281681941]
+[node name="Heading" type="Node2D" parent="."]
 unique_name_in_owner = true
 
-[node name="Sprite2D" type="Sprite2D" parent="Heading" unique_id=2079160854]
+[node name="Sprite2D" type="Sprite2D" parent="Heading"]
 texture_filter = 2
 material = ExtResource("3_smooth")
 texture = ExtResource("1_w6la0")
 
-[node name="Hitbox" type="Area2D" parent="Heading" unique_id=1138306670]
-unique_name_in_owner = true
-collision_layer = 0
-collision_mask = 6
-monitorable = false
+[node name="Components" type="Node2D" parent="Heading"]
+script = ExtResource("5_handler")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Heading/Hitbox" unique_id=1523778433]
+[node name="DamageComponent" type="Node2D" parent="Heading/Components"]
+unique_name_in_owner = true
+script = ExtResource("6_damage")
+damage = 1.0
+
+[node name="HitboxComponent" type="Area2D" parent="Heading/Components"]
+unique_name_in_owner = true
+collision_layer = 8
+collision_mask = 6
+monitorable = true
+script = ExtResource("7_hitbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Heading/Components/HitboxComponent"]
 shape = SubResource("CapsuleShape2D_hit")
 
-[node name="AimArrow" type="Node2D" parent="." unique_id=1758012643]
+[node name="AimArrow" type="Node2D" parent="."]
 unique_name_in_owner = true
 visible = false
 z_index = 20

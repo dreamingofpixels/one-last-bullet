@@ -22,18 +22,35 @@ One Last Bullet/
     │       ├── desert.tscn     Main playable arena
     │       ├── level.gd        Level director (spawn, aim start, win/lose)
     │       └── desert_tilemap.png
+    ├── components/             Reusable component scripts + scenes
+    │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
+    │   ├── health_component.gd / .tscn    HP tracking, calls DestroyComponent on death
+    │   ├── damage_component.gd / .tscn    Damage value + instigator (friendly-fire filter)
+    │   ├── hitbox_component.gd / .tscn    Area2D; on area_entered reads attacker COMPONENTS[DamageComponent]
+    │   ├── destroy_component.gd / .tscn   Disables collisions, plays pixel-fall FX, emits destroyed(node)
+    │   ├── movement_component.gd / .tscn  move(dir) / stop() with optional sprite flip
+    │   └── redirect_component.gd / .tscn  Player-only Area2D; tracks bullet proximity, drives aim windows
     ├── data/                   (empty; upgrades later)
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
     │   └── destruction_effect.gd     Spawns detached sprite FX on destroy/die
     ├── entities/
+    │   ├── _base/
+    │   │   ├── state.gd        Base State class (signal finished, enter/exit/update/handle_input)
+    │   │   └── state_machine.gd  StateMachine: states_map, 2-deep stack, force_state()
     │   ├── last_bullet/
     │   │   ├── last_orb.tscn / orb.png   (active desert projectile)
     │   │   ├── last_bullet.tscn / .gd / .png  (kept as alternate)
     │   │   └── aim_arrow.gd
     │   ├── player/
     │   │   ├── player.tscn / .gd / .png
-    │   │   └── player.aseprite
+    │   │   ├── player.aseprite
+    │   │   ├── player_action.gd    Per-action node; action string suffixed at runtime
+    │   │   ├── controls.gd         Per-player input abstraction (move/aim vectors, is_redirect etc.)
+    │   │   └── states/
+    │   │       ├── idle.gd
+    │   │       ├── walk.gd
+    │   │       └── redirect.gd
     │   └── enemies/
     │       ├── grunt/
     │       │   ├── grunt_knife.tscn / .gd / .png
@@ -43,7 +60,7 @@ One Last Bullet/
         ├── _base/
         │   ├── level_object_variant.gd   Per-variant texture + collision Resource
         │   ├── level_object.gd           Solid prop base (world layer, random variant)
-        │   └── breakable.gd              Breakable props (destroy on bullet bounce)
+        │   └── breakable.gd              Breakable props (breakables group + COMPONENTS dict)
         ├── cactai/
         │   ├── cactus.tscn               Breakable; picks cactus_1..4 at runtime
         │   ├── cactus_1..4.png
@@ -62,7 +79,7 @@ One Last Bullet/
 - **Editor plugins**: none
 
 ## Autoloads (from `project/project.godot`)
-None yet.
+None.
 
 | Name | Path | Purpose |
 |------|------|---------|
@@ -83,21 +100,39 @@ None yet.
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
-- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart
+- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart; connects `DestroyComponent.destroyed` for player and enemy death
+
+### Components
+- `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
+- `project/components/health_component.gd` — HP; calls `destroy_component.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`
+- `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter)
+- `project/components/hitbox_component.gd` — `Area2D`; `area_entered` reads attacker's `COMPONENTS[DamageComponent]`, skips if instigator == owner
+- `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `DestructionEffect`, frees owner
+- `project/components/movement_component.gd` — `move(dir)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h`
+- `project/components/redirect_component.gd` — player-only `Area2D`; tracks bullet proximity; `can_redirect()`, `begin_redirect()`, `begin_opening_aim()`, `set_aim_direction()`, `confirm_aim()`, `can_aim()`
+
+### State machine base
+- `project/entities/_base/state.gd` — `class_name State extends Node`; `signal finished(next_state_name)`; virtual `enter/exit/update/handle_input`
+- `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — WASD move, redirect range, death (+ pixel-fall FX); smooth pixel material
-- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile (desert); no visual rotation; circle body + circle hitbox
-- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); rotates `%Heading` with flight
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `bind_bullet()`, `begin_opening_aim()`; tree: Components (Health/Damage/Destroy/Movement/Redirect/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Redirect)
+- `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
+- `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_redirect_just_pressed()`, `is_confirm_just_pressed()`
+- `project/entities/player/states/idle.gd` — stops movement; transitions to walk or redirect
+- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle or redirect
+- `project/entities/player/states/redirect.gd` — feeds aim direction from `controls.get_aim_vector()`; leaves when `redirect_component.can_aim()` is false
+- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent` under `Components`; `set_aim_direction()` / `confirm_aim()` API; instigator-based player grace
+- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); Components under `%Heading`
 - `project/entities/last_bullet/aim_arrow.gd` — drawn aim arrow during aim windows
-- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + contact kill (+ pixel-fall FX on die); smooth pixel material
+- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; `COMPONENTS` dict; Health/Damage/Destroy/Movement/HitboxComponent
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
-- `project/objects/_base/breakable.gd` — breakable props (`breakables` group + `destroy()` + pixel-fall FX)
+- `project/objects/_base/breakable.gd` — `extends LevelObject`; `COMPONENTS` dict; `breakables` group; destroyed via `COMPONENTS[HealthComponent].take_damage()` from bullet `body_entered`
 - `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
-- `project/objects/cactai/cactus.tscn` — breakable cactus (4 art variants)
-- `project/objects/rocks/rock.tscn` — solid rock (1 art variant for now)
+- `project/objects/cactai/cactus.tscn` — breakable cactus; Components: HealthComponent + DestroyComponent
+- `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 
 ### Effects
 - `project/effects/SmoothPixel.gdshader` — [CptPotato Smooth Pixel Filtering](https://github.com/CptPotato/GodotThings/tree/master/SmoothPixelFiltering) (requires Linear filter on sprites)
@@ -120,12 +155,26 @@ None yet.
 | `breakables` | Breakable props (cactus, etc.) |
 
 ## Input actions
-- `move_up/down/left/right` — W/A/S/D
-- `redirect` — Space
-- `aim_confirm` — Space + left click (confirm aim early during slow-mo)
-- `restart` — R
+
+| Action | P1 binding | P2 binding (`_2` suffix) |
+|--------|-----------|--------------------------|
+| `move_up` | W, gamepad left-stick up (device 0), D-pad up | gamepad device 1 |
+| `move_down` | S, gamepad left-stick down, D-pad down | gamepad device 1 |
+| `move_left` | A, gamepad left-stick left, D-pad left | gamepad device 1 |
+| `move_right` | D, gamepad left-stick right, D-pad right | gamepad device 1 |
+| `redirect` | Space, gamepad A (device 0) | gamepad A device 1 |
+| `aim_confirm` | Space, left click, gamepad A (device 0) | gamepad A device 1 |
+| `aim_up/down/left/right` | gamepad right-stick (device 0) | gamepad right-stick device 1 |
+| `restart` | R | — |
+
+P1 keyboard/mouse actions use `device: -1` (any keyboard/mouse). P2 is gamepad-only. `_3` / `_4` action sets not yet authored (add with device 2/3 when needed). Aim direction for P1 falls back to mouse when the right stick is at rest.
 
 ## Conventions
+- Every combat/movable entity root declares `var COMPONENTS: Dictionary = {}`.
+- Instance `component_handler.tscn` as the `Components` child; add component scenes as its children. `ComponentHandler._ready()` registers them into `owner.COMPONENTS` keyed by **script class** (e.g. `COMPONENTS[HealthComponent]`).
+- Same-entity cross-component refs use `@export` NodePaths wired in the `.tscn`; cross-entity refs use `area.owner.COMPONENTS[SomeComponent]` at collision time.
+- State machine states are `Node` children of `StateMachine`; state scripts extend `State`; emit `finished("state_name")` to transition (lowercase child node name, or `"previous"`).
+- Player input always goes through the `Controls` node's `PlayerAction` children; never hardcode action strings in state or component scripts. `apply_player_index(n)` appends `""` / `"_2"` / `"_3"` / `"_4"` suffix at `_ready` time.
 - Prefer `%UniqueName` for required node references; fail fast on missing required nodes (see `.cursor/rules/godot-node-references.mdc`).
 - Do not hunt for an exported `.exe` to test; use in-editor play (see `.cursor/rules/godot-testing.mdc`).
 - Level objects: origin is **bottom-center** of the art; collision size/offset lives in a per-variant `LevelObjectVariant` Resource; shapes are built in code so instances do not share a mutated sub-resource.

@@ -1,27 +1,41 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://cloo7hwpiadpr"]
 
-[ext_resource type="Script" path="res://objects/_base/breakable.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://burfr4m62vdxl" path="res://objects/_base/breakable.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://c7ley58ad3nr6" path="res://objects/_base/level_object_variant.gd" id="2_rpnqn"]
 [ext_resource type="Texture2D" uid="uid://drhfrb8p8xdsb" path="res://objects/cactai/cactus_1.png" id="2_tex"]
 [ext_resource type="Resource" path="res://objects/cactai/variants/cactus_1.tres" id="3_v1"]
 [ext_resource type="Resource" path="res://objects/cactai/variants/cactus_2.tres" id="4_v2"]
 [ext_resource type="Resource" path="res://objects/cactai/variants/cactus_3.tres" id="5_v3"]
 [ext_resource type="Resource" path="res://objects/cactai/variants/cactus_4.tres" id="6_v4"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="7_handler"]
+[ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="8_health"]
+[ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="9_destroy"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_placeholder"]
 size = Vector2(14, 24)
 
-[node name="Cactus" type="StaticBody2D"]
-collision_layer = 1
+[node name="Cactus" type="StaticBody2D" unique_id=1313735517]
 collision_mask = 0
 script = ExtResource("1_script")
-variants = Array[LevelObjectVariant]([ExtResource("3_v1"), ExtResource("4_v2"), ExtResource("5_v3"), ExtResource("6_v4")])
+variants = Array[ExtResource("2_rpnqn")]([ExtResource("3_v1"), ExtResource("4_v2"), ExtResource("5_v3"), ExtResource("6_v4")])
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1079310370]
 unique_name_in_owner = true
-offset = Vector2(0, -16)
 texture = ExtResource("2_tex")
+offset = Vector2(0, -16)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1304318082]
 unique_name_in_owner = true
 position = Vector2(0, -12)
 shape = SubResource("RectangleShape2D_placeholder")
+
+[node name="Components" type="Node2D" parent="." unique_id=1006257729]
+script = ExtResource("7_handler")
+
+[node name="HealthComponent" type="Node2D" parent="Components" unique_id=366129273 node_paths=PackedStringArray("destroy_component")]
+script = ExtResource("8_health")
+destroy_component = NodePath("../DestroyComponent")
+
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=938070185 node_paths=PackedStringArray("sprite")]
+script = ExtResource("9_destroy")
+sprite = NodePath("../../Sprite2D")

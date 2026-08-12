@@ -21,14 +21,15 @@ func _ready() -> void:
 	randomize()
 	status_label.text = "Aim your last bullet"
 
-	player.bind_bullet(last_bullet)
-	player.died.connect(_on_player_died)
 	last_bullet.launched.connect(_on_bullet_launched)
 	last_bullet.redirected.connect(_on_bullet_redirected)
 
+	var player_destroy: DestroyComponent = player.COMPONENTS.get(DestroyComponent)
+	if player_destroy:
+		player_destroy.destroyed.connect(_on_player_died)
+
 	_spawn_enemies()
-	player.set_movement_locked(true)
-	last_bullet.begin_opening_aim(player, OPENING_AIM_SECONDS)
+	player.begin_opening_aim(last_bullet, OPENING_AIM_SECONDS)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -37,20 +38,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 
-func _process(_delta: float) -> void:
-	if _game_over or _cleared:
-		return
-	if is_instance_valid(player) and is_instance_valid(last_bullet):
-		player.set_movement_locked(last_bullet.is_aiming())
-
-
 func _spawn_enemies() -> void:
 	_enemies_alive = 0
 	for i in ENEMY_COUNT:
 		var grunt := GRUNT_SCENE.instantiate() as CharacterBody2D
 		enemies.add_child(grunt)
 		grunt.global_position = _pick_spawn_position()
-		grunt.died.connect(_on_enemy_died)
+		# Connect destroy_component.destroyed (emitted after death FX starts).
+		var destroy_comp: DestroyComponent = grunt.COMPONENTS.get(DestroyComponent)
+		if destroy_comp:
+			destroy_comp.destroyed.connect(_on_enemy_died.bind())
 		_enemies_alive += 1
 
 
@@ -68,30 +65,24 @@ func _pick_spawn_position() -> Vector2:
 func _on_bullet_launched() -> void:
 	if _game_over or _cleared:
 		return
-	if is_instance_valid(player):
-		player.set_movement_locked(false)
 	status_label.text = "Clear the saloon"
 
 
 func _on_bullet_redirected() -> void:
 	if _game_over or _cleared:
 		return
-	if is_instance_valid(player):
-		player.set_movement_locked(true)
 	status_label.text = "Redirecting..."
 
 
-func _on_enemy_died() -> void:
+func _on_enemy_died(_node: Node = null) -> void:
 	_enemies_alive = maxi(0, _enemies_alive - 1)
 	if _enemies_alive <= 0 and not _game_over:
 		_cleared = true
 		Engine.time_scale = 1.0
 		status_label.text = "Cleared! Press R to restart"
-		if is_instance_valid(player):
-			player.set_movement_locked(true)
 
 
-func _on_player_died() -> void:
+func _on_player_died(_node: Node = null) -> void:
 	if _cleared:
 		return
 	_game_over = true

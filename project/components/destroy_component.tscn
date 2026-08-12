@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://components/destroy_component.gd" id="1_destroy"]
+
+[node name="DestroyComponent" type="Node2D"]
+script = ExtResource("1_destroy")

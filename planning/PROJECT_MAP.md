@@ -30,7 +30,8 @@ One Last Bullet/
     │   ├── destroy_component.gd / .tscn   Disables collisions, plays pixel-fall FX, emits destroyed(node)
     │   ├── movement_component.gd / .tscn  move(dir) / stop() with optional sprite flip
     │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D)
-    │   ├── attack_component.gd / .tscn   Player arc swing; deflects orb, knocks enemies
+    │   ├── attack_component.gd / .tscn   Player arc swing; knocks enemies (orb deflect gated by flag)
+    │   ├── orb_tether_component.gd / .tscn  Proximity focus + tether capture/release for the orb
     │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames
     │   └── opening_aim_component.gd / .tscn  Level-start aim window driver
     ├── data/                   (empty; upgrades later)
@@ -42,7 +43,7 @@ One Last Bullet/
     │   │   ├── state.gd        Base State class (signal finished, enter/exit/update/handle_input)
     │   │   └── state_machine.gd  StateMachine: states_map, 2-deep stack, force_state()
     │   ├── last_bullet/
-    │   │   ├── last_orb.tscn / orb.png   (active desert projectile)
+    │   │   ├── last_orb.tscn / orb.png / orb_in_focus.png   (active desert projectile)
     │   │   ├── last_bullet.tscn / .gd / .png  (kept as alternate)
     │   │   └── aim_arrow.gd
     │   ├── player/
@@ -106,7 +107,7 @@ None.
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
-- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected`
+- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected` / `tethered` / `tether_released`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -116,7 +117,8 @@ None.
 - `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `DestructionEffect`, frees owner
 - `project/components/movement_component.gd` — `move(dir)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h`
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`
-- `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; reflects orb via `deflect()`, knocks enemies via `KnockbackComponent`
+- `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false)
+- `project/components/orb_tether_component.gd` — focus radius (32 px), capture/release via attack press; reads orb from `OpeningAimComponent.get_bullet()`; short post-release cooldown
 - `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; `start(dir)` / `is_dashing()` / `can_dash()`
 - `project/components/opening_aim_component.gd` — binds bullet; `begin_opening_aim()`, `set_aim_direction()`, `confirm_aim()`, `can_aim()`
 
@@ -125,16 +127,16 @@ None.
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `bind_bullet()`, `begin_opening_aim()`; tree: Components (Health/Damage/Destroy/Movement/OpeningAim/Attack/Dash/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Aim/Attack/Dash)
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `bind_bullet()`, `begin_opening_aim()`; tree: Components (Health/Damage/Destroy/Movement/OpeningAim/Attack/Dash/OrbTether/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Aim/Attack/Dash)
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_dash_just_pressed()`, `is_confirm_just_pressed()`
-- `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack
-- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack
+- `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; tether capture/release consumes attack press first; walk/dash blocked while tethering
+- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; tether capture/release consumes attack press first; forces idle while tethering
 - `project/entities/player/states/aim.gd` — opening-shot aim only; feeds aim until `opening_aim_component.can_aim()` is false
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
 - `project/entities/player/states/dash.gd` — snapshots aim, starts `DashComponent`; locked input until dash ends, then idle/walk
-- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; `set_aim_direction()` / `confirm_aim()` / `deflect()` API; instigator-based player grace; `signal deflected(by)`
-- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); Components under `%Heading`
+- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%OrbSprite` + overlay `%OrbInFocus`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states HELD/AIMING/FLYING/TETHERED; `set_aim_direction()` / `confirm_aim()` / `deflect()` / `begin_tether()` / `release_tether()` / `set_in_focus()` API; instigator-based player grace; signals `deflected`, `tethered`, `tether_released`
+- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
 - `project/entities/last_bullet/aim_arrow.gd` — drawn aim arrow during aim windows
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health/Damage/Destroy/Movement/Knockback/HitboxComponent
 

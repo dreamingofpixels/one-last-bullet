@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://c3eip5fgi2wd" path="res://areas/level/level.gd" id="2_level"]
 [ext_resource type="PackedScene" uid="uid://du4wuw1kmuhnc" path="res://entities/player/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/last_bullet/last_orb.tscn" id="4_bullet"]
-[ext_resource type="PackedScene" path="res://objects/cactai/cactus.tscn" id="5_cactus"]
+[ext_resource type="PackedScene" uid="uid://cloo7hwpiadpr" path="res://objects/cactai/cactus.tscn" id="5_cactus"]
 [ext_resource type="PackedScene" path="res://objects/rocks/rock.tscn" id="6_rock"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_gumju"]

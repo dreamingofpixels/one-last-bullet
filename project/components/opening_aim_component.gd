@@ -1,7 +1,7 @@
 class_name OpeningAimComponent extends Node2D
 
 ## Drives the level-start aim window on the bound bullet.
-## Mid-combat steering is handled by AttackComponent, not this node.
+## Mid-combat steering is handled by OrbTetherComponent (arc deflect is parked).
 
 var _bullet: RigidBody2D = null
 

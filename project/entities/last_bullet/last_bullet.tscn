@@ -35,10 +35,16 @@ shape = SubResource("CircleShape2D_body")
 [node name="Heading" type="Node2D" parent="."]
 unique_name_in_owner = true
 
-[node name="Sprite2D" type="Sprite2D" parent="Heading"]
+[node name="OrbSprite" type="Sprite2D" parent="Heading"]
+unique_name_in_owner = true
 texture_filter = 2
 material = ExtResource("3_smooth")
 texture = ExtResource("1_w6la0")
+
+[node name="OrbInFocus" type="Sprite2D" parent="Heading"]
+unique_name_in_owner = true
+visible = false
+texture_filter = 2
 
 [node name="Components" type="Node2D" parent="Heading"]
 script = ExtResource("5_handler")

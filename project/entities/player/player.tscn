@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://components/opening_aim_component.tscn" id="7_opening"]
 [ext_resource type="PackedScene" uid="uid://cu310m38frq6t" path="res://components/attack_component.tscn" id="8_attack"]
 [ext_resource type="PackedScene" path="res://components/dash_component.tscn" id="8_dash"]
+[ext_resource type="PackedScene" path="res://components/orb_tether_component.tscn" id="8_tether"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
 [ext_resource type="Script" uid="uid://ckyag5seiljcb" path="res://entities/player/controls.gd" id="9_controls"]
 [ext_resource type="Script" uid="uid://di63cvw2wmcm0" path="res://entities/player/player_action.gd" id="10_action"]
@@ -72,6 +73,9 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 sprite = NodePath("../../PlayerSprite")
 hitbox_component = NodePath("../HitboxComponent")
+
+[node name="OrbTetherComponent" parent="Components" instance=ExtResource("8_tether")]
+unique_name_in_owner = true
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1647528013 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true

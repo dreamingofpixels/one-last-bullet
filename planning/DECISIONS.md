@@ -33,14 +33,20 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Arc attack deflects the orb; knocks enemies back
 - **Decision**: Mid-combat steering is a mouse-aimed melee arc (authored `CollisionPolygon2D` on `AttackComponent`, 6-frame AnimationPlayer). The orb reflects off the radial normal when it overlaps the active hitbox; enemies hit by the same arc receive knockback (no melee damage). Opening shot still uses the 3s slow-mo aim window.
 - **Why**: One action, two jobs; more arcade and readable than proximity slow-mo redirect; removes global mid-combat `Engine.time_scale` pauses; keeps player control of orb direction via aim + contact point; scene-authored polygon is easier to tune against the arc art than a procedurally rebuilt wedge.
-- **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — too many steps / harder to read; keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker sheriff fantasy; runtime `ConvexPolygonShape2D` from radius/degrees exports — replaced by authored polygon.
-- **Status**: decided (in-codebase)
+- **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — previously rejected as too many steps / harder to read (now being re-tried; see tether entry below); keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker sheriff fantasy; runtime `ConvexPolygonShape2D` from radius/degrees exports — replaced by authored polygon.
+- **Status**: revisit — orb deflect gated behind `AttackComponent.deflect_orb_enabled` (default false); swing + enemy knockback still active. Code kept for rollback.
 
 ### Same-direction chase hits push along aim
 - **Decision**: When the orb's velocity aligns with the player→orb radial normal (dot above a tunable threshold, default 0.5), skip `Vector2.bounce` and set exit velocity to the attack aim direction. Side and inbound hits still use radial bounce.
 - **Why**: Pure radial bounce flips ~180° when chasing from behind, which feels like the bat reversed the orb instead of carrying it forward along the swing.
 - **Alternatives**: Always bounce on radial normal — unrealistic chase reversals; always set velocity to aim — loses readable glancing deflections; blend bounce + aim — more tuning for little gain; arc-surface contact normal — more accurate physically but harder to author and debug for a small polygon.
-- **Status**: decided (in-codebase)
+- **Status**: revisit — only matters when `deflect_orb_enabled` is true; code kept.
+
+### Orb tether capture: focus range, orbit, release on tangent
+- **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 32 px, it shows an `OrbInFocus` overlay. Attack captures it into a `TETHERED` orbit around the player (radius clamped to capture distance); a second attack or one full revolution releases it along the current tangent at full bullet speed. Capture/release consumes the attack press (no arc swing). Player movement and dash are locked while tethered. While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus post-release grace. Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` on the bullet.
+- **Why**: Trying a clearer "grab and sling" fantasy than batting; locking the player while the orb orbits makes the sling a committed stance rather than a free walk-around; one full auto-release turn prevents soft-locks if the player forgets the second press.
+- **Alternatives**: Keep arc deflect (parked behind flag); free movement while tethered — weaker commitment and easier to cheese positioning; hold-to-orbit / release-on-button-up — less deliberate release timing; aim-directed slingshot on release — more UI and less "continue forward" readability; inert tether (no enemy damage) — weaker as a spinning weapon.
+- **Status**: decided (in-codebase); playtest may restore arc deflect.
 
 ### Single basic enemy: chase + contact kill
 - **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. Prototype spawns 3.
@@ -82,11 +88,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ## Open design tensions
 
-- **Attack cooldown / charges**: current cooldown is 0.35s; revisit if spam-steering feels too strong.
+- **Tether feel / wall clipping**: orbit through solids while frozen; may need radius shrink later.
+- **Attack cooldown / charges**: swing cooldown 0.35s; tether post-release cooldown 0.25s.
 - **Gold vanish duration**: how long before drops disappear?
 - **Shop draft size and reroll rules**: how many offers, costs, rerolls?
 - **Camera / view perspective**: side-view character sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena.
 - **Co-op opening aim**: `Engine.time_scale` during the level-start aim is still global.
+- **Arc deflect rollback**: flip `deflect_orb_enabled` if tether does not pan out.
 
 ---
 
@@ -165,8 +173,8 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Post-launch player grace
-- **Decision**: After every launch (opening or deflect), the bullet ignores the player for 0.3s.
-- **Why**: Deflecting requires proximity; without grace the player dies on the same frame they bat the orb.
+- **Decision**: After every launch (opening, deflect, or tether release), the bullet ignores the player for 0.3s. While tethered, `instigator` stays pinned to the tethering player for the whole orbit (grace timer cleared mid-tether so it does not expire early).
+- **Why**: Deflecting / tethering requires proximity; without grace the player dies on the same frame they bat or release the orb.
 - **Alternatives**: Teleport bullet away on deflect — less readable; disable player hit forever until leave range — easier to cheese.
 - **Status**: decided (in-codebase)
 

@@ -11,22 +11,26 @@ func exit() -> void:
 
 func update(_delta: float) -> void:
 	var controls: Controls = owner.controls
+	owner.movement_component.stop()
+	# Locked in place while tethering the orb.
+	if owner.orb_tether_component.is_tethering():
+		return
 	# Poll held keys — is_action_pressed only fires on the rising edge, so returning
 	# here after attack while still holding WASD would otherwise soft-lock movement.
 	if controls.get_move_vector() != Vector2.ZERO:
 		emit_signal("finished", "walk")
-		return
-	owner.movement_component.stop()
 
 
 func handle_input(event: InputEvent) -> void:
 	var controls: Controls = owner.controls
 
 	if event.is_action_pressed(controls.dash_action.action):
-		if owner.dash_component.can_dash():
+		if not owner.orb_tether_component.is_tethering() and owner.dash_component.can_dash():
 			emit_signal("finished", "dash")
 			return
 
 	if event.is_action_pressed(controls.attack_action.action):
+		if owner.orb_tether_component.try_consume_attack_press():
+			return
 		if owner.attack_component.can_attack():
 			emit_signal("finished", "attack")

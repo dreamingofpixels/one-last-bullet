@@ -23,6 +23,8 @@ func _ready() -> void:
 
 	last_bullet.launched.connect(_on_bullet_launched)
 	last_bullet.deflected.connect(_on_bullet_deflected)
+	last_bullet.tethered.connect(_on_bullet_tethered)
+	last_bullet.tether_released.connect(_on_bullet_tether_released)
 
 	var player_destroy: DestroyComponent = player.COMPONENTS.get(DestroyComponent)
 	if player_destroy:
@@ -72,6 +74,18 @@ func _on_bullet_deflected(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
 	status_label.text = "Deflected!"
+
+
+func _on_bullet_tethered(_by: Node = null) -> void:
+	if _game_over or _cleared:
+		return
+	status_label.text = "Tethered!"
+
+
+func _on_bullet_tether_released(_by: Node = null) -> void:
+	if _game_over or _cleared:
+		return
+	status_label.text = "Released!"
 
 
 func _on_enemy_died(_node: Node = null) -> void:

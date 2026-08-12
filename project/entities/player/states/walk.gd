@@ -11,6 +11,11 @@ func exit() -> void:
 
 func update(_delta: float) -> void:
 	var controls: Controls = owner.controls
+	if owner.orb_tether_component.is_tethering():
+		owner.movement_component.stop()
+		emit_signal("finished", "idle")
+		return
+
 	var dir := controls.get_move_vector()
 	owner.movement_component.move(dir)
 
@@ -22,10 +27,12 @@ func handle_input(event: InputEvent) -> void:
 	var controls: Controls = owner.controls
 
 	if event.is_action_pressed(controls.dash_action.action):
-		if owner.dash_component.can_dash():
+		if not owner.orb_tether_component.is_tethering() and owner.dash_component.can_dash():
 			emit_signal("finished", "dash")
 			return
 
 	if event.is_action_pressed(controls.attack_action.action):
+		if owner.orb_tether_component.try_consume_attack_press():
+			return
 		if owner.attack_component.can_attack():
 			emit_signal("finished", "attack")

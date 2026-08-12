@@ -1,7 +1,7 @@
 # One Last Bullet — Game Brief
 
 ## Summary
-Western saloon arcade roguelike. You are a Sheriff with **one bullet**. The run starts with that bullet fired into the room: it bounces forever, damages enemies on hit, and **kills you instantly** on contact. Steer it mid-combat by swinging a mouse-aimed attack arc that deflects the orb; clear the saloon; spend gold on synergistic upgrades; survive **10 levels**.
+Western saloon arcade roguelike. You are a Sheriff with **one bullet**. The run starts with that bullet fired into the room: it bounces forever, damages enemies on hit, and **kills you instantly** on contact. Steer it mid-combat by getting close and tethering it into an orbit, then releasing it along a chosen tangent; clear the saloon; spend gold on synergistic upgrades; survive **10 levels**.
 
 ## Story (current)
 Very lean. You are a Sheriff defending your town's saloon from enemies. No deeper plot required — the game is gameplay-first arcade.
@@ -12,7 +12,8 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 ## Core loop
 - **Level start**: player stands center-bottom; **3 real-time seconds** of slow-mo free aim, then the bullet launches in the chosen direction.
 - **Combat**: bullet travels and bounces indefinitely. Enemies chase the player (contact kill). Solid props and breakables bounce the bullet; breakables are destroyed on that hit. Obstacles can interact further later (e.g. TNT barrels explode). Breakables can later drop powerups.
-- **Attack**: press attack to swing a melee **arc** toward the mouse / right stick (hitbox is an authored polygon on `AttackComponent`). The orb **bounces off** the arc (or is **pushed along aim** when already traveling away from the player); enemies in the arc get **knocked back**. Movement stays unlocked during the swing.
+- **Attack**: press attack to swing a melee **arc** toward the mouse / right stick (hitbox is an authored polygon on `AttackComponent`). Enemies in the arc get **knocked back**. When the orb is within focus range, the same attack press **captures** it onto a tether instead of swinging. Movement stays unlocked during swings; **locked while tethered**.
+- **Orb tether**: when the flying orb is within **32 px**, it shows an in-focus overlay. Attack captures it so it circles the player; a second attack (or one full revolution) releases it along its current tangent at full speed. Player cannot move or dash while tethered. While tethered it damages enemies but not the tethering player. Arc-deflect of the orb is disabled (code kept behind a flag).
 - **Dash**: press Space (or gamepad B) to dash **50 px** toward aim. While dashing the player is immune to damage, phases through props/enemies/walls, and cannot move or attack. Short cooldown (~0.5s); cannot start mid-swing.
 - **Loot**: enemies drop gold that must be picked up quickly before it disappears. *(not in prototype yet)*
 - **Clear**: kill all enemies → level win.
@@ -28,8 +29,8 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 - Fired at the beginning of the level from the player's position (center bottom of the screen) after a **3s opening aim** window.
 - Travels and bounces freely forever (perfectly elastic walls; constant speed).
 - Damages enemies on hit; kills the player on contact.
-- Speed should be slow enough to interact with (attack-deflect) but fast enough that avoiding it is a challenge.
-- Mid-combat steer: attack arc deflects the orb off a radial normal whenever it overlaps the active hitbox (inbound or outbound). When the orb is already moving away from the player (chase / same-direction hit), the arc **pushes** it along aim instead of mirroring. Brief post-deflect grace so the player is not instantly killed. Attack has a short cooldown (~0.35s).
+- Speed should be slow enough to interact with (tether capture) but fast enough that avoiding it is a challenge.
+- Mid-combat steer: get within **32 px**, press attack to tether the orb into an orbit around the player, then press attack again (or wait one full revolution) to release it along the current tangent. Player cannot move or dash while tethered. While tethered the orb damages enemies; the tethering player is immune via instigator grace for the whole tether and briefly after release. Brief post-release grace so the player is not instantly killed. Arc-deflect of the orb is parked (code kept). Attack swing still knocks enemies and has a short cooldown (~0.35s) when not capturing/releasing.
 
 ## Input
 - **Move**: WASD (keyboard) or left stick / D-pad (gamepad)
@@ -67,10 +68,12 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 - Spent in the between-level shop on upgrades.
 
 ## Open questions / design tensions to resolve
-- **Attack cooldown / charges**: current cooldown is 0.35s; revisit if spam-steering feels too strong.
+- **Tether feel**: orbit radius, auto-release after one turn, and wall/prop clipping while tethered — revisit after playtest.
+- **Attack cooldown / charges**: current cooldown is 0.35s on swings; tether capture/release has its own short post-release cooldown (~0.25s).
 - **Gold vanish duration**: how long before dropped gold disappears?
 - **Shop draft**: how many offers, rerolls, price scaling?
 - **Powerup types**: what breakables drop, and how they stack with shop upgrades.
 - **Camera / view**: side-view sprites in a top-down-ish arena; confirm long-term camera.
 - **Difficulty curve**: how enemy count, obstacles, and layout pressure scale across 10 levels.
 - **Co-op opening aim**: `Engine.time_scale` slow-mo during the level-start aim is still global — one player's opening aim slows all players.
+- **Arc deflect rollback**: `AttackComponent.deflect_orb_enabled` is false; may restore if tether does not pan out.

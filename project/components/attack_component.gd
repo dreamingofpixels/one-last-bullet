@@ -1,12 +1,14 @@
 class_name AttackComponent extends Area2D
 
-## Player melee arc: authored CollisionPolygon2D that reflects the orb and knocks enemies.
+## Player melee arc: authored CollisionPolygon2D that knocks enemies (and optionally reflects the orb).
 
 const PHYSICS_LAYER_ENEMY := 4
 const PHYSICS_LAYER_BULLET := 8
 
 @export var knockback_force: float = 220.0
 @export var attack_cooldown: float = 0.35
+## When false, the arc still knocks enemies but does not deflect the orb (tether steering is active instead).
+@export var deflect_orb_enabled: bool = false
 ## When orb velocity aligns with player→orb (dot > this), push along aim instead of bouncing.
 @export var same_direction_dot_threshold: float = 0.5
 ## Visual-only rotation: art is a NE quarter-arc; +45° puts its midline on parent +X (aim).
@@ -114,6 +116,8 @@ func _resolve_hit(body: Node) -> void:
 
 
 func _try_deflect_orb(orb: Node) -> void:
+	if not deflect_orb_enabled:
+		return
 	if _hit_orb:
 		return
 	if not orb.has_method("deflect") or not orb.has_method("is_flying"):

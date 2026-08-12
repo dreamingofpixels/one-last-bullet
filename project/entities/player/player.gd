@@ -10,6 +10,7 @@ var COMPONENTS: Dictionary = {}
 @onready var opening_aim_component: OpeningAimComponent = %OpeningAimComponent
 @onready var attack_component: AttackComponent = %AttackComponent
 @onready var dash_component: DashComponent = %DashComponent
+@onready var orb_tether_component: OrbTetherComponent = %OrbTetherComponent
 @onready var destroy_component: DestroyComponent = %DestroyComponent
 @onready var player_sprite: Sprite2D = %PlayerSprite
 @onready var controls: Controls = %Controls

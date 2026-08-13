@@ -2,11 +2,14 @@ class_name HitboxComponent extends Area2D
 
 ## The HealthComponent on this entity that receives incoming damage.
 @export var health_component: HealthComponent
+## Minimum time before the same attacker can damage this hitbox again.
+@export var hit_cooldown_seconds: float = 0.25
+
+var _attacker_cooldown_until_msec: Dictionary = {}
 
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
-	body_entered.connect(_on_body_entered)
 
 
 ## Disable monitoring while invulnerable so overlaps deal no damage.
@@ -16,11 +19,9 @@ func set_invulnerable(value: bool) -> void:
 
 
 func _on_area_entered(area: Area2D) -> void:
+	if not area is HitboxComponent:
+		return
 	_try_apply_damage_from(_resolve_attacker_root(area))
-
-
-func _on_body_entered(body: Node2D) -> void:
-	_try_apply_damage_from(_resolve_attacker_root(body))
 
 
 ## Walk up from a collider until we find the entity root that holds `COMPONENTS`.
@@ -57,5 +58,13 @@ func _try_apply_damage_from(attacker: Node) -> void:
 	if is_instance_valid(dc.instigator) and dc.instigator == owner:
 		return
 
+	var now_msec := Time.get_ticks_msec()
+	var attacker_id := attacker.get_instance_id()
+	if _attacker_cooldown_until_msec.get(attacker_id, 0) > now_msec:
+		return
+
 	if health_component:
 		health_component.take_damage(dc.damage)
+		_attacker_cooldown_until_msec[attacker_id] = (
+			now_msec + int(hit_cooldown_seconds * 1000.0)
+		)

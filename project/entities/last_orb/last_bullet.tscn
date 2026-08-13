@@ -30,6 +30,7 @@ linear_damp_mode = 1
 script = ExtResource("1_6hh1f")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+unique_name_in_owner = true
 shape = SubResource("CircleShape2D_body")
 
 [node name="Heading" type="Node2D" parent="."]

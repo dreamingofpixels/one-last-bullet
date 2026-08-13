@@ -43,10 +43,16 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: revisit — only matters when `deflect_orb_enabled` is true; code kept.
 
 ### Orb tether capture: focus range, orbit, release on tangent
-- **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 32 px, it shows an `OrbInFocus` overlay. The dedicated `tether` input (right click / gamepad X; `TetherAction` under Controls) captures it into a `TETHERED` orbit around the player (radius clamped to capture distance); a second tether press or one full revolution releases it along the current tangent at full bullet speed. Attack remains melee-only and does not capture/release. Player movement and dash are locked while tethered. Each release multiplies orb `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus post-release grace. Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` on the bullet.
+- **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 32 px, it shows an `OrbInFocus` overlay. The dedicated `tether` input (right click / gamepad X; `TetherAction` under Controls) captures it into a `TETHERED` orbit around the player (radius clamped to capture distance); a second tether press or one full revolution releases it along the current tangent at full bullet speed. Attack remains melee-only and does not capture/release. Player movement and dash are locked while tethered. Each release multiplies orb `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus post-release grace. Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` / `break_tether` on the bullet.
 - **Why**: Separate tether from attack so melee knockback stays available near the orb; clearer "grab and sling" fantasy than batting; locking the player while the orb orbits makes the sling a committed stance; stacking speed/damage rewards repeated successful slings.
 - **Alternatives**: Consume attack for capture/release (previous) — blocked melee while near the orb; keep arc deflect (parked behind flag); free movement while tethered — weaker commitment and easier to cheese positioning; no release boost — less reward for risking the tether; temporary boost that decays — more bookkeeping for little clarity; hold-to-orbit / release-on-button-up — less deliberate release timing; aim-directed slingshot on release — more UI and less "continue forward" readability; inert tether (no enemy damage) — weaker as a spinning weapon.
 - **Status**: decided (in-codebase); playtest may restore arc deflect.
+
+### Tether breaks on solid/entity contact and on dealing damage
+- **Decision**: While tethered, the orb shape-probes its orbit step against world / player / enemy layers. Any solid or entity body contact calls `break_tether(exit_velocity)` with a bounce off the contact normal. Dealing damage to any entity with a `HealthComponent` (via the orb hitbox, excluding instigator grace) also breaks the tether along the orbit tangent. Forced breaks apply the same +10% speed/damage boost as intentional mid-combat release; opening tether still has no boost. Bounce SFX plays on forced break (not release SFX). While flying, the orb's rigid-body mask includes player and enemy layers so it also **bounces off** `CharacterBody2D` entities (damage still via hitbox).
+- **Why**: Orbit previously teleported through rocks and entities because the tethered orb is kinematic; clipping felt broken. Breaking on damage keeps the spinning weapon from chewing through a pack without cost. Entity bounce makes the flying orb readable as a physical projectile.
+- **Alternatives**: Shrink orbit radius to avoid walls — still fails on props mid-arena and does not cover enemy hits; keep tether through solids but stop damaging — weaker fantasy and still clips visually; punch-through enemies while tethered — rewards careless orbits; no boost on forced break — punishes contact twice (lose tether + no reward) and feels inconsistent with release-as-commit; only break on rocks (not damage) — leaves multi-enemy orbits unbroken.
+- **Status**: decided (in-codebase)
 
 ### Level start: opening tether instead of slow-mo aim
 - **Decision**: At level start the orb spawns already tethered **32 px above** the player (`begin_opening_tether`). Tether (or one full revolution) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost. `OpeningAimComponent`, the Aim state, and global `Engine.time_scale` opening slow-mo are removed. `OrbTetherComponent` owns the orb reference via `bind_orb()`.
@@ -94,7 +100,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ## Open design tensions
 
-- **Tether feel / wall clipping**: orbit through solids while frozen; may need radius shrink later.
+- **Tether feel**: orbit radius / auto-release after forced breaks; radius shrink less critical now that contact breaks the tether.
 - **Attack cooldown / charges**: swing cooldown 0.35s; tether post-release cooldown 0.25s.
 - **Gold vanish duration**: how long before drops disappear?
 - **Shop draft size and reroll rules**: how many offers, costs, rerolls?
@@ -120,9 +126,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Health: one-hit-kill expressed as max_health = 1.0
 
-- **Decision**: `HealthComponent.max_health` defaults to `1.0`. Player, grunt, and cactus all have `max_health = 1.0`, preserving the one-hit-kill design. Multi-HP entities will just set a higher value.
-- **Why**: Keeps gameplay rules encoded in data rather than special-casing HP logic; multi-hit enemies are a future slider, not a code change.
-- **Alternatives**: A bool `is_one_shot` — extra flag for something already handled by the value itself.
+- **Decision**: `HealthComponent.max_health` defaults to `1.0`. Player, grunt, and cactus all have `max_health = 1.0`, preserving the one-hit-kill design. Multi-HP entities will just set a higher value. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`.
+- **Why**: Keeps gameplay rules encoded in data rather than special-casing HP logic; multi-hit enemies are a future slider, not a code change. Shared flash on HealthComponent covers entities and breakables without per-scene VFX scripts.
+- **Alternatives**: A bool `is_one_shot` — extra flag for something already handled by the value itself; shader hit flash — heavier for a short modulate; only flash on non-fatal — invisible on current one-hit targets.
 - **Status**: decided (in-codebase)
 
 ### Damage flow: HitboxComponent area-vs-area
@@ -166,9 +172,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Bullet is RigidBody2D with circle bounce + capsule hitbox
-- **Decision**: `LastBullet` is a `RigidBody2D` with a circular body shape (world bounce only), locked rotation, gravity 0, bounce 1 / friction 0 material, continuous CCD, and per-frame speed renormalization. Hits use a separate capsule `Area2D` under a `%Heading` pivot that rotates with travel direction.
-- **Why**: Circle bounces are angle-independent; capsule matches the sprite silhouette for hits; Godot 2D has no per-shape layers so the capsule cannot live on the rigid body.
-- **Alternatives**: `CharacterBody2D` + manual `bounce(normal)` — more code, same outcome; capsule on the rigid body — lopsided wall bounces.
+- **Decision**: `LastBullet` is a `RigidBody2D` with a circular body shape (world + player + enemy bounce), locked rotation, gravity 0, bounce 1 / friction 0 material, continuous CCD, and per-frame speed renormalization. Hits use a separate capsule/circle `Area2D` under a `%Heading` pivot (or root for the circular orb) that rotates with travel direction. Collision mask is world | player | enemy so the body bounces off entities as well as props.
+- **Why**: Circle bounces are angle-independent; capsule matches the sprite silhouette for hits; Godot 2D has no per-shape layers so the hit area cannot live on the rigid body; entity bounce keeps the projectile feeling physical.
+- **Alternatives**: `CharacterBody2D` + manual `bounce(normal)` — more code, same outcome; capsule on the rigid body — lopsided wall bounces; world-only mask — orb passes through enemies/player bodies (damage-only via hitbox).
 - **Status**: decided (in-codebase)
 
 ### Aim windows measured in real time under Engine.time_scale

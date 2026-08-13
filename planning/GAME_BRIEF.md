@@ -13,7 +13,7 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 - **Level start**: player stands center-bottom; the orb spawns **tethered 32 px above** the player. Tether (or one full revolution) releases it along the orbit tangent into combat.
 - **Combat**: bullet travels and bounces indefinitely. Enemies chase the player (contact kill). Solid props and breakables bounce the bullet; breakables are destroyed on that hit. Obstacles can interact further later (e.g. TNT barrels explode). Breakables can later drop powerups.
 - **Attack**: press attack to swing a melee **arc** toward the mouse / right stick (hitbox is an authored polygon on `AttackComponent`). Enemies in the arc get **knocked back**. Movement stays unlocked during swings; **locked while tethered**. Attack does not capture or release the orb.
-- **Orb tether**: when the flying orb is within **32 px**, it shows an in-focus overlay. Press tether to capture it so it circles the player; press tether again (or wait one full revolution) to release it along its current tangent at full speed. Player cannot move or dash while tethered. Each release permanently increases the orb's **speed and damage by 10%** (speed capped at **1500**). While tethered it damages enemies but not the tethering player. Arc-deflect of the orb is disabled (code kept behind a flag).
+- **Orb tether**: when the flying orb is within **32 px**, it shows an in-focus overlay. Press tether to capture it so it circles the player; press tether again (or wait one full revolution) to release it along its current tangent at full speed. Player cannot move or dash while tethered. Each release permanently increases the orb's **speed and damage by 10%** (speed capped at **1500**). While tethered it damages enemies but not the tethering player. The tether **breaks on contact** with rocks/walls/props/entities and whenever the orb **deals damage** to anything with a health component; forced breaks bounce the orb off the contact normal and still apply the +10% boost (opening tether excepted). Arc-deflect of the orb is disabled (code kept behind a flag).
 - **Dash**: press Space (or gamepad B) to dash **50 px** toward current facing (8 directions: N/S/E/W + diagonals). While dashing the player is immune to damage, phases through props/enemies/walls, and cannot move or attack. Short cooldown (~0.5s); cannot start mid-swing.
 - **Loot**: enemies drop gold that must be picked up quickly before it disappears. *(not in prototype yet)*
 - **Clear**: kill all enemies → level win.
@@ -27,10 +27,10 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 
 ## The bullet
 - Starts the level already tethered **32 px above** the player; tether releases it along the current tangent (no opening-aim slow-mo).
-- Travels and bounces freely forever (perfectly elastic walls; constant speed).
+- Travels and bounces freely forever (perfectly elastic walls, rocks, breakables, and entity bodies; constant speed).
 - Damages enemies on hit; kills the player on contact.
 - Speed should be slow enough to interact with (tether capture) but fast enough that avoiding it is a challenge.
-- Mid-combat steer: get within **32 px**, press tether to capture the orb into an orbit around the player, then press tether again (or wait one full revolution) to release it along the current tangent. Player cannot move or dash while tethered. Each release permanently increases orb **speed and damage by 10%** (speed capped at **1500**). While tethered the orb damages enemies; the tethering player is immune via instigator grace for the whole tether and briefly after release. Brief post-release grace so the player is not instantly killed. Arc-deflect of the orb is parked (code kept). Attack swing still knocks enemies and has a short cooldown (~0.35s); it is independent of tether capture/release.
+- Mid-combat steer: get within **32 px**, press tether to capture the orb into an orbit around the player, then press tether again (or wait one full revolution) to release it along the current tangent. Player cannot move or dash while tethered. Each release permanently increases orb **speed and damage by 10%** (speed capped at **1500**). While tethered the orb damages enemies; the tethering player is immune via instigator grace for the whole tether and briefly after release. Contact with solids or entities (or dealing damage to a health-bearing target) **breaks the tether**, bounces the orb, and applies the same +10% boost as an intentional release (opening tether still has no boost). The flying orb also **bounces off** player and enemy bodies. Brief post-release grace so the player is not instantly killed. Arc-deflect of the orb is parked (code kept). Attack swing still knocks enemies and has a short cooldown (~0.35s); it is independent of tether capture/release.
 
 ## Input
 - **Move**: WASD (keyboard) or left stick / D-pad (gamepad)
@@ -68,7 +68,7 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 - Spent in the between-level shop on upgrades.
 
 ## Open questions / design tensions to resolve
-- **Tether feel**: orbit radius, auto-release after one turn, and wall/prop clipping while tethered — revisit after playtest.
+- **Tether feel**: orbit radius, auto-release after one turn, and forced break on contact/damage — revisit after playtest.
 - **Attack cooldown / charges**: current cooldown is 0.35s on swings; tether capture/release has its own short post-release cooldown (~0.25s).
 - **Gold vanish duration**: how long before dropped gold disappears?
 - **Shop draft**: how many offers, rerolls, price scaling?

@@ -48,6 +48,7 @@ script = ExtResource("2_handler")
 
 [node name="HealthComponent" type="Node2D" parent="Components" unique_id=1298444502 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("3_health")
+max_health = 3.0
 destroy_component = NodePath("../DestroyComponent")
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=789470835]
@@ -66,9 +67,18 @@ move_speed = 200.0
 
 [node name="AttackComponent" parent="Components" unique_id=2121984031 instance=ExtResource("8_attack")]
 unique_name_in_owner = true
+knockback_force = null
+attack_cooldown = null
+deflect_orb_enabled = null
+same_direction_dot_threshold = null
+sprite_angle_offset = null
+lock_movement = null
 
 [node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("hitbox_component") instance=ExtResource("8_dash")]
 unique_name_in_owner = true
+dash_distance = null
+dash_speed = null
+dash_cooldown = null
 hitbox_component = NodePath("../HitboxComponent")
 
 [node name="OrbTetherComponent" parent="Components" unique_id=1870992403 instance=ExtResource("8_tether")]

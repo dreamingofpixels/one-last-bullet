@@ -8,6 +8,9 @@ signal tether_released(by: Node)
 enum BulletState { FLYING, TETHERED }
 
 const PHYSICS_LAYER_WORLD := 1
+const PHYSICS_LAYER_PLAYER := 2
+const PHYSICS_LAYER_ENEMY := 4
+const PHYSICS_MASK_PROBE := PHYSICS_LAYER_WORLD | PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_ENEMY
 
 var COMPONENTS: Dictionary = {}
 
@@ -24,6 +27,7 @@ var COMPONENTS: Dictionary = {}
 @export var begin_tether_sound: SoundEvent
 @export var release_tether_sound: SoundEvent
 
+@onready var body_collision_shape: CollisionShape2D = %CollisionShape2D
 @onready var heading: Node2D = %Heading
 @onready var aim_arrow: Node2D = %AimArrow
 @onready var damage_component: DamageComponent = %DamageComponent
@@ -41,6 +45,7 @@ var _tether_angle: float = 0.0
 var _tether_dir: float = 1.0
 var _tether_swept: float = 0.0
 var _opening_tether: bool = false
+var _tether_broke_this_frame: bool = false
 
 
 func _ready() -> void:
@@ -54,7 +59,7 @@ func _ready() -> void:
 	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	angular_damp = 0.0
 	collision_layer = 8  # bullet layer
-	collision_mask = PHYSICS_LAYER_WORLD
+	collision_mask = PHYSICS_MASK_PROBE
 	contact_monitor = true
 	max_contacts_reported = 4
 
@@ -64,6 +69,7 @@ func _ready() -> void:
 	physics_material_override = mat
 
 	body_entered.connect(_on_body_entered)
+	hitbox_component.area_entered.connect(_on_hitbox_area_entered)
 
 	orb_in_focus.visible = false
 	aim_arrow.visible = false
@@ -73,11 +79,15 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_tether_broke_this_frame = false
 	match state:
 		BulletState.FLYING:
+			# Rigid contacts can null velocity; always keep full speed.
+			if aim_direction.length_squared() < 0.0001:
+				aim_direction = Vector2.RIGHT
 			if linear_velocity.length_squared() > 0.0001:
-				linear_velocity = linear_velocity.normalized() * speed
 				aim_direction = linear_velocity.normalized()
+			linear_velocity = aim_direction * speed
 			_apply_heading()
 			# Clear instigator once grace window elapses.
 			if _grace_clear_msec > 0 and Time.get_ticks_msec() >= _grace_clear_msec:
@@ -166,30 +176,24 @@ func release_tether() -> void:
 	if state != BulletState.TETHERED:
 		return
 
-	var by: Node = _tether_player
 	var was_opening := _opening_tether
 	var tangent := _tether_tangent()
-	aim_direction = tangent
-	if not was_opening:
-		_apply_tether_release_boost()
-	state = BulletState.FLYING
-	freeze = false
-	linear_velocity = aim_direction * speed
-	hitbox_component.monitoring = true
-	if is_instance_valid(by):
-		damage_component.instigator = by
-		_player = by as Node2D
-	_grace_clear_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
-	_opening_tether = false
-	_clear_tether_vars()
-	set_in_focus(false)
-	_apply_heading()
-	if release_tether_sound:
-		AudioManager.play_at(release_tether_sound, global_position)
-	if was_opening:
-		launched.emit()
-	else:
-		tether_released.emit(by)
+	_finish_tether_release(tangent, was_opening, _safe_tether_player(), true)
+
+
+## Forced break from collision or dealing damage. Applies boost (unless opening).
+func break_tether(exit_velocity: Vector2) -> void:
+	if state != BulletState.TETHERED or _tether_broke_this_frame:
+		return
+
+	_tether_broke_this_frame = true
+	var was_opening := _opening_tether
+	var exit_dir := exit_velocity
+	if exit_dir.length_squared() < 0.0001:
+		exit_dir = _tether_tangent()
+	if exit_dir.length_squared() < 0.0001:
+		exit_dir = aim_direction if aim_direction.length_squared() > 0.0001 else Vector2.RIGHT
+	_finish_tether_release(exit_dir, was_opening, _safe_tether_player(), false)
 
 
 func set_in_focus(value: bool) -> void:
@@ -209,24 +213,169 @@ func is_tethered() -> bool:
 
 
 func get_tether_player() -> Node2D:
-	return _tether_player
+	return _safe_tether_player()
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────
 
+## Freed/invalid tether owners must never be passed as typed Node args.
+func _safe_tether_player() -> Node2D:
+	if is_instance_valid(_tether_player):
+		return _tether_player
+	return null
+
+
+func _finish_tether_release(
+	exit_dir: Vector2,
+	was_opening: bool,
+	by: Node,
+	play_release_sound: bool
+) -> void:
+	if exit_dir.length_squared() > 0.0001:
+		aim_direction = exit_dir.normalized()
+	elif aim_direction.length_squared() < 0.0001:
+		aim_direction = Vector2.RIGHT
+	if not was_opening:
+		_apply_tether_release_boost()
+	state = BulletState.FLYING
+	freeze = false
+	# Always launch at full speed — never leave the orb parked.
+	linear_velocity = aim_direction * maxf(speed, 0.001)
+	hitbox_component.monitoring = true
+	if is_instance_valid(by):
+		damage_component.instigator = by
+		_player = by as Node2D
+		_grace_clear_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
+	else:
+		damage_component.instigator = null
+		_player = null
+		_grace_clear_msec = 0
+	_opening_tether = false
+	_clear_tether_vars()
+	set_in_focus(false)
+	_apply_heading()
+	if play_release_sound:
+		if release_tether_sound:
+			AudioManager.play_at(release_tether_sound, global_position)
+	elif bounce_sound:
+		AudioManager.play_at(bounce_sound, global_position)
+	if was_opening:
+		launched.emit()
+	else:
+		tether_released.emit(by)
+
+
 func _update_tether(delta: float) -> void:
 	if not is_instance_valid(_tether_player):
+		# Owner freed (e.g. player died) — launch along last tangent; do not pass freed refs.
 		release_tether()
 		return
 
 	var angular_speed: float = (speed * tether_speed_scale) / _tether_radius
 	var step: float = angular_speed * delta
-	_tether_angle += step * _tether_dir
+	var next_angle: float = _tether_angle + step * _tether_dir
+	var next_pos: Vector2 = (
+		_tether_player.global_position + Vector2.RIGHT.rotated(next_angle) * _tether_radius
+	)
+
+	if _probe_tether_collision(global_position, next_pos, next_angle):
+		return
+
+	_tether_angle = next_angle
 	_tether_swept += step
 	_update_tether_pose()
 
 	if _tether_swept >= TAU * tether_auto_release_turns:
 		release_tether()
+
+
+func _probe_tether_collision(from_pos: Vector2, next_pos: Vector2, next_angle: float) -> bool:
+	var shape: Shape2D = body_collision_shape.shape
+	if shape == null:
+		return false
+
+	var motion: Vector2 = next_pos - from_pos
+	var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = shape
+	params.transform = Transform2D(0.0, from_pos)
+	params.motion = motion
+	params.collision_mask = PHYSICS_MASK_PROBE
+	params.exclude = [get_rid()]
+	params.collide_with_areas = false
+	params.collide_with_bodies = true
+
+	var cast: PackedFloat32Array = space.cast_motion(params)
+	# cast_motion returns [safe, unsafe] fractions; both 1.0 means no hit.
+	if cast.size() < 2 or cast[0] >= 1.0:
+		# Also catch already-overlapping solids at the destination (teleport case).
+		params.transform = Transform2D(0.0, next_pos)
+		params.motion = Vector2.ZERO
+		var overlaps: Array[Dictionary] = space.intersect_shape(params, 1)
+		if overlaps.is_empty():
+			return false
+		return _break_tether_from_collision(overlaps[0], next_angle)
+
+	var hit_fraction: float = cast[0]
+	var hit_pos: Vector2 = from_pos + motion * hit_fraction
+	params.transform = Transform2D(0.0, hit_pos)
+	params.motion = Vector2.ZERO
+	var hits: Array[Dictionary] = space.intersect_shape(params, 1)
+	if hits.is_empty():
+		# Nudge slightly past the unsafe fraction to find the collider.
+		var unsafe_pos: Vector2 = from_pos + motion * minf(cast[1], 1.0)
+		params.transform = Transform2D(0.0, unsafe_pos)
+		hits = space.intersect_shape(params, 1)
+		if hits.is_empty():
+			return false
+	return _break_tether_from_collision(hits[0], next_angle)
+
+
+func _break_tether_from_collision(hit: Dictionary, next_angle: float) -> bool:
+	var collider: Object = hit.get("collider")
+	if collider == null or not is_instance_valid(collider):
+		return false
+
+	var body: Node = collider as Node
+	var entity_root: Node = _resolve_entity_root(body)
+
+	# Damage breakables on contact (same as flying body_entered).
+	if body.is_in_group("breakables") or (entity_root != null and entity_root.is_in_group("breakables")):
+		var breakable: Node = entity_root if entity_root != null and entity_root.is_in_group("breakables") else body
+		var comp = breakable.get("COMPONENTS")
+		if comp and comp.has(HealthComponent):
+			comp[HealthComponent].take_damage(damage_component.damage if damage_component.damage > 0.0 else 1.0)
+
+	var collider_pos: Vector2 = _collider_global_position(body)
+	var normal: Vector2 = (global_position - collider_pos).normalized()
+	if normal.length_squared() < 0.0001:
+		normal = -_tether_tangent_at(next_angle)
+
+	var tangent: Vector2 = _tether_tangent_at(next_angle)
+	var exit_velocity: Vector2 = tangent.bounce(normal)
+	if exit_velocity.length_squared() < 0.0001:
+		exit_velocity = -tangent
+	if exit_velocity.length_squared() < 0.0001:
+		exit_velocity = -aim_direction if aim_direction.length_squared() > 0.0001 else Vector2.RIGHT
+
+	break_tether(exit_velocity)
+	return true
+
+
+func _collider_global_position(body: Node) -> Vector2:
+	if body is Node2D:
+		return (body as Node2D).global_position
+	return global_position
+
+
+func _resolve_entity_root(collider: Node) -> Node:
+	if collider == null or not is_instance_valid(collider):
+		return null
+
+	var node: Node = collider
+	while node != null and node.get("COMPONENTS") == null:
+		node = node.get_parent()
+	return node
 
 
 func _update_tether_pose() -> void:
@@ -236,8 +385,12 @@ func _update_tether_pose() -> void:
 
 
 func _tether_tangent() -> Vector2:
+	return _tether_tangent_at(_tether_angle)
+
+
+func _tether_tangent_at(angle: float) -> Vector2:
 	# Perpendicular to radial; dir = +1 is counterclockwise.
-	return Vector2.RIGHT.rotated(_tether_angle + PI / 2.0 * _tether_dir)
+	return Vector2.RIGHT.rotated(angle + PI / 2.0 * _tether_dir)
 
 
 func _clear_tether_vars() -> void:
@@ -259,11 +412,49 @@ func _apply_heading() -> void:
 	aim_arrow.rotation = aim_direction.angle()
 
 
+func _on_hitbox_area_entered(area: Area2D) -> void:
+	if state != BulletState.TETHERED or _tether_broke_this_frame:
+		return
+	if damage_component.damage <= 0.0:
+		return
+
+	var victim_root: Node = _resolve_entity_root(area)
+	if victim_root == null:
+		return
+
+	var comp = victim_root.get("COMPONENTS")
+	if comp == null or not comp.has(HealthComponent):
+		return
+
+	# Friendly-fire: instigator is immune — physical probe still breaks on body contact.
+	if is_instance_valid(damage_component.instigator) and damage_component.instigator == victim_root:
+		return
+
+	break_tether(_tether_tangent())
+
+
 func _on_body_entered(body: Node) -> void:
 	if state != BulletState.FLYING:
 		return
 	if bounce_sound:
 		AudioManager.play_at(bounce_sound, global_position)
+
+	if body is CharacterBody2D:
+		var other: CharacterBody2D = body as CharacterBody2D
+		var normal := (global_position - other.global_position).normalized()
+		if normal.length_squared() < 0.0001:
+			normal = -aim_direction
+		# Bounce inbound travel direction (aim), not post-solver velocity — avoids double-reflect.
+		var bounced := aim_direction.bounce(normal)
+		if bounced.length_squared() < 0.0001:
+			bounced = -aim_direction
+		if bounced.length_squared() < 0.0001:
+			bounced = Vector2.RIGHT
+		aim_direction = bounced.normalized()
+		linear_velocity = aim_direction * speed
+		_apply_heading()
+		return
+
 	# Breakables: damage via HealthComponent so the bounce resolves first.
 	if body.is_in_group("breakables"):
 		var comp = body.get("COMPONENTS")

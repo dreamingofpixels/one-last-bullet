@@ -33,7 +33,7 @@ One Last Bullet/
     │   ├── attack_component.gd / .tscn   Player arc swing; knocks enemies (orb deflect gated by flag)
     │   ├── orb_tether_component.gd / .tscn  Proximity focus + tether capture/release for the orb
     │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames
-    │   └── opening_aim_component.gd / .tscn  Level-start aim window driver
+    │   └── directional_sprite_component.gd / .tscn  8-way logical facing (4-way visual) via AnimatedSprite2D
     ├── data/                   (empty; upgrades later)
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
@@ -47,15 +47,14 @@ One Last Bullet/
     │   │   ├── last_bullet.tscn / .gd / .png  (kept as alternate)
     │   │   └── aim_arrow.gd
     │   ├── player/
-    │   │   ├── player.tscn / .gd / .png
+    │   │   ├── player.tscn / .gd / player_spritesheet.png / player_frames.tres
+    │   │   ├── player.png / player.aseprite / player_2.aseprite  (legacy single-frame art)
     │   │   ├── attack_texture.png / .aseprite  6-frame 16x16 arc (96x16 sheet)
-    │   │   ├── player.aseprite
     │   │   ├── player_action.gd    Per-action node; action string suffixed at runtime
-    │   │   ├── controls.gd         Per-player input abstraction (move/aim/attack/dash vectors)
+    │   │   ├── controls.gd         Per-player input abstraction (move/aim/attack/tether/dash)
     │   │   └── states/
     │   │       ├── idle.gd
     │   │       ├── walk.gd
-    │   │       ├── aim.gd
     │   │       ├── attack.gd
     │   │       └── dash.gd
     │   └── enemies/
@@ -107,7 +106,7 @@ None.
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
-- `project/areas/level/level.gd` — director: spawn 3 grunts, opening aim, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected` / `tethered` / `tether_released`
+- `project/areas/level/level.gd` — director: spawn 3 grunts, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected` / `tethered` / `tether_released` / `launched`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -118,24 +117,23 @@ None.
 - `project/components/movement_component.gd` — `move(dir)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h`
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false)
-- `project/components/orb_tether_component.gd` — focus radius (32 px), capture/release via attack press; reads orb from `OpeningAimComponent.get_bullet()`; short post-release cooldown
+- `project/components/orb_tether_component.gd` — focus radius (32 px), `bind_orb()` / `begin_opening_tether()`; capture/release via `try_tether_press()` on the tether action; short post-release cooldown
 - `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; `start(dir)` / `is_dashing()` / `can_dash()`
-- `project/components/opening_aim_component.gd` — binds bullet; `begin_opening_aim()`, `set_aim_direction()`, `confirm_aim()`, `can_aim()`
+- `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
 ### State machine base
 - `project/entities/_base/state.gd` — `class_name State extends Node`; `signal finished(next_state_name)`; virtual `enter/exit/update/handle_input`
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `bind_bullet()`, `begin_opening_aim()`; tree: Components (Health/Damage/Destroy/Movement/OpeningAim/Attack/Dash/OrbTether/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Aim/Attack/Dash)
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `begin_level(orb)`; tree: Components (Health/Damage/Destroy/Movement/Attack/Dash/OrbTether/DirectionalSprite/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
-- `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_dash_just_pressed()`, `is_confirm_just_pressed()`
-- `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; tether capture/release consumes attack press first; walk/dash blocked while tethering
-- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; tether capture/release consumes attack press first; forces idle while tethering
-- `project/entities/player/states/aim.gd` — opening-shot aim only; feeds aim until `opening_aim_component.can_aim()` is false
+- `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
+- `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; walk/dash blocked while tethering
+- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
-- `project/entities/player/states/dash.gd` — snapshots aim, starts `DashComponent`; locked input until dash ends, then idle/walk
-- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%OrbSprite` + overlay `%OrbInFocus`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states HELD/AIMING/FLYING/TETHERED; `set_aim_direction()` / `confirm_aim()` / `deflect()` / `begin_tether()` / `release_tether()` / `set_in_focus()` API; instigator-based player grace; signals `deflected`, `tethered`, `tether_released`
+- `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
+- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%OrbSprite` + overlay `%OrbInFocus`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `set_in_focus()` API; opening release emits `launched` (no boost); mid-combat release emits `tether_released` (+10% boost); instigator-based player grace; signals `launched`, `deflected`, `tethered`, `tether_released`
 - `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
 - `project/entities/last_bullet/aim_arrow.gd` — drawn aim arrow during aim windows
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health/Damage/Destroy/Movement/Knockback/HitboxComponent
@@ -176,8 +174,8 @@ None.
 | `move_left` | A, gamepad left-stick left, D-pad left | gamepad device 1 |
 | `move_right` | D, gamepad left-stick right, D-pad right | gamepad device 1 |
 | `attack` | left click, gamepad A (device 0) | gamepad A device 1 |
+| `tether` | right click, gamepad X (device 0) | gamepad X device 1 |
 | `dash` | Space, gamepad B (device 0) | gamepad B device 1 |
-| `aim_confirm` | Space, left click, gamepad A (device 0) | gamepad A device 1 |
 | `aim_up/down/left/right` | gamepad right-stick (device 0) | gamepad right-stick device 1 |
 | `restart` | R | — |
 
@@ -190,6 +188,7 @@ P1 keyboard/mouse actions use `device: -1` (any keyboard/mouse). P2 is gamepad-o
 - State machine states are `Node` children of `StateMachine`; state scripts extend `State`; emit `finished("state_name")` to transition (lowercase child node name, or `"previous"`).
 - Player input always goes through the `Controls` node's `PlayerAction` children; never hardcode action strings in state or component scripts. `apply_player_index(n)` appends `""` / `"_2"` / `"_3"` / `"_4"` suffix at `_ready` time.
 - Prefer `%UniqueName` for required node references; fail fast on missing required nodes (see `.cursor/rules/godot-node-references.mdc`).
+- Player facing: 8-way logical facing; visuals use `<action>_<visual>` names (`idle_sw`, `walk_ne`, …) on a shared `SpriteFrames` resource; `DirectionalSpriteComponent` owns octant snap and cardinal→diagonal visual mapping.
 - Do not hunt for an exported `.exe` to test; use in-editor play (see `.cursor/rules/godot-testing.mdc`).
 - Level objects: origin is **bottom-center** of the art; collision size/offset lives in a per-variant `LevelObjectVariant` Resource; shapes are built in code so instances do not share a mutated sub-resource.
 - Keep this file updated when autoloads, scenes, scripts, groups, or physics layers change.

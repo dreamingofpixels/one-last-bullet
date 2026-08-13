@@ -18,8 +18,8 @@ var player_index: int = 1
 @onready var aim_left_action: PlayerAction = %AimLeftAction
 @onready var aim_right_action: PlayerAction = %AimRightAction
 @onready var attack_action: PlayerAction = %AttackAction
+@onready var tether_action: PlayerAction = %TetherAction
 @onready var dash_action: PlayerAction = %DashAction
-@onready var aim_confirm_action: PlayerAction = %AimConfirmAction
 
 
 func apply_player_index(index: int) -> void:
@@ -67,13 +67,13 @@ func is_attack_just_pressed() -> bool:
 	return Input.is_action_just_pressed(attack_action.action)
 
 
+func is_tether_just_pressed() -> bool:
+	if tether_action.action.is_empty():
+		return false
+	return Input.is_action_just_pressed(tether_action.action)
+
+
 func is_dash_just_pressed() -> bool:
 	if dash_action.action.is_empty():
 		return false
 	return Input.is_action_just_pressed(dash_action.action)
-
-
-func is_confirm_just_pressed() -> bool:
-	if aim_confirm_action.action.is_empty():
-		return false
-	return Input.is_action_just_pressed(aim_confirm_action.action)

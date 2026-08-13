@@ -2,8 +2,8 @@ class_name DestroyComponent extends Node2D
 
 signal destroyed(node: Node)
 
-## The Sprite2D to use for the pixel-fall destruction VFX.
-@export var sprite: Sprite2D
+## The sprite to use for the pixel-fall destruction VFX (Sprite2D or AnimatedSprite2D).
+@export var sprite: Node2D
 
 var _is_destroying: bool = false
 

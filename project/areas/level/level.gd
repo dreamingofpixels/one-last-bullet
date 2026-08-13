@@ -1,7 +1,6 @@
 extends Node2D
 
 const GRUNT_SCENE := preload("res://entities/enemies/grunt/grunt_knife.tscn")
-const OPENING_AIM_SECONDS := 3.0
 const ENEMY_COUNT := 3
 const MIN_SPAWN_DISTANCE := 120.0
 const PLAY_RECT := Rect2(24.0, 24.0, 592.0, 312.0)
@@ -19,7 +18,7 @@ var _cleared: bool = false
 func _ready() -> void:
 	Engine.time_scale = 1.0
 	randomize()
-	status_label.text = "Aim your last bullet"
+	status_label.text = "Tether to release"
 
 	last_bullet.launched.connect(_on_bullet_launched)
 	last_bullet.deflected.connect(_on_bullet_deflected)
@@ -31,7 +30,9 @@ func _ready() -> void:
 		player_destroy.destroyed.connect(_on_player_died)
 
 	_spawn_enemies()
-	player.begin_opening_aim(last_bullet, OPENING_AIM_SECONDS)
+	player.begin_level(last_bullet)
+	# begin_level emits tethered; keep the opening prompt instead of "Tethered!".
+	status_label.text = "Tether to release"
 
 
 func _unhandled_input(event: InputEvent) -> void:

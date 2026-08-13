@@ -7,12 +7,12 @@ extends CharacterBody2D
 var COMPONENTS: Dictionary = {}
 
 @onready var movement_component: MovementComponent = %MovementComponent
-@onready var opening_aim_component: OpeningAimComponent = %OpeningAimComponent
 @onready var attack_component: AttackComponent = %AttackComponent
 @onready var dash_component: DashComponent = %DashComponent
 @onready var orb_tether_component: OrbTetherComponent = %OrbTetherComponent
 @onready var destroy_component: DestroyComponent = %DestroyComponent
-@onready var player_sprite: Sprite2D = %PlayerSprite
+@onready var directional_sprite: DirectionalSpriteComponent = %DirectionalSpriteComponent
+@onready var player_sprite: AnimatedSprite2D = %PlayerSprite
 @onready var controls: Controls = %Controls
 @onready var state_machine: StateMachine = %StateMachine
 
@@ -22,19 +22,9 @@ func _ready() -> void:
 	controls.apply_player_index(player_index)
 
 
-## Facing fallback used by dash when aim vector is zero.
-func is_sprite_flipped() -> bool:
-	return player_sprite.flip_h
-
-
 # ── Public API (called from level.gd) ─────────────────────────────────────────
 
-func bind_bullet(bullet: RigidBody2D) -> void:
-	opening_aim_component.bind_bullet(bullet)
-
-
-func begin_opening_aim(bullet: RigidBody2D, duration_seconds: float) -> void:
-	opening_aim_component.bind_bullet(bullet)
-	opening_aim_component.begin_opening_aim(duration_seconds)
-	# Opening aim drives its own slow-mo; the Aim state feeds aim until the window closes.
-	state_machine.force_state("aim")
+func begin_level(orb: RigidBody2D) -> void:
+	orb_tether_component.bind_orb(orb)
+	orb_tether_component.begin_opening_tether()
+	# Stay in Idle — is_tethering() locks movement.

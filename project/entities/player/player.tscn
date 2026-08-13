@@ -1,23 +1,22 @@
 [gd_scene format=3 uid="uid://du4wuw1kmuhnc"]
 
 [ext_resource type="Script" uid="uid://177x22cxj76t" path="res://entities/player/player.gd" id="1_abrql"]
-[ext_resource type="Texture2D" uid="uid://b0r4lvarfy3n6" path="res://entities/player/player.png" id="1_symyc"]
+[ext_resource type="SpriteFrames" uid="uid://bl2x5nlx7dk6" path="res://entities/player/player_frames.tres" id="1_frames"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="2_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="3_health"]
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="4_damage"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_destroy"]
 [ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="6_movement"]
-[ext_resource type="PackedScene" path="res://components/opening_aim_component.tscn" id="7_opening"]
 [ext_resource type="PackedScene" uid="uid://cu310m38frq6t" path="res://components/attack_component.tscn" id="8_attack"]
 [ext_resource type="PackedScene" path="res://components/dash_component.tscn" id="8_dash"]
-[ext_resource type="PackedScene" path="res://components/orb_tether_component.tscn" id="8_tether"]
+[ext_resource type="PackedScene" path="res://components/directional_sprite_component.tscn" id="8_dir"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
+[ext_resource type="PackedScene" uid="uid://o4pbxn2a23t6" path="res://components/orb_tether_component.tscn" id="8_tether"]
 [ext_resource type="Script" uid="uid://ckyag5seiljcb" path="res://entities/player/controls.gd" id="9_controls"]
 [ext_resource type="Script" uid="uid://di63cvw2wmcm0" path="res://entities/player/player_action.gd" id="10_action"]
 [ext_resource type="Script" uid="uid://bahr53w7vvpv6" path="res://entities/_base/state_machine.gd" id="11_sm"]
 [ext_resource type="Script" uid="uid://dxp6dkx7p1vmg" path="res://entities/player/states/idle.gd" id="12_idle"]
 [ext_resource type="Script" uid="uid://b4rxpo1dkquso" path="res://entities/player/states/walk.gd" id="13_walk"]
-[ext_resource type="Script" uid="uid://d0vute03i6ubx" path="res://entities/player/states/aim.gd" id="14_aim"]
 [ext_resource type="Script" uid="uid://dv4orhnn3e1d1" path="res://entities/player/states/attack.gd" id="15_attack"]
 [ext_resource type="Script" uid="uid://ceaw37m3x00mu" path="res://entities/player/states/dash.gd" id="16_dash"]
 
@@ -33,10 +32,12 @@ height = 26.0
 collision_layer = 2
 script = ExtResource("1_abrql")
 
-[node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1508902462]
+[node name="PlayerSprite" type="AnimatedSprite2D" parent="." unique_id=1508902462]
 unique_name_in_owner = true
 texture_filter = 1
-texture = ExtResource("1_symyc")
+sprite_frames = ExtResource("1_frames")
+animation = &"idle_se"
+autoplay = "idle_se"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=565534729]
 shape = SubResource("CapsuleShape2D_body")
@@ -62,21 +63,21 @@ sprite = NodePath("../../PlayerSprite")
 unique_name_in_owner = true
 script = ExtResource("6_movement")
 move_speed = 200.0
-sprite = NodePath("../../PlayerSprite")
-
-[node name="OpeningAimComponent" parent="Components" unique_id=96348510 instance=ExtResource("7_opening")]
-unique_name_in_owner = true
 
 [node name="AttackComponent" parent="Components" unique_id=2121984031 instance=ExtResource("8_attack")]
 unique_name_in_owner = true
 
-[node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("sprite", "hitbox_component") instance=ExtResource("8_dash")]
+[node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("hitbox_component") instance=ExtResource("8_dash")]
 unique_name_in_owner = true
-sprite = NodePath("../../PlayerSprite")
 hitbox_component = NodePath("../HitboxComponent")
 
-[node name="OrbTetherComponent" parent="Components" instance=ExtResource("8_tether")]
+[node name="OrbTetherComponent" parent="Components" unique_id=1870992403 instance=ExtResource("8_tether")]
 unique_name_in_owner = true
+focus_radius = 48.0
+
+[node name="DirectionalSpriteComponent" parent="Components" unique_id=122017100 node_paths=PackedStringArray("animated_sprite") instance=ExtResource("8_dir")]
+unique_name_in_owner = true
+animated_sprite = NodePath("../../PlayerSprite")
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1647528013 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true
@@ -137,15 +138,15 @@ unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "attack"
 
+[node name="TetherAction" type="Node" parent="Controls" unique_id=1421936632]
+unique_name_in_owner = true
+script = ExtResource("10_action")
+action = "tether"
+
 [node name="DashAction" type="Node" parent="Controls" unique_id=520390759]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "dash"
-
-[node name="AimConfirmAction" type="Node" parent="Controls" unique_id=551642541]
-unique_name_in_owner = true
-script = ExtResource("10_action")
-action = "aim_confirm"
 
 [node name="StateMachine" type="Node" parent="." unique_id=1222181441]
 unique_name_in_owner = true
@@ -157,9 +158,6 @@ script = ExtResource("12_idle")
 
 [node name="Walk" type="Node" parent="StateMachine" unique_id=1234487413]
 script = ExtResource("13_walk")
-
-[node name="Aim" type="Node" parent="StateMachine" unique_id=259465949]
-script = ExtResource("14_aim")
 
 [node name="Attack" type="Node" parent="StateMachine" unique_id=149531413]
 script = ExtResource("15_attack")

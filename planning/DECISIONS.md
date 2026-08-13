@@ -28,10 +28,10 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Get close to the bullet, press Space, time slows briefly, player picks a new direction with the mouse. Opening shot uses the same aim UX for 3 real-time seconds; redirects use 1.5s. Player movement is locked while aiming.
 - **Why**: Gave agency without removing positioning/timing skill; shared aim UX kept the opening shot teachable.
 - **Alternatives**: Always-on aim control — removes tension; automatic wall-aim assist — too passive; keyboard rotation (A/D) — removed in favor of mouse-only aim.
-- **Status**: superseded — mid-combat redirect replaced by arc attack (see below). Opening aim (3s slow-mo) remains.
+- **Status**: superseded — mid-combat redirect replaced by arc attack, then tether; opening aim replaced by opening tether (see below).
 
 ### Arc attack deflects the orb; knocks enemies back
-- **Decision**: Mid-combat steering is a mouse-aimed melee arc (authored `CollisionPolygon2D` on `AttackComponent`, 6-frame AnimationPlayer). The orb reflects off the radial normal when it overlaps the active hitbox; enemies hit by the same arc receive knockback (no melee damage). Opening shot still uses the 3s slow-mo aim window.
+- **Decision**: Mid-combat steering is a mouse-aimed melee arc (authored `CollisionPolygon2D` on `AttackComponent`, 6-frame AnimationPlayer). The orb reflects off the radial normal when it overlaps the active hitbox; enemies hit by the same arc receive knockback (no melee damage). Opening shot later moved to tether (see opening tether entry).
 - **Why**: One action, two jobs; more arcade and readable than proximity slow-mo redirect; removes global mid-combat `Engine.time_scale` pauses; keeps player control of orb direction via aim + contact point; scene-authored polygon is easier to tune against the arc art than a procedurally rebuilt wedge.
 - **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — previously rejected as too many steps / harder to read (now being re-tried; see tether entry below); keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker sheriff fantasy; runtime `ConvexPolygonShape2D` from radius/degrees exports — replaced by authored polygon.
 - **Status**: revisit — orb deflect gated behind `AttackComponent.deflect_orb_enabled` (default false); swing + enemy knockback still active. Code kept for rollback.
@@ -43,10 +43,16 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: revisit — only matters when `deflect_orb_enabled` is true; code kept.
 
 ### Orb tether capture: focus range, orbit, release on tangent
-- **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 32 px, it shows an `OrbInFocus` overlay. Attack captures it into a `TETHERED` orbit around the player (radius clamped to capture distance); a second attack or one full revolution releases it along the current tangent at full bullet speed. Capture/release consumes the attack press (no arc swing). Player movement and dash are locked while tethered. Each release multiplies orb `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus post-release grace. Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` on the bullet.
-- **Why**: Trying a clearer "grab and sling" fantasy than batting; locking the player while the orb orbits makes the sling a committed stance rather than a free walk-around; stacking speed/damage rewards repeated successful slings and escalates late-level threat; one full auto-release turn prevents soft-locks if the player forgets the second press.
-- **Alternatives**: Keep arc deflect (parked behind flag); free movement while tethered — weaker commitment and easier to cheese positioning; no release boost — less reward for risking the tether; temporary boost that decays — more bookkeeping for little clarity; hold-to-orbit / release-on-button-up — less deliberate release timing; aim-directed slingshot on release — more UI and less "continue forward" readability; inert tether (no enemy damage) — weaker as a spinning weapon.
+- **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 32 px, it shows an `OrbInFocus` overlay. The dedicated `tether` input (right click / gamepad X; `TetherAction` under Controls) captures it into a `TETHERED` orbit around the player (radius clamped to capture distance); a second tether press or one full revolution releases it along the current tangent at full bullet speed. Attack remains melee-only and does not capture/release. Player movement and dash are locked while tethered. Each release multiplies orb `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus post-release grace. Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` on the bullet.
+- **Why**: Separate tether from attack so melee knockback stays available near the orb; clearer "grab and sling" fantasy than batting; locking the player while the orb orbits makes the sling a committed stance; stacking speed/damage rewards repeated successful slings.
+- **Alternatives**: Consume attack for capture/release (previous) — blocked melee while near the orb; keep arc deflect (parked behind flag); free movement while tethered — weaker commitment and easier to cheese positioning; no release boost — less reward for risking the tether; temporary boost that decays — more bookkeeping for little clarity; hold-to-orbit / release-on-button-up — less deliberate release timing; aim-directed slingshot on release — more UI and less "continue forward" readability; inert tether (no enemy damage) — weaker as a spinning weapon.
 - **Status**: decided (in-codebase); playtest may restore arc deflect.
+
+### Level start: opening tether instead of slow-mo aim
+- **Decision**: At level start the orb spawns already tethered **32 px above** the player (`begin_opening_tether`). Tether (or one full revolution) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost. `OpeningAimComponent`, the Aim state, and global `Engine.time_scale` opening slow-mo are removed. `OrbTetherComponent` owns the orb reference via `bind_orb()`.
+- **Why**: One tether UX for start and mid-combat; removes co-op-hostile global slow-mo; teaches capture/release immediately.
+- **Alternatives**: Keep 3s slow-mo free aim — separate system and co-op time_scale issues; auto-launch upward without tether — skips the core sling lesson; apply boost on opening release — unfair free power on every level start.
+- **Status**: decided (in-codebase)
 
 ### Single basic enemy: chase + contact kill
 - **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. Prototype spawns 3.
@@ -92,8 +98,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Attack cooldown / charges**: swing cooldown 0.35s; tether post-release cooldown 0.25s.
 - **Gold vanish duration**: how long before drops disappear?
 - **Shop draft size and reroll rules**: how many offers, costs, rerolls?
-- **Camera / view perspective**: side-view character sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena.
-- **Co-op opening aim**: `Engine.time_scale` during the level-start aim is still global.
+- **Camera / view perspective**: player uses 4-direction diagonal sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena. Confirm long-term camera for larger stages.
 - **Arc deflect rollback**: flip `deflect_orb_enabled` if tether does not pan out.
 
 ---
@@ -139,7 +144,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Player states are `Node` children of `StateMachine`. Each state emits `signal finished(next_state_name)` (lowercase child name, or `"previous"`). The machine maps child names to nodes at `_ready`; all state lifecycle calls go through `update(delta)` / `handle_input(event)` / `enter()` / `exit()`. A `State` base class with `class_name` provides typed virtuals.
 - **Why**: Decouples transition logic from the machine; states are scene-tree nodes (easy to inspect/debug); `"previous"` enables one-level undo without a full stack.
 - **Alternatives**: Return-value transitions — state must know the machine's state set; full stack — over-engineered for 3 states; node-group polling — no explicit lifecycle.
-- **Status**: decided (in-codebase); states: Idle, Walk, Aim, Attack, Dash
+- **Status**: decided (in-codebase); states: Idle, Walk, Attack, Dash
 
 ### Per-player input: static action duplication + runtime suffix
 
@@ -167,13 +172,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Aim windows measured in real time under Engine.time_scale
-- **Decision**: Opening aim is 3.0s of **wall-clock** time via `Time.get_ticks_msec()`, while `Engine.time_scale = 0.15` during aim. Mid-combat redirect aim windows are gone.
+- **Decision**: Opening aim was 3.0s of **wall-clock** time via `Time.get_ticks_msec()`, while `Engine.time_scale = 0.15` during aim. Mid-combat redirect aim windows were already gone.
 - **Why**: Slow-mo must not stretch the intended aim deadline.
 - **Alternatives**: Use scaled `delta` timers — windows become much longer than designed.
-- **Status**: decided (in-codebase)
+- **Status**: superseded — opening aim replaced by opening tether (no time_scale aim window)
 
 ### Post-launch player grace
-- **Decision**: After every launch (opening, deflect, or tether release), the bullet ignores the player for 0.3s. While tethered, `instigator` stays pinned to the tethering player for the whole orbit (grace timer cleared mid-tether so it does not expire early).
+- **Decision**: After every launch (opening tether release, deflect, or mid-combat tether release), the bullet ignores the player for 0.3s. While tethered, `instigator` stays pinned to the tethering player for the whole orbit (grace timer cleared mid-tether so it does not expire early).
 - **Why**: Deflecting / tethering requires proximity; without grace the player dies on the same frame they bat or release the orb.
 - **Alternatives**: Teleport bullet away on deflect — less readable; disable player hit forever until leave range — easier to cheese.
 - **Status**: decided (in-codebase)
@@ -185,9 +190,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Dash: fixed distance with i-frames and phase-through
-- **Decision**: Player dashes 50 px toward aim direction (mouse / right stick) at 400 px/s via `DashComponent` + `Dash` state. While dashing: hitbox monitoring off (immune to bullet and enemies), body `collision_layer`/`collision_mask` cleared so the player phases through props/enemies/walls, no movement input, no attacking. 0.5 s cooldown. Starts only from Idle/Walk (does not cancel an attack swing). Space is `dash`; attack keeps left click / gamepad A.
-- **Why**: Readable dodge through the orb, chasers, and clutter; fixed distance is easy to learn and tune; aim-direction dash matches the attack arc mental model; phase-through keeps the dash reliable in a prop-filled arena.
-- **Alternatives**: Reuse `KnockbackComponent`'s decaying shove — wrong curve (fade-out vs constant speed) and no i-frame API; velocity-based dodge that keeps movement control — less committed and harder to read; interrupt attack with dash — too many cancel options for prototype; keep world collision during dash — props truncate the dash unpredictably; separate prop vs wall physics layers so walls still block — extra layer setup before it is needed.
+- **Decision**: Player dashes 50 px toward **current facing** (8-way via `DirectionalSpriteComponent.facing_vector()`) at 400 px/s via `DashComponent` + `Dash` state. Idle dash uses last facing; dash does not read mouse/aim. While dashing: hitbox monitoring off (immune to bullet and enemies), body `collision_layer`/`collision_mask` cleared so the player phases through props/enemies/walls, no movement input, no attacking. 0.5 s cooldown. Starts only from Idle/Walk (does not cancel an attack swing). Space is `dash`; attack keeps left click / gamepad A.
+- **Why**: Readable dodge through the orb, chasers, and clutter; fixed distance is easy to learn and tune; facing-direction dash matches movement/strafe intent and frees aim for the attack arc; phase-through keeps the dash reliable in a prop-filled arena.
+- **Alternatives**: Aim-direction dash (mouse / right stick) — coupled dodge to attack aim and fought strafe play; reuse `KnockbackComponent`'s decaying shove — wrong curve (fade-out vs constant speed) and no i-frame API; velocity-based dodge that keeps movement control — less committed and harder to read; interrupt attack with dash — too many cancel options for prototype; keep world collision during dash — props truncate the dash unpredictably; separate prop vs wall physics layers so walls still block — extra layer setup before it is needed.
 - **Status**: decided (in-codebase)
 
 ### Level objects: shared script + per-variant Resource
@@ -215,7 +220,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Destruction VFX: detached sprite + canvas pixel-fall shader
-- **Decision**: On breakable/enemy/player death, disable collision, emit gameplay signals immediately, spawn a detached `Sprite2D` copy with `pixel_fall.gdshader`, then `queue_free()` the entity. `DestructionEffect.play_from_sprite()` owns the FX life cycle (tween `progress` → free).
+- **Decision**: On breakable/enemy/player death, disable collision, emit gameplay signals immediately, spawn a detached `Sprite2D` copy with `pixel_fall.gdshader`, then `queue_free()` the entity. `DestructionEffect.play_from_sprite()` owns the FX life cycle (tween `progress` → free). For `AnimatedSprite2D` sources, the current frame is extracted via `sprite_frames.get_frame_texture` and flattened to an `ImageTexture` so the shader sees one frame's `tex_size` and full 0..1 UVs (not the whole sheet).
 - **Why**: Gameplay stays snappy (win/lose and bounce timing unchanged) while pixels crumble visually; one helper works for props and characters without delaying entity teardown.
-- **Alternatives**: Animate in-place and delay `queue_free()` — risks leftover collision and win-count timing bugs; GPU particles of colored quads — heavier setup and less 1:1 with sprite art; CPU `Image` pixel scatter — more code for the same look.
+- **Alternatives**: Animate in-place and delay `queue_free()` — risks leftover collision and win-count timing bugs; GPU particles of colored quads — heavier setup and less 1:1 with sprite art; CPU `Image` pixel scatter — more code for the same look; pass the full spritesheet to the shader — crumbles all frames at once.
+- **Status**: decided (in-codebase)
+
+### Player facing: 8-way logical / 4-way visual AnimatedSprite2D + DirectionalSpriteComponent
+- **Decision**: Logical facing is **8-way** (N, S, E, W, NE, NW, SE, SW) via octant snap in `DirectionalSpriteComponent.face()`. Player art remains a 128×32 sheet (four 32×32 diagonals only). Visual playback uses `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to a diagonal suffix by keeping the other-axis bias of the previous visual (e.g. N → `ne` or `nw`). Facing comes from movement while walking and snaps to aim on attack; dash uses `facing_vector()` and does not retarget facing; idle keeps the last facing. `MovementComponent` / `DashComponent` no longer flip the player sprite.
+- **Why**: Dash and movement need true cardinals; authored art is still 4-diagonal; the naming scheme lets walk/attack cycles drop in later without inventing cardinal PNGs; flipping a SW frame would invent a false SE facing.
+- **Alternatives**: 4-way logical facing only — no straight N/S/E/W dash; require 8 sprite frames — art not ready; `flip_h` mirroring of two frames — fights the authored SW/SE and NW/NE pairs; always face aim — would spin the sprite while strafing.
 - **Status**: decided (in-codebase)

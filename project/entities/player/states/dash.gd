@@ -2,11 +2,7 @@ extends State
 
 
 func enter() -> void:
-	var controls: Controls = owner.controls
-	var aim := controls.get_aim_vector(owner.global_position)
-	if aim.length_squared() < 0.0001:
-		aim = Vector2.LEFT if owner.is_sprite_flipped() else Vector2.RIGHT
-	owner.dash_component.start(aim)
+	owner.dash_component.start(owner.directional_sprite.facing_vector())
 
 
 func exit() -> void:

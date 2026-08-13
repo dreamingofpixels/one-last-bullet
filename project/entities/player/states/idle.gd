@@ -29,8 +29,12 @@ func handle_input(event: InputEvent) -> void:
 			emit_signal("finished", "dash")
 			return
 
+	if event.is_action_pressed(controls.tether_action.action):
+		owner.orb_tether_component.try_tether_press()
+		return
+
 	if event.is_action_pressed(controls.attack_action.action):
-		if owner.orb_tether_component.try_consume_attack_press():
+		if owner.orb_tether_component.is_tethering():
 			return
 		if owner.attack_component.can_attack():
 			emit_signal("finished", "attack")

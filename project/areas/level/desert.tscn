@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://b7od4f25gdreb" path="res://areas/level/desert_tilemap.png" id="1_3bkra"]
 [ext_resource type="Script" uid="uid://c3eip5fgi2wd" path="res://areas/level/level.gd" id="2_level"]
 [ext_resource type="PackedScene" uid="uid://du4wuw1kmuhnc" path="res://entities/player/player.tscn" id="3_player"]
-[ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/last_bullet/last_orb.tscn" id="4_bullet"]
+[ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/last_orb/last_orb.tscn" id="4_bullet"]
 [ext_resource type="PackedScene" uid="uid://cloo7hwpiadpr" path="res://objects/cactai/cactus.tscn" id="5_cactus"]
 [ext_resource type="PackedScene" path="res://objects/rocks/rock.tscn" id="6_rock"]
 
@@ -245,14 +245,14 @@ shape = SubResource("RectangleShape2D_right")
 
 [node name="Player" parent="." unique_id=735883009 instance=ExtResource("3_player")]
 unique_name_in_owner = true
-position = Vector2(320, 320)
+position = Vector2(320, 288)
 
 [node name="Enemies" type="Node2D" parent="." unique_id=771931118]
 unique_name_in_owner = true
 
 [node name="LastBullet" parent="." unique_id=1109868456 instance=ExtResource("4_bullet")]
 unique_name_in_owner = true
-position = Vector2(320, 298)
+position = Vector2(320, 248)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1083207069]
 

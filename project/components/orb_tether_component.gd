@@ -1,14 +1,27 @@
 class_name OrbTetherComponent extends Node2D
 
 ## Proximity focus + tether capture/release for the bound orb.
-## Attack presses are consumed by try_consume_attack_press() so the arc does not swing.
+## Driven by the tether input via try_tether_press().
 
 @export var focus_radius: float = 32.0
 @export var min_tether_radius: float = 16.0
 @export var tether_cooldown: float = 0.25
 @export var tether_enabled: bool = true
 
+var _orb: RigidBody2D = null
 var _cooldown_until_msec: int = 0
+
+
+func bind_orb(orb: RigidBody2D) -> void:
+	_orb = orb
+
+
+func begin_opening_tether(radius: float = -1.0) -> void:
+	var orb := _get_orb()
+	if orb == null or not orb.has_method("begin_opening_tether"):
+		return
+	var r: float = focus_radius if radius < 0.0 else radius
+	orb.begin_opening_tether(owner, r)
 
 
 func _process(_delta: float) -> void:
@@ -38,8 +51,8 @@ func is_tethering() -> bool:
 	return orb.has_method("get_tether_player") and orb.get_tether_player() == owner
 
 
-## Returns true when the attack press was used for capture or release (no swing).
-func try_consume_attack_press() -> bool:
+## Returns true when capture or release succeeded.
+func try_tether_press() -> bool:
 	if not tether_enabled:
 		return false
 
@@ -71,10 +84,6 @@ func try_consume_attack_press() -> bool:
 
 
 func _get_orb() -> RigidBody2D:
-	var opening = owner.get("opening_aim_component")
-	if opening == null or not opening.has_method("get_bullet"):
+	if not is_instance_valid(_orb):
 		return null
-	var bullet = opening.get_bullet()
-	if not is_instance_valid(bullet):
-		return null
-	return bullet as RigidBody2D
+	return _orb

@@ -10,11 +10,11 @@ Very lean. You are a Sheriff defending your town's saloon from enemies. No deepe
 Dodge your own bullet while batting it at enemies. Risk the floor for vanishing gold. Build a run from shop synergies that twist the bullet, you, or the enemies.
 
 ## Core loop
-- **Level start**: player stands center-bottom; **3 real-time seconds** of slow-mo free aim, then the bullet launches in the chosen direction.
+- **Level start**: player stands center-bottom; the orb spawns **tethered 32 px above** the player. Tether (or one full revolution) releases it along the orbit tangent into combat.
 - **Combat**: bullet travels and bounces indefinitely. Enemies chase the player (contact kill). Solid props and breakables bounce the bullet; breakables are destroyed on that hit. Obstacles can interact further later (e.g. TNT barrels explode). Breakables can later drop powerups.
-- **Attack**: press attack to swing a melee **arc** toward the mouse / right stick (hitbox is an authored polygon on `AttackComponent`). Enemies in the arc get **knocked back**. When the orb is within focus range, the same attack press **captures** it onto a tether instead of swinging. Movement stays unlocked during swings; **locked while tethered**.
-- **Orb tether**: when the flying orb is within **32 px**, it shows an in-focus overlay. Attack captures it so it circles the player; a second attack (or one full revolution) releases it along its current tangent at full speed. Player cannot move or dash while tethered. Each release permanently increases the orb's **speed and damage by 10%** (speed capped at **1500**). While tethered it damages enemies but not the tethering player. Arc-deflect of the orb is disabled (code kept behind a flag).
-- **Dash**: press Space (or gamepad B) to dash **50 px** toward aim. While dashing the player is immune to damage, phases through props/enemies/walls, and cannot move or attack. Short cooldown (~0.5s); cannot start mid-swing.
+- **Attack**: press attack to swing a melee **arc** toward the mouse / right stick (hitbox is an authored polygon on `AttackComponent`). Enemies in the arc get **knocked back**. Movement stays unlocked during swings; **locked while tethered**. Attack does not capture or release the orb.
+- **Orb tether**: when the flying orb is within **32 px**, it shows an in-focus overlay. Press tether to capture it so it circles the player; press tether again (or wait one full revolution) to release it along its current tangent at full speed. Player cannot move or dash while tethered. Each release permanently increases the orb's **speed and damage by 10%** (speed capped at **1500**). While tethered it damages enemies but not the tethering player. Arc-deflect of the orb is disabled (code kept behind a flag).
+- **Dash**: press Space (or gamepad B) to dash **50 px** toward current facing (8 directions: N/S/E/W + diagonals). While dashing the player is immune to damage, phases through props/enemies/walls, and cannot move or attack. Short cooldown (~0.5s); cannot start mid-swing.
 - **Loot**: enemies drop gold that must be picked up quickly before it disappears. *(not in prototype yet)*
 - **Clear**: kill all enemies → level win.
 - **Shop**: spend gold on randomized upgrades (bullet / player / enemy curses). Synergies are a design pillar. *(not in prototype yet)*
@@ -26,18 +26,18 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 - **Lose**: player dies from an enemy or from the bullet.
 
 ## The bullet
-- Fired at the beginning of the level from the player's position (center bottom of the screen) after a **3s opening aim** window.
+- Starts the level already tethered **32 px above** the player; tether releases it along the current tangent (no opening-aim slow-mo).
 - Travels and bounces freely forever (perfectly elastic walls; constant speed).
 - Damages enemies on hit; kills the player on contact.
 - Speed should be slow enough to interact with (tether capture) but fast enough that avoiding it is a challenge.
-- Mid-combat steer: get within **32 px**, press attack to tether the orb into an orbit around the player, then press attack again (or wait one full revolution) to release it along the current tangent. Player cannot move or dash while tethered. Each release permanently increases orb **speed and damage by 10%** (speed capped at **1500**). While tethered the orb damages enemies; the tethering player is immune via instigator grace for the whole tether and briefly after release. Brief post-release grace so the player is not instantly killed. Arc-deflect of the orb is parked (code kept). Attack swing still knocks enemies and has a short cooldown (~0.35s) when not capturing/releasing.
+- Mid-combat steer: get within **32 px**, press tether to capture the orb into an orbit around the player, then press tether again (or wait one full revolution) to release it along the current tangent. Player cannot move or dash while tethered. Each release permanently increases orb **speed and damage by 10%** (speed capped at **1500**). While tethered the orb damages enemies; the tethering player is immune via instigator grace for the whole tether and briefly after release. Brief post-release grace so the player is not instantly killed. Arc-deflect of the orb is parked (code kept). Attack swing still knocks enemies and has a short cooldown (~0.35s); it is independent of tether capture/release.
 
 ## Input
 - **Move**: WASD (keyboard) or left stick / D-pad (gamepad)
 - **Attack**: left click (keyboard); A button (gamepad)
+- **Tether**: right click (keyboard); X button (gamepad)
 - **Dash**: Space (keyboard); B button (gamepad)
 - **Aim**: mouse for the keyboard player; right stick for gamepad players
-- **Confirm opening aim early**: Space, left click, or A button
 - **Restart**: R
 - **Co-op**: up to 4 local players supported by the input system; P1 uses keyboard + mouse + gamepad device 0; P2 uses gamepad device 1; P3/P4 action bindings not yet authored in project.godot
 
@@ -73,7 +73,6 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 - **Gold vanish duration**: how long before dropped gold disappears?
 - **Shop draft**: how many offers, rerolls, price scaling?
 - **Powerup types**: what breakables drop, and how they stack with shop upgrades.
-- **Camera / view**: side-view sprites in a top-down-ish arena; confirm long-term camera.
+- **Camera / view**: player uses 4-direction diagonal sprites in a top-down-ish arena; confirm long-term camera for larger stages.
 - **Difficulty curve**: how enemy count, obstacles, and layout pressure scale across 10 levels.
-- **Co-op opening aim**: `Engine.time_scale` slow-mo during the level-start aim is still global — one player's opening aim slows all players.
 - **Arc deflect rollback**: `AttackComponent.deflect_orb_enabled` is false; may restore if tether does not pan out.

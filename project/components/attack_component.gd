@@ -51,7 +51,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _attacking or owner.opening_aim_component.can_aim():
+	if _attacking or owner.orb_tether_component.is_tethering():
 		attack_sprite_hint.visible = false
 		return
 

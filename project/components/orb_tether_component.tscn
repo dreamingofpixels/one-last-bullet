@@ -4,5 +4,3 @@
 
 [node name="OrbTetherComponent" type="Node2D" unique_id=571598597]
 script = ExtResource("1_tether")
-focus_radius = 48.0
-min_tether_radius = 24.0

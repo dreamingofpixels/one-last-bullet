@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://cs5k4bbqcwlan"]
+
+[ext_resource type="Script" uid="uid://dlea7fiafdu0g" path="res://entities/last_orb/last_bullet.gd" id="1_6jmgt"]
+[ext_resource type="Texture2D" uid="uid://bo1vvlewgnv41" path="res://entities/last_orb/orb.png" id="4_6jmgt"]
+[ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/last_orb/aim_arrow.gd" id="4_qrreq"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="5_handler"]
+[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="6_damage"]
+[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
+[ext_resource type="Texture2D" uid="uid://d3k3j8jrv1xkj" path="res://entities/last_orb/orb_in_focus.png" id="8_focus"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 8.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hit"]
+radius = 8.0
+
+[node name="LastOrb" type="RigidBody2D" unique_id=97652282]
+collision_layer = 8
+mass = 0.1
+physics_material_override = SubResource("PhysicsMaterial_bounce")
+gravity_scale = 0.0
+lock_rotation = true
+continuous_cd = 2
+linear_damp_mode = 1
+script = ExtResource("1_6jmgt")
+rotate_heading = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1660037255]
+shape = SubResource("CircleShape2D_body")
+
+[node name="Heading" type="Node2D" parent="." unique_id=1313043990]
+unique_name_in_owner = true
+
+[node name="AimArrow" type="Node2D" parent="." unique_id=974800482]
+unique_name_in_owner = true
+visible = false
+z_index = 20
+script = ExtResource("4_qrreq")
+
+[node name="OrbSprite" type="Sprite2D" parent="." unique_id=546175583]
+unique_name_in_owner = true
+texture_filter = 1
+texture = ExtResource("4_6jmgt")
+
+[node name="OrbInFocus" type="Sprite2D" parent="." unique_id=1753354882]
+unique_name_in_owner = true
+visible = false
+texture_filter = 1
+texture = ExtResource("8_focus")
+
+[node name="Components" type="Node2D" parent="." unique_id=1017783253]
+script = ExtResource("5_handler")
+
+[node name="DamageComponent" type="Node2D" parent="Components" unique_id=1545720499]
+unique_name_in_owner = true
+script = ExtResource("6_damage")
+
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1377224673]
+unique_name_in_owner = true
+collision_layer = 8
+collision_mask = 6
+script = ExtResource("7_hitbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=106822358]
+shape = SubResource("CircleShape2D_hit")

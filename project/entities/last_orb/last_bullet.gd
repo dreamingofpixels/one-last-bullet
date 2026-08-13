@@ -20,6 +20,9 @@ var COMPONENTS: Dictionary = {}
 @export var tether_auto_release_turns: float = 1.0
 ## Multiplier applied to speed and damage on every tether release (1.1 = +10%).
 @export var tether_release_boost: float = 1.1
+@export var bounce_sound: SoundEvent
+@export var begin_tether_sound: SoundEvent
+@export var release_tether_sound: SoundEvent
 
 @onready var heading: Node2D = %Heading
 @onready var aim_arrow: Node2D = %AimArrow
@@ -107,6 +110,8 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	hitbox_component.monitoring = true
 	set_in_focus(true)
 	_update_tether_pose()
+	if begin_tether_sound:
+		AudioManager.play_at(begin_tether_sound, global_position)
 	tethered.emit(player)
 
 
@@ -152,6 +157,8 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	hitbox_component.monitoring = true
 	set_in_focus(true)
 	_update_tether_pose()
+	if begin_tether_sound:
+		AudioManager.play_at(begin_tether_sound, global_position)
 	tethered.emit(player)
 
 
@@ -177,6 +184,8 @@ func release_tether() -> void:
 	_clear_tether_vars()
 	set_in_focus(false)
 	_apply_heading()
+	if release_tether_sound:
+		AudioManager.play_at(release_tether_sound, global_position)
 	if was_opening:
 		launched.emit()
 	else:
@@ -253,6 +262,8 @@ func _apply_heading() -> void:
 func _on_body_entered(body: Node) -> void:
 	if state != BulletState.FLYING:
 		return
+	if bounce_sound:
+		AudioManager.play_at(bounce_sound, global_position)
 	# Breakables: damage via HealthComponent so the bounce resolves first.
 	if body.is_in_group("breakables"):
 		var comp = body.get("COMPONENTS")

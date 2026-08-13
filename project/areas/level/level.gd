@@ -5,6 +5,8 @@ const ENEMY_COUNT := 3
 const MIN_SPAWN_DISTANCE := 120.0
 const PLAY_RECT := Rect2(24.0, 24.0, 592.0, 312.0)
 
+@export var level_music: AudioStream
+
 @onready var player: CharacterBody2D = %Player
 @onready var enemies: Node2D = %Enemies
 @onready var last_bullet: RigidBody2D = %LastBullet
@@ -19,6 +21,9 @@ func _ready() -> void:
 	Engine.time_scale = 1.0
 	randomize()
 	status_label.text = "Tether to release"
+
+	if level_music:
+		AudioManager.play_music(level_music)
 
 	last_bullet.launched.connect(_on_bullet_launched)
 	last_bullet.deflected.connect(_on_bullet_deflected)

@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://audio/audio_manager.gd" id="1_script"]
+
+[node name="AudioManager" type="Node"]
+process_mode = 3
+script = ExtResource("1_script")
+
+[node name="MusicA" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+bus = &"Music"
+
+[node name="MusicB" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+bus = &"Music"
+
+[node name="GlobalPool" type="Node" parent="."]
+unique_name_in_owner = true
+
+[node name="WorldPool" type="Node2D" parent="."]
+unique_name_in_owner = true

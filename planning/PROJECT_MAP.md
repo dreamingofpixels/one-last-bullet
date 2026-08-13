@@ -24,16 +24,20 @@ One Last Bullet/
     │       └── desert_tilemap.png
     ├── components/             Reusable component scripts + scenes
     │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
-    │   ├── health_component.gd / .tscn    HP tracking, calls DestroyComponent on death
+    │   ├── health_component.gd / .tscn    HP tracking; damaged SFX; calls DestroyComponent on death
     │   ├── damage_component.gd / .tscn    Damage value + instigator (friendly-fire filter)
     │   ├── hitbox_component.gd / .tscn    Area2D; on area_entered reads attacker COMPONENTS[DamageComponent]
-    │   ├── destroy_component.gd / .tscn   Disables collisions, plays pixel-fall FX, emits destroyed(node)
+    │   ├── destroy_component.gd / .tscn   Disables collisions, destroy SFX, pixel-fall FX, emits destroyed(node)
     │   ├── movement_component.gd / .tscn  move(dir) / stop() with optional sprite flip
     │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D)
     │   ├── attack_component.gd / .tscn   Player arc swing; knocks enemies (orb deflect gated by flag)
     │   ├── orb_tether_component.gd / .tscn  Proximity focus + tether capture/release for the orb
-    │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames
+    │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames + dash SFX
     │   └── directional_sprite_component.gd / .tscn  8-way logical facing (4-way visual) via AnimatedSprite2D
+    ├── audio/
+    │   ├── audio_manager.gd / .tscn   Autoload: Music/SFX pools + bus helpers
+    │   ├── sound_event.gd             SoundEvent Resource (streams, pitch, cooldown)
+    │   └── music/                     Level/menu tracks (empty for now)
     ├── data/                   (empty; upgrades later)
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
@@ -42,14 +46,18 @@ One Last Bullet/
     │   ├── _base/
     │   │   ├── state.gd        Base State class (signal finished, enter/exit/update/handle_input)
     │   │   └── state_machine.gd  StateMachine: states_map, 2-deep stack, force_state()
-    │   ├── last_bullet/
+    │   ├── entity_destroyed.wav / .tres   Shared death SFX (SoundEvent)
+    │   ├── entity_damaged.wav / _2.wav / .tres   Shared non-fatal hit SFX
+    │   ├── last_orb/
     │   │   ├── last_orb.tscn / orb.png / orb_in_focus.png   (active desert projectile)
-    │   │   ├── last_bullet.tscn / .gd / .png  (kept as alternate)
-    │   │   └── aim_arrow.gd
+    │   │   ├── last_bullet.tscn / .gd / .png  (kept as alternate; script shared)
+    │   │   ├── aim_arrow.gd
+    │   │   └── last_orb_sfx/         bounce / begin_tether / release_tether clips + SoundEvents
     │   ├── player/
     │   │   ├── player.tscn / .gd / player_spritesheet.png / player_frames.tres
     │   │   ├── player.png / player.aseprite / player_2.aseprite  (legacy single-frame art)
     │   │   ├── attack_texture.png / .aseprite  6-frame 16x16 arc (96x16 sheet)
+    │   │   ├── dash.wav / dash.tres   Dash SFX
     │   │   ├── player_action.gd    Per-action node; action string suffixed at runtime
     │   │   ├── controls.gd         Per-player input abstraction (move/aim/attack/tether/dash)
     │   │   └── states/
@@ -71,6 +79,8 @@ One Last Bullet/
         │   ├── cactus.tscn               Breakable; picks cactus_1..4 at runtime
         │   ├── cactus_1..4.png
         │   └── variants/                 LevelObjectVariant .tres per art
+        ├── mana/
+        │   └── mana_picked_up.ogg        (unwired; no mana scene yet)
         └── rocks/
             ├── rock.tscn                 Solid; picks from rock variants at runtime
             ├── rock_1.png
@@ -85,11 +95,10 @@ One Last Bullet/
 - **Editor plugins**: none
 
 ## Autoloads (from `project/project.godot`)
-None.
 
 | Name | Path | Purpose |
 |------|------|---------|
-| — | — | — |
+| `AudioManager` | `res://audio/audio_manager.tscn` | Music A/B crossfade + pooled global/positional SFX on Music/SFX buses |
 
 ## Physics layers (from `project/project.godot`)
 
@@ -106,19 +115,19 @@ None.
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
-- `project/areas/level/level.gd` — director: spawn 3 grunts, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected` / `tethered` / `tether_released` / `launched`
+- `project/areas/level/level.gd` — director: spawn 3 grunts, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected` / `tethered` / `tether_released` / `launched`; optional `@export level_music` → `AudioManager.play_music()`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
-- `project/components/health_component.gd` — HP; calls `destroy_component.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`
+- `project/components/health_component.gd` — HP; plays `damaged_sound` on non-fatal hits; calls `destroy_component.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`
 - `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter)
 - `project/components/hitbox_component.gd` — `Area2D`; `area_entered` reads attacker's `COMPONENTS[DamageComponent]`, skips if instigator == owner; `set_invulnerable(bool)` toggles monitoring (deferred)
-- `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `DestructionEffect`, frees owner
+- `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `destroy_sound`, plays `DestructionEffect`, frees owner
 - `project/components/movement_component.gd` — `move(dir)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h`
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`
-- `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false)
+- `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false); optional `swing_sound` (unassigned)
 - `project/components/orb_tether_component.gd` — focus radius (32 px), `bind_orb()` / `begin_opening_tether()`; capture/release via `try_tether_press()` on the tether action; short post-release cooldown
-- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; `start(dir)` / `is_dashing()` / `can_dash()`
+- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; plays `dash_sound`; `start(dir)` / `is_dashing()` / `can_dash()`
 - `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
 ### State machine base
@@ -133,9 +142,9 @@ None.
 - `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
-- `project/entities/last_bullet/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%OrbSprite` + overlay `%OrbInFocus`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `set_in_focus()` API; opening release emits `launched` (no boost); mid-combat release emits `tether_released` (+10% boost); instigator-based player grace; signals `launched`, `deflected`, `tethered`, `tether_released`
-- `project/entities/last_bullet/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
-- `project/entities/last_bullet/aim_arrow.gd` — drawn aim arrow during aim windows
+- `project/entities/last_orb/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%OrbSprite` + overlay `%OrbInFocus`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `set_in_focus()` API; opening release emits `launched` (no boost); mid-combat release emits `tether_released` (+10% boost); instigator-based player grace; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
+- `project/entities/last_orb/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
+- `project/entities/last_orb/aim_arrow.gd` — drawn aim arrow during aim windows
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health/Damage/Destroy/Movement/Knockback/HitboxComponent
 
 ### Objects
@@ -150,6 +159,12 @@ None.
 - `project/effects/smooth_pixel_material.tres` — shared `ShaderMaterial` for player, enemies, bullet
 - `project/effects/pixel_fall.gdshader` — canvas-item shader: staggered per-pixel fall + ground fade
 - `project/effects/destruction_effect.gd` — `DestructionEffect.play_from_sprite()`; detached copy, tween `progress`, free when done
+
+### Audio
+- `project/audio/audio_manager.tscn` — autoload; Music A/B crossfade; 8 global + 16 positional pooled players (oldest-voice steal); `play` / `play_at` / `play_music` / bus volume helpers
+- `project/audio/sound_event.gd` — `SoundEvent` Resource: stream variants, bus, volume_db, pitch range, retrigger cooldown, max voices, avoid_repeat
+- Convention: author a `SoundEvent` `.tres` next to the clip it wraps (same pattern as `LevelObjectVariant`)
+- Wired events: entity destroyed/damaged, dash, orb bounce (`impact_soft`), begin/release tether; attack swing export exists but unassigned
 
 ### Data
 - `project/data/` — reserved for game data (upgrades, enemies, etc.); empty
@@ -188,6 +203,7 @@ P1 keyboard/mouse actions use `device: -1` (any keyboard/mouse). P2 is gamepad-o
 - State machine states are `Node` children of `StateMachine`; state scripts extend `State`; emit `finished("state_name")` to transition (lowercase child node name, or `"previous"`).
 - Player input always goes through the `Controls` node's `PlayerAction` children; never hardcode action strings in state or component scripts. `apply_player_index(n)` appends `""` / `"_2"` / `"_3"` / `"_4"` suffix at `_ready` time.
 - Prefer `%UniqueName` for required node references; fail fast on missing required nodes (see `.cursor/rules/godot-node-references.mdc`).
+- Audio: define sounds as `SoundEvent` Resources colocated with their clips; play through `AudioManager.play` / `play_at` (pooled players, not per-entity `AudioStreamPlayer` nodes). Buses: Master / Music / SFX via `default_bus_layout.tres`.
 - Player facing: 8-way logical facing; visuals use `<action>_<visual>` names (`idle_sw`, `walk_ne`, …) on a shared `SpriteFrames` resource; `DirectionalSpriteComponent` owns octant snap and cardinal→diagonal visual mapping.
 - Do not hunt for an exported `.exe` to test; use in-editor play (see `.cursor/rules/godot-testing.mdc`).
 - Level objects: origin is **bottom-center** of the art; collision size/offset lives in a per-variant `LevelObjectVariant` Resource; shapes are built in code so instances do not share a mutated sub-resource.

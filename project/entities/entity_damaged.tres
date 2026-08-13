@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://audio/sound_event.gd" id="1_script"]
+[ext_resource type="AudioStream" uid="uid://df1djucyy4amr" path="res://entities/entity_damaged.wav" id="2_a"]
+[ext_resource type="AudioStream" uid="uid://by3rsuhsoyfaw" path="res://entities/entity_damaged_2.wav" id="2_b"]
+
+[resource]
+script = ExtResource("1_script")
+streams = Array[AudioStream]([ExtResource("2_a"), ExtResource("2_b")])
+bus = &"SFX"
+volume_db = 0.0
+pitch_min = 0.95
+pitch_max = 1.05
+retrigger_cooldown = 0.0
+max_voices = 0
+avoid_repeat = true

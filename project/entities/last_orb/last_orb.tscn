@@ -7,6 +7,9 @@
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="6_damage"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
 [ext_resource type="Texture2D" uid="uid://d3k3j8jrv1xkj" path="res://entities/last_orb/orb_in_focus.png" id="8_focus"]
+[ext_resource type="Resource" path="res://entities/last_orb/last_orb_sfx/orb_bounce.tres" id="9_bounce"]
+[ext_resource type="Resource" path="res://entities/last_orb/last_orb_sfx/begin_tether.tres" id="10_begin"]
+[ext_resource type="Resource" path="res://entities/last_orb/last_orb_sfx/release_tether.tres" id="11_release"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
 friction = 0.0
@@ -28,6 +31,9 @@ continuous_cd = 2
 linear_damp_mode = 1
 script = ExtResource("1_6jmgt")
 rotate_heading = false
+bounce_sound = ExtResource("9_bounce")
+begin_tether_sound = ExtResource("10_begin")
+release_tether_sound = ExtResource("11_release")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1660037255]
 shape = SubResource("CircleShape2D_body")

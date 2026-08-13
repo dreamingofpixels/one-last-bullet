@@ -153,11 +153,11 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Runtime duplication autoload (clone base actions to `_2/_3/_4` at startup) — adds an autoload and makes bindings invisible in Project Settings; plain `InputEvent.device` filtering in every script — more per-script boilerplate.
 - **Status**: decided (in-codebase); P1 + P2 authored; P3/P4 not yet authored
 
-### Main scene is desert level; no autoloads yet
-- **Decision**: `run/main_scene` is `areas/level/desert.tscn`. Level logic lives on the scene root (`level.gd`). No autoloads yet.
-- **Why**: Prototype is a single scene; avoid global state until shop/run flow needs it.
-- **Alternatives**: Early GameManager autoload — premature for one arena.
-- **Status**: decided (in-codebase)
+### Main scene is desert level; AudioManager is the first autoload
+- **Decision**: `run/main_scene` is `areas/level/desert.tscn`. Level logic lives on the scene root (`level.gd`). First autoload is `AudioManager` for Music/SFX.
+- **Why**: Prototype is still a single scene; audio needs a global owner before shop/run flow does.
+- **Alternatives**: Early GameManager autoload — premature for one arena; no audio autoload (per-scene players) — harder to share buses/pools.
+- **Status**: decided (in-codebase); supersedes "no autoloads yet"
 
 ### Arena walls as StaticBody2D border slabs
 - **Decision**: Bullet/player world collision uses four `StaticBody2D` wall slabs around the viewport, not TileMap physics polygons.
@@ -229,4 +229,10 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Logical facing is **8-way** (N, S, E, W, NE, NW, SE, SW) via octant snap in `DirectionalSpriteComponent.face()`. Player art remains a 128×32 sheet (four 32×32 diagonals only). Visual playback uses `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to a diagonal suffix by keeping the other-axis bias of the previous visual (e.g. N → `ne` or `nw`). Facing comes from movement while walking and snaps to aim on attack; dash uses `facing_vector()` and does not retarget facing; idle keeps the last facing. `MovementComponent` / `DashComponent` no longer flip the player sprite.
 - **Why**: Dash and movement need true cardinals; authored art is still 4-diagonal; the naming scheme lets walk/attack cycles drop in later without inventing cardinal PNGs; flipping a SW frame would invent a false SE facing.
 - **Alternatives**: 4-way logical facing only — no straight N/S/E/W dash; require 8 sprite frames — art not ready; `flip_h` mirroring of two frames — fights the authored SW/SE and NW/NE pairs; always face aim — would spin the sprite while strafing.
+- **Status**: decided (in-codebase)
+
+### Audio: two buses + SoundEvent resources + pooled AudioManager
+- **Decision**: `default_bus_layout.tres` exposes **Music** and **SFX** under Master. An `AudioManager` autoload owns Music A/B crossfade players plus pooled non-positional (`AudioStreamPlayer` × 8) and positional (`AudioStreamPlayer2D` × 16) voices. Exhausted pools steal the oldest voice. Sounds are authored as `SoundEvent` Resources (stream variants, volume, pitch range, retrigger cooldown, max voices) colocated with their clips; callers use `AudioManager.play` / `play_at`. Damaged SFX plays only on non-fatal hits; destroy SFX plays on death.
+- **Why**: Bus split matches the requested two-channel design and future options UI; `SoundEvent` matches the existing `LevelObjectVariant` data pattern and lets designers tune without code; pooling + oldest-voice steal avoids QuizGame's silent drop when all players are busy; positional pool is not reparented to emitters so death sounds outlive `queue_free()`.
+- **Alternatives**: Preloaded stream dictionary on the autoload (QuizGame style) — harder to tune pitch/cooldown per event; global-only playback — no stereo across the arena; per-entity `AudioStreamPlayer2D` nodes — death/teardown races and more scene boilerplate; fade-out/wait/fade-in music (QuizGame) — replaced with true A/B crossfade.
 - **Status**: decided (in-codebase)

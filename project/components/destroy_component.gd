@@ -4,6 +4,7 @@ signal destroyed(node: Node)
 
 ## The sprite to use for the pixel-fall destruction VFX (Sprite2D or AnimatedSprite2D).
 @export var sprite: Node2D
+@export var destroy_sound: SoundEvent = preload("res://entities/entity_destroyed.tres")
 
 var _is_destroying: bool = false
 
@@ -16,6 +17,9 @@ func self_destroy() -> void:
 	_disable_collisions()
 
 	destroyed.emit(owner)
+
+	if destroy_sound and owner is Node2D:
+		AudioManager.play_at(destroy_sound, (owner as Node2D).global_position)
 
 	if sprite:
 		DestructionEffect.play_from_sprite(sprite)

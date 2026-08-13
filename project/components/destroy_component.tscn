@@ -1,6 +1,8 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://components/destroy_component.gd" id="1_destroy"]
+[ext_resource type="Resource" path="res://entities/entity_destroyed.tres" id="2_sound"]
 
 [node name="DestroyComponent" type="Node2D"]
 script = ExtResource("1_destroy")
+destroy_sound = ExtResource("2_sound")

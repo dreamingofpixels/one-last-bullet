@@ -14,6 +14,8 @@ const PHYSICS_LAYER_BULLET := 8
 ## Visual-only rotation: art is a NE quarter-arc; +45° puts its midline on parent +X (aim).
 @export var sprite_angle_offset: float = PI / 4.0
 @export var lock_movement: bool = false
+## Optional swing SFX; left unassigned until a clip exists.
+@export var swing_sound: SoundEvent
 
 @onready var attack_sprite: Sprite2D = %AttackSprite
 @onready var attack_sprite_hint: Sprite2D = %AttackSpriteHint
@@ -78,6 +80,8 @@ func start(aim_direction: Vector2) -> void:
 	attack_sprite_hint.visible = false
 	attack_sprite.visible = true
 	attack_sprite.frame = 0
+	if swing_sound and owner is Node2D:
+		AudioManager.play_at(swing_sound, (owner as Node2D).global_position)
 	attack_animation.play("attack")
 
 

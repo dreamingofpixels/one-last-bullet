@@ -9,6 +9,7 @@ class_name DashComponent extends Node2D
 @export var dash_cooldown: float = 0.5
 @export var sprite: Sprite2D
 @export var hitbox_component: HitboxComponent
+@export var dash_sound: SoundEvent = preload("res://entities/player/dash.tres")
 
 var _direction: Vector2 = Vector2.RIGHT
 var _remaining_distance: float = 0.0
@@ -32,6 +33,8 @@ func start(direction: Vector2) -> void:
 		sprite.flip_h = _direction.x < 0.0
 	if hitbox_component:
 		hitbox_component.set_invulnerable(true)
+	if dash_sound and owner is Node2D:
+		AudioManager.play_at(dash_sound, (owner as Node2D).global_position)
 	_begin_phase()
 	set_physics_process(true)
 

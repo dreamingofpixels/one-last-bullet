@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://dr700in50ujsq"]
+
+[ext_resource type="Texture2D" path="res://effects/particle_pixel.png" id="1_pixel"]
+
+[sub_resource type="Gradient" id="Gradient_impact"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.55, 0.65, 1, 0.9, 0.35, 0.2, 0.55, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_impact"]
+gradient = SubResource("Gradient_impact")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_impact"]
+particle_flag_disable_z = true
+direction = Vector3(1, 0, 0)
+spread = 45.0
+initial_velocity_min = 40.0
+initial_velocity_max = 90.0
+gravity = Vector3(0, 0, 0)
+scale_min = 2.0
+scale_max = 4.0
+color_ramp = SubResource("GradientTexture1D_impact")
+
+[node name="OrbImpact" type="GPUParticles2D"]
+z_index = 5
+texture_filter = 1
+emitting = false
+amount = 14
+lifetime = 0.25
+one_shot = true
+explosiveness = 1.0
+local_coords = true
+process_material = SubResource("ParticleProcessMaterial_impact")
+texture = ExtResource("1_pixel")

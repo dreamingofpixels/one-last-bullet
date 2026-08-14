@@ -7,6 +7,25 @@
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="5_handler"]
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="6_damage"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
+[ext_resource type="Texture2D" path="res://effects/particle_pixel.png" id="8_pixel"]
+
+[sub_resource type="Gradient" id="Gradient_trail"]
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(0.9, 0.95, 1, 1, 0.55, 0.45, 0.85, 0.75, 0.25, 0.15, 0.45, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_trail"]
+gradient = SubResource("Gradient_trail")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_trail"]
+particle_flag_disable_z = true
+direction = Vector3(1, 0, 0)
+spread = 18.0
+initial_velocity_min = 30.0
+initial_velocity_max = 70.0
+gravity = Vector3(0, 0, 0)
+scale_min = 2.0
+scale_max = 3.0
+color_ramp = SubResource("GradientTexture1D_trail")
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
 friction = 0.0
@@ -35,6 +54,17 @@ shape = SubResource("CircleShape2D_body")
 
 [node name="Heading" type="Node2D" parent="."]
 unique_name_in_owner = true
+
+[node name="TrailParticles" type="GPUParticles2D" parent="."]
+unique_name_in_owner = true
+texture_filter = 1
+emitting = false
+amount = 48
+lifetime = 0.45
+visibility_rect = Rect2(-400, -400, 800, 800)
+local_coords = false
+process_material = SubResource("ParticleProcessMaterial_trail")
+texture = ExtResource("8_pixel")
 
 [node name="OrbSprite" type="Sprite2D" parent="Heading"]
 unique_name_in_owner = true

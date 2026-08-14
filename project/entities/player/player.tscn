@@ -64,7 +64,7 @@ sprite = NodePath("../../PlayerSprite")
 [node name="MovementComponent" type="Node2D" parent="Components" unique_id=1815320275]
 unique_name_in_owner = true
 script = ExtResource("6_movement")
-move_speed = 200.0
+move_speed = 130.0
 
 [node name="AttackComponent" parent="Components" unique_id=2121984031 instance=ExtResource("8_attack")]
 unique_name_in_owner = true

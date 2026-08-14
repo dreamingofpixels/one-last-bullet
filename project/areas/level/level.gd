@@ -1,6 +1,7 @@
 extends Node2D
 
 const GRUNT_SCENE := preload("res://entities/enemies/grunt/grunt_knife.tscn")
+const BRUTE_SCENE := preload("res://entities/enemies/brute/brute.tscn")
 const ENEMY_COUNT := 3
 const MIN_SPAWN_DISTANCE := 120.0
 const PLAY_RECT := Rect2(24.0, 24.0, 592.0, 312.0)
@@ -49,14 +50,19 @@ func _unhandled_input(event: InputEvent) -> void:
 func _spawn_enemies() -> void:
 	_enemies_alive = 0
 	for i in ENEMY_COUNT:
-		var grunt := GRUNT_SCENE.instantiate() as CharacterBody2D
-		enemies.add_child(grunt)
-		grunt.global_position = _pick_spawn_position()
-		# Connect destroy_component.destroyed (emitted after death FX starts).
-		var destroy_comp: DestroyComponent = grunt.COMPONENTS.get(DestroyComponent)
-		if destroy_comp:
-			destroy_comp.destroyed.connect(_on_enemy_died.bind())
-		_enemies_alive += 1
+		_spawn_enemy(GRUNT_SCENE)
+	_spawn_enemy(BRUTE_SCENE)
+
+
+func _spawn_enemy(scene: PackedScene) -> void:
+	var enemy := scene.instantiate() as CharacterBody2D
+	enemies.add_child(enemy)
+	enemy.global_position = _pick_spawn_position()
+	# Connect destroy_component.destroyed (emitted after death FX starts).
+	var destroy_comp: DestroyComponent = enemy.COMPONENTS.get(DestroyComponent)
+	if destroy_comp:
+		destroy_comp.destroyed.connect(_on_enemy_died.bind())
+	_enemies_alive += 1
 
 
 func _pick_spawn_position() -> Vector2:

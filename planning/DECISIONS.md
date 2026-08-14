@@ -54,6 +54,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Shrink orbit radius to avoid walls — still fails on props mid-arena and does not cover enemy hits; keep tether through solids but stop damaging — weaker fantasy and still clips visually; punch-through enemies while tethered — rewards careless orbits; no boost on forced break — punishes contact twice (lose tether + no reward) and feels inconsistent with release-as-commit; only break on rocks (not damage) — leaves multi-enemy orbits unbroken.
 - **Status**: decided (in-codebase)
 
+### Forced tether release never parks the orb
+- **Decision**: Forced tether breaks (solid/entity contact or dealing damage) launch into free space instead of trusting a raw tangent bounce. Exit direction uses a real contact normal (`get_rest_info`, center-to-center only as fallback) and `_safe_exit_direction`: reflect only when inbound, then bias outbound if the result still points into the surface. Hitbox-triggered breaks are deferred one physics tick so freeze/velocity are not mutated mid-solver after a kinematic orbit teleport. `_finish_tether_release` depenetrates up to the body radius (8 px, 2 px steps) before asserting velocity. Flying bounce reflects **once** off the summed inbound contact normals (avoids two opposite surfaces cancelling back into the first). A never-still watchdog unsticks the orb after 12 consecutive stalled physics ticks (~0.06 s at 200 Hz) by depenetrating and picking an escape along overlapping normals (fallback: invert `aim_direction`). `can_sleep` is off. Collision layers/masks are unchanged.
+- **Why**: Tethered orbit teleports a frozen rigid body, so a break can leave the orb overlapping a grunt/wall/player. Inspector dumps showed `FLYING`, non-zero velocity, `freeze`/`sleeping` false, and a frozen transform — the solver refused the motion. Sequential per-contact bounce made two-body wedges permanent.
+- **Alternatives**: Add the bullet layer to grunt/player masks so `move_and_slide` also treats the orb as solid — changes the whole game into "orb is a moving obstacle"; remove player/enemy from the orb body mask and script entity bounce — different flying feel; only `sleeping = false` on release — inspector already showed awake; only nudge along tangent — still launches into the blocker when the tangent is inbound.
+- **Status**: decided (in-codebase); see also "Tether breaks on solid/entity contact and on dealing damage"
+
 ### Level start: opening tether instead of slow-mo aim
 - **Decision**: At level start the orb spawns already tethered **32 px above** the player (`begin_opening_tether`). Tether (or one full revolution) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost. `OpeningAimComponent`, the Aim state, and global `Engine.time_scale` opening slow-mo are removed. `OrbTetherComponent` owns the orb reference via `bind_orb()`.
 - **Why**: One tether UX for start and mid-combat; removes co-op-hostile global slow-mo; teaches capture/release immediately.
@@ -61,9 +67,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Single basic enemy: chase + contact kill
-- **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. Prototype spawns 3.
-- **Why**: Simple pressure while the bullet/attack loop is proven.
-- **Alternatives**: Ranged enemies first — more systems before the core loop is solid; brute enemy — deferred.
+- **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. Prototype spawns 3 grunts. A second chaser (`brute`) uses the same chase/contact-damage model; prototype also spawns 1 brute.
+- **Why**: Simple pressure while the bullet/attack loop is proven. Brute is a size/art variant of that loop, not a new AI.
+- **Alternatives**: Ranged enemies first — more systems before the core loop is solid; brute as unique club-melee AI — not needed yet (contact hitbox matches grunt).
 - **Status**: decided (in-codebase)
 
 ### Gold drops vanish if not picked up quickly
@@ -186,7 +192,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Bullet is RigidBody2D with script-owned bounce + separate hitbox
-- **Decision**: `LastBullet` / `LastOrb` is a `RigidBody2D` with a circular body shape (world + player + enemy mask), locked rotation, gravity 0, friction 0, **bounce 0** material, continuous CCD, and constant-speed flight. All reflection is owned by `_integrate_forces`: for each contact, reflect `aim_direction` off `get_contact_local_normal` only when moving into the surface (`dot < 0`), then set `linear_velocity = aim_direction * speed`. `_physics_process` does **not** re-derive direction from solver velocity. Hits use a separate circle/capsule `HitboxComponent` Area2D. Bounce SFX and breakable damage still use `body_entered`.
+- **Decision**: `LastBullet` / `LastOrb` is a `RigidBody2D` with a circular body shape (world + player + enemy mask), locked rotation, gravity 0, friction 0, **bounce 0** material, continuous CCD, `can_sleep` off, and constant-speed flight. All reflection is owned by `_integrate_forces`: inbound contact normals are summed, then `aim_direction` reflects **once** off that combined normal (only when moving into the surface), then `linear_velocity = aim_direction * speed`. `_physics_process` does **not** re-derive direction from solver velocity. Hits use a separate circle/capsule `HitboxComponent` Area2D. Bounce SFX and breakable damage still use `body_entered`.
 - **Why**: Solver bounce + script bounce fought each other and caused sticky re-entry (double damage / double SFX). Real contact normals beat center-to-center approximations on capsules and rectangles. Single bounce authority keeps the projectile readable.
 - **Alternatives**: PhysicsMaterial bounce 1 + velocity read-back — previous; double-reflect artifacts; radial bounce only in `body_entered` for CharacterBody2D — wrong normals and still fought the solver; world-only mask + area-driven entity bounce — reverses entity-body bounce feel; wall-clock hit cooldown — papers over the symptom.
 - **Status**: decided (in-codebase)

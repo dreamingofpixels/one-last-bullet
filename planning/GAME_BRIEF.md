@@ -58,9 +58,9 @@ Dodge your own bullet while batting it at enemies. Risk the floor for vanishing 
 - Fun should come from discovering interesting synergies across those categories.
 
 ## Enemies
-- For now: one basic enemy (`grunt_knife`) that **chases the player** and deals **1 contact damage** on a ~0.75s tick while overlapping.
-- Grunts have **3 HP** (orb hits chip them; melee still knocks back without damage).
-- Prototype spawns **3** grunts. Brute deferred.
+- Two chaser enemies (`grunt_knife`, `brute`) **chase the player** and deal **1 contact damage** on a ~0.75s tick while overlapping.
+- Grunts and brutes have **3 HP** (orb hits chip them; melee still knocks back without damage). Brute HP/damage can be tuned on the scene.
+- Prototype spawns **3** grunts and **1** brute.
 - Player attack knocks enemies back (no melee damage).
 - More enemy types planned later.
 

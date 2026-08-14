@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://bq7w3m5k8tn2r"]
+
+[ext_resource type="Script" uid="uid://c8v4n2hxpq1km" path="res://entities/enemies/brute/brute.gd" id="1_brute"]
+[ext_resource type="Texture2D" uid="uid://c0cgp4q0208em" path="res://entities/enemies/brute/brute.png" id="2_sprite"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="3_handler"]
+[ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="4_health"]
+[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="5_damage"]
+[ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="6_destroy"]
+[ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="7_movement"]
+[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
+[ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="9_knockback"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 15.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
+radius = 15.0
+
+[node name="Brute" type="CharacterBody2D" unique_id=539860681 groups=["enemies"]]
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("1_brute")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=502488451]
+position = Vector2(0, -1)
+shape = SubResource("CircleShape2D_body")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=921487892]
+unique_name_in_owner = true
+texture_filter = 1
+texture = ExtResource("2_sprite")
+
+[node name="Components" type="Node2D" parent="." unique_id=550465024]
+script = ExtResource("3_handler")
+
+[node name="HealthComponent" type="Node2D" parent="Components" unique_id=648504730 node_paths=PackedStringArray("destroy_component")]
+script = ExtResource("4_health")
+max_health = 10.0
+destroy_component = NodePath("../DestroyComponent")
+
+[node name="DamageComponent" type="Node2D" parent="Components" unique_id=621483871]
+script = ExtResource("5_damage")
+damage = 3.0
+contact_damage_interval = 0.75
+
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=156210785 node_paths=PackedStringArray("sprite")]
+unique_name_in_owner = true
+script = ExtResource("6_destroy")
+sprite = NodePath("../../Sprite2D")
+
+[node name="MovementComponent" type="Node2D" parent="Components" unique_id=1827114338]
+unique_name_in_owner = true
+script = ExtResource("7_movement")
+move_speed = 40.0
+sprite = NodePath("../../Sprite2D")
+
+[node name="KnockbackComponent" parent="Components" unique_id=645508517 instance=ExtResource("9_knockback")]
+unique_name_in_owner = true
+
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=637237179 node_paths=PackedStringArray("health_component")]
+unique_name_in_owner = true
+collision_layer = 4
+collision_mask = 10
+script = ExtResource("8_hitbox")
+health_component = NodePath("../HealthComponent")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1111307241]
+position = Vector2(0, -1)
+shape = SubResource("CircleShape2D_hitbox")

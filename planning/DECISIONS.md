@@ -1,4 +1,6 @@
-# One Last Bullet — Decision Log
+# Tavern Roguelike — Decision Log
+
+*Working title from the design doc; final name TBD (replacing "One Last Bullet").*
 
 This is a living log of decisions that shape the game and codebase. Add entries when a choice affects multiple systems or would be costly to reverse.
 
@@ -12,16 +14,16 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ## Gameplay & design decisions
 
-### One bullet, fired at level start, bounces forever
-- **Decision**: The player has a single bullet. It is fired at the start of each level and travels/bounces indefinitely.
-- **Why**: The whole fantasy is "one last bullet" — scarcity and danger in the same object.
-- **Alternatives**: Multi-shot ammo pool — dilutes the hook; bullet that despawns — removes the constant threat.
-- **Status**: decided (design)
+### One orb of chaos, fired at level start, bounces forever
+- **Decision**: The player has a single spell — the **orb of chaos**. It enters play at the start of each level and travels/bounces indefinitely.
+- **Why**: Scarcity and danger in the same object; the wizard has one wild spell left to survive the room.
+- **Alternatives**: Multi-shot mana pool — dilutes the hook; orb that despawns — removes the constant threat.
+- **Status**: decided (design); supersedes "One bullet, fired at level start"
 
-### Bullet damages enemies; hurts player on contact
+### Orb damages enemies; hurts player on contact
 - **Decision**: The same projectile is a weapon against enemies and a hazard for the player. Player and grunt start at **3 HP**; orb damage defaults to **1**. Player gets brief i-frames after a non-fatal hit.
 - **Why**: Forces constant spatial awareness; multi-hit HP lets the dodge fantasy breathe without making every graze an instant run-ender.
-- **Alternatives**: Instant-kill on player contact — previous design; too punishing once tether proximity is required; bullet only hurts enemies — loses the dodge fantasy.
+- **Alternatives**: Instant-kill on player contact — previous design; too punishing once tether proximity is required; orb only hurts enemies — loses the dodge fantasy.
 - **Status**: decided (in-codebase)
 
 ### Redirect via proximity + button, brief slow-mo, then choose direction
@@ -33,7 +35,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Arc attack deflects the orb; knocks enemies back
 - **Decision**: Mid-combat steering is a mouse-aimed melee arc (authored `CollisionPolygon2D` on `AttackComponent`, 6-frame AnimationPlayer). The orb reflects off the radial normal when it overlaps the active hitbox; enemies hit by the same arc receive knockback (no melee damage). Opening shot later moved to tether (see opening tether entry).
 - **Why**: One action, two jobs; more arcade and readable than proximity slow-mo redirect; removes global mid-combat `Engine.time_scale` pauses; keeps player control of orb direction via aim + contact point; scene-authored polygon is easier to tune against the arc art than a procedurally rebuilt wedge.
-- **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — previously rejected as too many steps / harder to read (now being re-tried; see tether entry below); keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker sheriff fantasy; runtime `ConvexPolygonShape2D` from radius/degrees exports — replaced by authored polygon.
+- **Alternatives**: Orbit-capture (attack holds the orb in a circle until second press) — previously rejected as too many steps / harder to read (now being re-tried; see tether entry below); keep mouse-aim slow-mo redirect — locks movement and slows all players in co-op; proximity-only redirect without a swing — weaker melee fantasy; runtime `ConvexPolygonShape2D` from radius/degrees exports — replaced by authored polygon.
 - **Status**: revisit — orb deflect gated behind `AttackComponent.deflect_orb_enabled` (default false); swing + enemy knockback still active. Code kept for rollback.
 
 ### Same-direction chase hits push along aim
@@ -63,20 +65,26 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Level start: opening tether instead of slow-mo aim
 - **Decision**: At level start the orb spawns already tethered **32 px above** the player (`begin_opening_tether`). Tether (or one full revolution) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost. `OpeningAimComponent`, the Aim state, and global `Engine.time_scale` opening slow-mo are removed. `OrbTetherComponent` owns the orb reference via `bind_orb()`.
 - **Why**: One tether UX for start and mid-combat; removes co-op-hostile global slow-mo; teaches capture/release immediately.
-- **Alternatives**: Keep 3s slow-mo free aim — separate system and co-op time_scale issues; auto-launch upward without tether — skips the core sling lesson; apply boost on opening release — unfair free power on every level start.
-- **Status**: decided (in-codebase)
+- **Alternatives**: Keep 3s slow-mo free aim — separate system and co-op time_scale issues; **design-doc free aim-and-fire at start** — may return to match source doc; auto-launch upward without tether — skips the core sling lesson; apply boost on opening release — unfair free power on every level start.
+- **Status**: decided (in-codebase); **revisit** — design doc says player fires orb in any direction at level start
 
 ### Single basic enemy: chase + contact kill
 - **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. Prototype spawns 3 grunts. A second chaser (`brute`) uses the same chase/contact-damage model; prototype also spawns 1 brute.
-- **Why**: Simple pressure while the bullet/attack loop is proven. Brute is a size/art variant of that loop, not a new AI.
+- **Why**: Simple pressure while the orb/attack loop is proven. Brute is a size/art variant of that loop, not a new AI.
 - **Alternatives**: Ranged enemies first — more systems before the core loop is solid; brute as unique club-melee AI — not needed yet (contact hitbox matches grunt).
 - **Status**: decided (in-codebase)
 
-### Gold drops vanish if not picked up quickly
-- **Decision**: Enemies drop gold that disappears after a short window.
-- **Why**: Creates risk/reward: leave safe space to grab loot while the bullet and enemies threaten.
-- **Alternatives**: Permanent gold until leave — less tension; auto-collect — removes the skill beat.
-- **Status**: decided (design); vanish duration TBD; not in prototype yet
+### Wizard fantasy; orb of chaos (replaces sheriff / one bullet)
+- **Decision**: Player is a **wizard** with one spell left — the **orb of chaos**. Setting is **tavern roguelike** with varied stages/environments, not a western sheriff defending a saloon.
+- **Why**: Design doc refocused on magic arcade survival; orb tether/redirect is the core hook, not gun fantasy.
+- **Alternatives**: Keep sheriff + bullet western theme — superseded by design doc; generic fantasy mage with many spells — dilutes the one-spell scarcity.
+- **Status**: decided (design); art/prototype still uses desert arena and legacy "bullet" code names
+
+### Mana drops vanish if not picked up quickly
+- **Decision**: Enemies drop **mana** that disappears after a short window. Mana is spent in the between-level shop.
+- **Why**: Creates risk/reward: leave safe space to grab loot while the orb and enemies threaten; mana fits the wizard fantasy.
+- **Alternatives**: Permanent mana until leave — less tension; auto-collect — removes the skill beat; gold currency — superseded (western theme dropped).
+- **Status**: decided (design); vanish duration TBD; not in prototype yet (only `mana_picked_up.ogg` asset)
 
 ### Run structure: clear level → shop → repeat; 10 levels to win
 - **Decision**: Clear all enemies to finish a level; shop between levels; win the run after 10 clears. Death ends the run.
@@ -84,23 +92,23 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Endless mode only — no climax; shorter runs — less room for synergy builds.
 - **Status**: decided (design); shop/multi-level not in prototype yet
 
-### Shop upgrades: bullet / player / enemy curses; synergies matter
-- **Decision**: Between-level shop offers randomized upgrades that improve the bullet, the player, or curse enemies. Synergies are intentional fun.
+### Shop upgrades: orb / player / enemy curses; synergies matter
+- **Decision**: Between-level shop offers randomized upgrades that improve the orb, the player, or curse enemies. Synergies are intentional fun.
 - **Why**: Keeps runs distinct and rewards build-crafting without a huge combat ruleset.
 - **Alternatives**: Fixed upgrade tree — less replay discovery; only player buffs — thinner fantasy.
 - **Status**: decided (design)
 
 ### Minimal story; gameplay-first arcade
-- **Decision**: Story is lean (Sheriff defending the saloon). No deep narrative required for v1.
-- **Why**: Focus production on the bullet/attack/shop loop.
+- **Decision**: Story is lean (wizard defending against nefarious beings). No deep narrative required for v1.
+- **Why**: Focus production on the orb/tether/shop loop.
 - **Alternatives**: Heavy campaign narrative — distracts from the arcade core.
-- **Status**: decided (design)
+- **Status**: decided (design); supersedes sheriff/saloon story
 
-### Saloon stages with randomized enemies, obstacles, and breakables
-- **Decision**: Each stage is a saloon layout with randomized enemies/obstacles; obstacles can interact with the bullet (e.g. TNT); breakables can drop powerups.
-- **Why**: Variety and environmental play without leaving the fantasy setting.
-- **Alternatives**: Static hand-authored only levels — less replay; pure empty arenas — less toy potential.
-- **Status**: decided (design)
+### Varied stages with randomized enemies, obstacles, and breakables
+- **Decision**: Stages use **different environments** (tavern is one option) with randomized enemies/obstacles; obstacles can interact with the orb (e.g. TNT); breakables can drop powerups.
+- **Why**: Variety and environmental play without locking to one room type.
+- **Alternatives**: Saloon-only stages — superseded; static hand-authored only levels — less replay; pure empty arenas — less toy potential.
+- **Status**: decided (design); prototype is still a single desert arena
 
 ---
 
@@ -108,7 +116,8 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 - **Tether feel**: orbit radius / auto-release after forced breaks; radius shrink less critical now that contact breaks the tether.
 - **Attack cooldown / charges**: swing cooldown 0.35s; tether post-release cooldown 0.25s.
-- **Gold vanish duration**: how long before drops disappear?
+- **Opening shot UX**: design doc says free aim-and-fire at level start; prototype uses opening tether.
+- **Mana vanish duration**: how long before drops disappear?
 - **Shop draft size and reroll rules**: how many offers, costs, rerolls?
 - **Camera / view perspective**: player uses 4-direction diagonal sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena. Confirm long-term camera for larger stages.
 - **Arc deflect rollback**: flip `deflect_orb_enabled` if tether does not pan out.
@@ -136,6 +145,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Why**: Keeps rules in data; multi-hit is a slider per entity, not special-case code. Shared flash covers entities and breakables without per-scene VFX scripts.
 - **Alternatives**: One-hit-kill for everyone (`max_health = 1.0`) — previous design; too harsh with tether proximity; a bool `is_one_shot` — extra flag for something already handled by the value; shader hit flash — heavier for a short modulate.
 - **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"
+
+### Damage-reveal percentage health bars
+- **Decision**: Every `HealthComponent` owner (player, enemies, breakables) instances `HealthBarComponent`: an 18×2 px world-space bar drawn with `_draw`, fill width = `% of max_health` (not absolute HP, so a 10-HP brute and a 100-HP boss use the same pixel width). Hidden until `damage_taken`; stays visible for **1.5 s**, refreshing on each hit. Per-scene `offset` places it above the sprite.
+- **Why**: Upcoming damaging effects can push HP past 100; a percentage bar stays readable without growing. Reveal-on-hit keeps the 640×360 arena uncluttered. Same component on breakables so future multi-hit props get the UI for free.
+- **Alternatives**: Always-visible overhead bars — clutter at higher enemy counts; discrete pips — breaks once max HP is no longer 3; screen-only player HUD — enemies would still need hit confirmation for orb grazes; `ProgressBar`/`ColorRect` nodes — extra nodes and softer pixel alignment vs `_draw`.
+- **Status**: decided (in-codebase)
 
 ### Damage flow: HitboxComponent overlap polling
 

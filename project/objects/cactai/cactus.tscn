@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="7_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="8_health"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="9_destroy"]
+[ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="10_hbar"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_placeholder"]
 size = Vector2(14, 24)
@@ -35,6 +36,10 @@ script = ExtResource("7_handler")
 [node name="HealthComponent" type="Node2D" parent="Components" unique_id=366129273 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("8_health")
 destroy_component = NodePath("../DestroyComponent")
+
+[node name="HealthBarComponent" parent="Components" unique_id=1657382910 node_paths=PackedStringArray("health_component") instance=ExtResource("10_hbar")]
+health_component = NodePath("../HealthComponent")
+offset = Vector2(0, -28)
 
 [node name="DestroyComponent" type="Node2D" parent="Components" unique_id=938070185 node_paths=PackedStringArray("sprite")]
 script = ExtResource("9_destroy")

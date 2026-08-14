@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="6_movement"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
 [ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="8_knockback"]
+[ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="9_hbar"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0
@@ -37,6 +38,10 @@ script = ExtResource("2_handler")
 script = ExtResource("3_health")
 max_health = 3.0
 destroy_component = NodePath("../DestroyComponent")
+
+[node name="HealthBarComponent" parent="Components" unique_id=1928374650 node_paths=PackedStringArray("health_component") instance=ExtResource("9_hbar")]
+health_component = NodePath("../HealthComponent")
+offset = Vector2(0, -16)
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=1772677854]
 script = ExtResource("4_damage")

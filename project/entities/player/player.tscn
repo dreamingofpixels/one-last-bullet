@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://cu310m38frq6t" path="res://components/attack_component.tscn" id="8_attack"]
 [ext_resource type="PackedScene" path="res://components/dash_component.tscn" id="8_dash"]
 [ext_resource type="PackedScene" path="res://components/directional_sprite_component.tscn" id="8_dir"]
+[ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="8_hbar"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
 [ext_resource type="PackedScene" uid="uid://o4pbxn2a23t6" path="res://components/orb_tether_component.tscn" id="8_tether"]
 [ext_resource type="Script" uid="uid://ckyag5seiljcb" path="res://entities/player/controls.gd" id="9_controls"]
@@ -51,6 +52,10 @@ script = ExtResource("3_health")
 max_health = 3.0
 destroy_component = NodePath("../DestroyComponent")
 invulnerable_seconds = 0.5
+
+[node name="HealthBarComponent" parent="Components" unique_id=1847201931 node_paths=PackedStringArray("health_component") instance=ExtResource("8_hbar")]
+health_component = NodePath("../HealthComponent")
+offset = Vector2(0, -20)
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=789470835]
 script = ExtResource("4_damage")

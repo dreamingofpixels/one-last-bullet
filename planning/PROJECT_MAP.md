@@ -1,12 +1,14 @@
-# One Last Bullet — Project Map
+# Tavern Roguelike — Project Map
+
+*Working title from the design doc; final name TBD (replacing "One Last Bullet"). Legacy "bullet" names remain in code until rename.*
 
 This is a high-level map of the repo: where things live, how the core systems connect, and the conventions the project uses.
 
 ## Repo layout
 ```
-One Last Bullet/
+Tavern Roguelike/          (repo folder still "One Last Bullet" until rename)
 ├── planning/
-│   ├── One Last Bullet.txt     Source-of-truth design document
+│   ├── One Last Bullet.txt     Source-of-truth design document (title in doc: Tavern Roguelike)
 │   ├── One Last Bullet.docx    Word export of the design doc
 │   ├── GAME_BRIEF.md           Living brief
 │   ├── DECISIONS.md            Living decision log
@@ -25,6 +27,7 @@ One Last Bullet/
     ├── components/             Reusable component scripts + scenes
     │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
     │   ├── health_component.gd / .tscn    HP; flash + optional i-frames; DestroyComponent on death
+    │   ├── health_bar_component.gd / .tscn  Damage-reveal 18×2 px percentage bar above entities
     │   ├── damage_component.gd / .tscn    Damage + instigator + optional contact tick interval
     │   ├── hitbox_component.gd / .tscn    Area2D; polls overlaps; frame dedup + contact ticks
     │   ├── destroy_component.gd / .tscn   Disables collisions, destroy SFX, pixel-fall FX, emits destroyed(node)
@@ -80,7 +83,7 @@ One Last Bullet/
         │   ├── cactus_1..4.png
         │   └── variants/                 LevelObjectVariant .tres per art
         ├── mana/
-        │   └── mana_picked_up.ogg        (unwired; no mana scene yet)
+        │   └── mana_picked_up.ogg        (design economy resource; pickup scene not wired yet)
         └── rocks/
             ├── rock.tscn                 Solid; picks from rock variants at runtime
             ├── rock_1.png
@@ -107,7 +110,7 @@ One Last Bullet/
 | 1 | world |
 | 2 | player |
 | 3 | enemy |
-| 4 | bullet |
+| 4 | bullet | *(legacy name; orb of chaos projectile)* |
 
 ---
 
@@ -120,6 +123,7 @@ One Last Bullet/
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
 - `project/components/health_component.gd` — HP; red flash on hit; optional `invulnerable_seconds` + blink on non-fatal hits; `take_damage` returns bool; plays `damaged_sound` on non-fatal hits; calls `DestroyComponent.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`; sprite via optional export or `DestroyComponent.sprite`
+- `project/components/health_bar_component.gd` — world-space 18×2 px `_draw` bar; fill is `% of max_health` (same pixel width for every entity); hidden until `damage_taken`, then visible for 1.5 s (timer refreshes on each hit); `@export` offset/colors; instanced on player, grunt, brute, and cactus
 - `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter), `contact_damage_interval` (0 = once per overlap)
 - `project/components/hitbox_component.gd` — `Area2D`; physics-frame overlap poll of attacker `HitboxComponent`s; frame dedup via `hit_dedup_frames`; contact ticks from `DamageComponent.contact_damage_interval`; skips if instigator == owner; `set_invulnerable(bool)` clears overlap state and toggles monitoring (deferred)
 - `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `destroy_sound`, plays `DestructionEffect`, frees owner
@@ -135,7 +139,7 @@ One Last Bullet/
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `begin_level(orb)`; tree: Components (Health max 3 + 0.5s i-frames / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `begin_level(orb)`; tree: Components (Health max 3 + 0.5s i-frames / HealthBar / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
 - `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; walk/dash blocked while tethering
@@ -145,14 +149,14 @@ One Last Bullet/
 - `project/entities/last_orb/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` API; tether orbit probes world/player/enemy layers and breaks on contact or on dealing damage; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); opening release emits `launched` (no boost); mid-combat release / forced break emits `tether_released` (+10% boost); instigator-based player grace; trail particles while flying/tethered; world-surface impact bursts via `OrbImpactEffect`; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
 - `project/entities/last_orb/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
 - `project/entities/last_orb/aim_arrow.gd` — drawn aim arrow during aim windows
-- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health max 3 / Damage with 0.75s contact tick / Destroy / Movement / Knockback / HitboxComponent
-- `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same chase/contact-damage stack as grunt; left-facing sprite (`flip_h` inverted); larger collision (r=15); Health/Damage left at grunt defaults
+- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health max 3 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / HitboxComponent
+- `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same chase/contact-damage stack as grunt; left-facing sprite (`flip_h` inverted); larger collision (r=15); Health max 10 / HealthBar / Damage 3.0 with 0.75s contact tick
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
 - `project/objects/_base/breakable.gd` — `extends LevelObject`; `COMPONENTS` dict; `breakables` group; destroyed via `COMPONENTS[HealthComponent].take_damage()` from bullet `body_entered`
 - `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
-- `project/objects/cactai/cactus.tscn` — breakable cactus; Components: HealthComponent + DestroyComponent
+- `project/objects/cactai/cactus.tscn` — breakable cactus; Components: HealthComponent + HealthBarComponent + DestroyComponent
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 
 ### Effects
@@ -181,7 +185,7 @@ One Last Bullet/
 |-------|---------|
 | `player` | Player root |
 | `enemies` | GruntKnife root |
-| `bullet` | LastBullet / LastOrb root (shared `last_bullet.gd`) |
+| `bullet` | LastBullet / LastOrb root (shared `last_bullet.gd`; legacy group name) |
 | `breakables` | Breakable props (cactus, etc.) |
 
 ## Input actions

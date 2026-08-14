@@ -10,9 +10,14 @@ signal health_changed(current: float, maximum: float)
 @export var damaged_sound: SoundEvent = preload("res://entities/entity_damaged.tres")
 @export var damage_flash_color: Color = Color(1.0, 0.2, 0.2, 1.0)
 @export var damage_flash_seconds: float = 0.12
+## Gameplay i-frames after a non-fatal hit. 0 = none.
+@export var invulnerable_seconds: float = 0.0
+@export var invulnerable_blink_alpha: float = 0.35
+@export var invulnerable_blink_hz: float = 12.0
 
 var health: float = 1.0
 var _flash_tween: Tween
+var _invulnerable_until_msec: int = 0
 
 
 func _ready() -> void:
@@ -20,16 +25,28 @@ func _ready() -> void:
 	health_changed.emit(health, max_health)
 
 
-func take_damage(amount: float) -> void:
+func is_invulnerable() -> bool:
+	return Time.get_ticks_msec() < _invulnerable_until_msec
+
+
+func take_damage(amount: float) -> bool:
+	if is_invulnerable():
+		return false
+
 	health -= amount
 	damage_taken.emit()
 	health_changed.emit(health, max_health)
 	_flash_damage()
 	if health <= 0.0:
+		_invulnerable_until_msec = 0
 		if destroy_component:
 			destroy_component.self_destroy()
-	elif damaged_sound and owner is Node2D:
-		AudioManager.play_at(damaged_sound, (owner as Node2D).global_position)
+	else:
+		if invulnerable_seconds > 0.0:
+			_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_seconds * 1000.0)
+		if damaged_sound and owner is Node2D:
+			AudioManager.play_at(damaged_sound, (owner as Node2D).global_position)
+	return true
 
 
 func _resolve_sprite() -> CanvasItem:
@@ -55,3 +72,15 @@ func _flash_damage() -> void:
 
 	_flash_tween = create_tween()
 	_flash_tween.tween_property(target, "modulate", Color.WHITE, damage_flash_seconds)
+
+	if invulnerable_seconds <= damage_flash_seconds:
+		return
+
+	var blink_duration: float = invulnerable_seconds - damage_flash_seconds
+	var blink_period: float = 1.0 / maxf(invulnerable_blink_hz, 1.0)
+	var half_period: float = blink_period * 0.5
+	var cycles: int = maxi(1, int(ceil(blink_duration / blink_period)))
+	var dim := Color(1.0, 1.0, 1.0, invulnerable_blink_alpha)
+	for _i in cycles:
+		_flash_tween.tween_property(target, "modulate", dim, half_period)
+		_flash_tween.tween_property(target, "modulate", Color.WHITE, half_period)

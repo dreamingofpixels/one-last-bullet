@@ -64,7 +64,8 @@ func _ready() -> void:
 	max_contacts_reported = 4
 
 	var mat := PhysicsMaterial.new()
-	mat.bounce = 1.0
+	# Script owns reflection via _integrate_forces; solver bounce would fight it.
+	mat.bounce = 0.0
 	mat.friction = 0.0
 	physics_material_override = mat
 
@@ -78,15 +79,38 @@ func _ready() -> void:
 	_apply_heading()
 
 
+func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
+	if state != BulletState.FLYING:
+		return
+	if aim_direction.length_squared() < 0.0001:
+		aim_direction = Vector2.RIGHT
+
+	var contact_count: int = physics_state.get_contact_count()
+	for i in contact_count:
+		var normal: Vector2 = physics_state.get_contact_local_normal(i)
+		if normal.length_squared() < 0.0001:
+			continue
+		normal = normal.normalized()
+		# Only reflect when moving into the surface (avoids sticky re-reflect jitter).
+		if aim_direction.dot(normal) >= 0.0:
+			continue
+		var bounced: Vector2 = aim_direction.bounce(normal)
+		if bounced.length_squared() < 0.0001:
+			bounced = -aim_direction
+		if bounced.length_squared() < 0.0001:
+			bounced = Vector2.RIGHT
+		aim_direction = bounced.normalized()
+
+	physics_state.linear_velocity = aim_direction * speed
+
+
 func _physics_process(delta: float) -> void:
 	_tether_broke_this_frame = false
 	match state:
 		BulletState.FLYING:
-			# Rigid contacts can null velocity; always keep full speed.
+			# Keep constant speed; direction is owned by aim_direction / _integrate_forces.
 			if aim_direction.length_squared() < 0.0001:
 				aim_direction = Vector2.RIGHT
-			if linear_velocity.length_squared() > 0.0001:
-				aim_direction = linear_velocity.normalized()
 			linear_velocity = aim_direction * speed
 			_apply_heading()
 			# Clear instigator once grace window elapses.
@@ -439,22 +463,7 @@ func _on_body_entered(body: Node) -> void:
 	if bounce_sound:
 		AudioManager.play_at(bounce_sound, global_position)
 
-	if body is CharacterBody2D:
-		var other: CharacterBody2D = body as CharacterBody2D
-		var normal := (global_position - other.global_position).normalized()
-		if normal.length_squared() < 0.0001:
-			normal = -aim_direction
-		# Bounce inbound travel direction (aim), not post-solver velocity — avoids double-reflect.
-		var bounced := aim_direction.bounce(normal)
-		if bounced.length_squared() < 0.0001:
-			bounced = -aim_direction
-		if bounced.length_squared() < 0.0001:
-			bounced = Vector2.RIGHT
-		aim_direction = bounced.normalized()
-		linear_velocity = aim_direction * speed
-		_apply_heading()
-		return
-
+	# Bounce direction is owned by _integrate_forces (true contact normals).
 	# Breakables: damage via HealthComponent so the bounce resolves first.
 	if body.is_in_group("breakables"):
 		var comp = body.get("COMPONENTS")

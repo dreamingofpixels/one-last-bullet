@@ -24,9 +24,9 @@ One Last Bullet/
     │       └── desert_tilemap.png
     ├── components/             Reusable component scripts + scenes
     │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
-    │   ├── health_component.gd / .tscn    HP tracking; damaged SFX; calls DestroyComponent on death
-    │   ├── damage_component.gd / .tscn    Damage value + instigator (friendly-fire filter)
-    │   ├── hitbox_component.gd / .tscn    Area2D; on area_entered reads attacker COMPONENTS[DamageComponent]
+    │   ├── health_component.gd / .tscn    HP; flash + optional i-frames; DestroyComponent on death
+    │   ├── damage_component.gd / .tscn    Damage + instigator + optional contact tick interval
+    │   ├── hitbox_component.gd / .tscn    Area2D; polls overlaps; frame dedup + contact ticks
     │   ├── destroy_component.gd / .tscn   Disables collisions, destroy SFX, pixel-fall FX, emits destroyed(node)
     │   ├── movement_component.gd / .tscn  move(dir) / stop() with optional sprite flip
     │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D)
@@ -119,9 +119,9 @@ One Last Bullet/
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
-- `project/components/health_component.gd` — HP; red sprite modulate flash on hit; plays `damaged_sound` on non-fatal hits; calls `DestroyComponent.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`; sprite via optional export or `DestroyComponent.sprite`
-- `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter)
-- `project/components/hitbox_component.gd` — `Area2D`; `area_entered` reads attacker's `COMPONENTS[DamageComponent]`, skips if instigator == owner; `set_invulnerable(bool)` toggles monitoring (deferred)
+- `project/components/health_component.gd` — HP; red flash on hit; optional `invulnerable_seconds` + blink on non-fatal hits; `take_damage` returns bool; plays `damaged_sound` on non-fatal hits; calls `DestroyComponent.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`; sprite via optional export or `DestroyComponent.sprite`
+- `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter), `contact_damage_interval` (0 = once per overlap)
+- `project/components/hitbox_component.gd` — `Area2D`; physics-frame overlap poll of attacker `HitboxComponent`s; frame dedup via `hit_dedup_frames`; contact ticks from `DamageComponent.contact_damage_interval`; skips if instigator == owner; `set_invulnerable(bool)` clears overlap state and toggles monitoring (deferred)
 - `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `destroy_sound`, plays `DestructionEffect`, frees owner
 - `project/components/movement_component.gd` — `move(dir)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h`
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`
@@ -135,17 +135,17 @@ One Last Bullet/
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `begin_level(orb)`; tree: Components (Health/Damage/Destroy/Movement/Attack/Dash/OrbTether/DirectionalSprite/Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; `begin_level(orb)`; tree: Components (Health max 3 + 0.5s i-frames / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
 - `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; walk/dash blocked while tethering
 - `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
-- `project/entities/last_orb/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` API; tether orbit probes world/player/enemy layers and breaks on contact or on dealing damage; flying body also bounces off `CharacterBody2D` entities; opening release emits `launched` (no boost); mid-combat release / forced break emits `tether_released` (+10% boost); instigator-based player grace; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
+- `project/entities/last_orb/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` API; tether orbit probes world/player/enemy layers and breaks on contact or on dealing damage; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); opening release emits `launched` (no boost); mid-combat release / forced break emits `tether_released` (+10% boost); instigator-based player grace; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
 - `project/entities/last_orb/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
 - `project/entities/last_orb/aim_arrow.gd` — drawn aim arrow during aim windows
-- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health/Damage/Destroy/Movement/Knockback/HitboxComponent
+- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health max 3 / Damage with 0.75s contact tick / Destroy / Movement / Knockback / HitboxComponent
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)

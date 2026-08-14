@@ -18,11 +18,11 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Multi-shot ammo pool — dilutes the hook; bullet that despawns — removes the constant threat.
 - **Status**: decided (design)
 
-### Bullet damages enemies; kills player on contact
-- **Decision**: The same projectile is a weapon against enemies and an instant-death hazard for the player.
-- **Why**: Forces constant spatial awareness; every deflect is a risk trade.
-- **Alternatives**: Bullet only hurts enemies — loses the dodge fantasy; damage-over-time to player — less arcade-readable.
-- **Status**: decided (design)
+### Bullet damages enemies; hurts player on contact
+- **Decision**: The same projectile is a weapon against enemies and a hazard for the player. Player and grunt start at **3 HP**; orb damage defaults to **1**. Player gets brief i-frames after a non-fatal hit.
+- **Why**: Forces constant spatial awareness; multi-hit HP lets the dodge fantasy breathe without making every graze an instant run-ender.
+- **Alternatives**: Instant-kill on player contact — previous design; too punishing once tether proximity is required; bullet only hurts enemies — loses the dodge fantasy.
+- **Status**: decided (in-codebase)
 
 ### Redirect via proximity + button, brief slow-mo, then choose direction
 - **Decision**: Get close to the bullet, press Space, time slows briefly, player picks a new direction with the mouse. Opening shot uses the same aim UX for 3 real-time seconds; redirects use 1.5s. Player movement is locked while aiming.
@@ -124,18 +124,32 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Inheritance (`Enemy extends Character`) — becomes flag soup for diverse entities; NodePath exports without dict — O(n) get_node calls; signal bus — more indirection than needed for a small game.
 - **Status**: decided (in-codebase)
 
-### Health: one-hit-kill expressed as max_health = 1.0
+### Health: multi-hit via max_health (player/grunt = 3)
 
-- **Decision**: `HealthComponent.max_health` defaults to `1.0`. Player, grunt, and cactus all have `max_health = 1.0`, preserving the one-hit-kill design. Multi-HP entities will just set a higher value. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`.
-- **Why**: Keeps gameplay rules encoded in data rather than special-casing HP logic; multi-hit enemies are a future slider, not a code change. Shared flash on HealthComponent covers entities and breakables without per-scene VFX scripts.
-- **Alternatives**: A bool `is_one_shot` — extra flag for something already handled by the value itself; shader hit flash — heavier for a short modulate; only flash on non-fatal — invisible on current one-hit targets.
+- **Decision**: `HealthComponent.max_health` defaults to `1.0` (still fine for one-shot breakables). Player and grunt set `max_health = 3.0`. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`. Non-fatal hits can start gameplay i-frames (see below).
+- **Why**: Keeps rules in data; multi-hit is a slider per entity, not special-case code. Shared flash covers entities and breakables without per-scene VFX scripts.
+- **Alternatives**: One-hit-kill for everyone (`max_health = 1.0`) — previous design; too harsh with tether proximity; a bool `is_one_shot` — extra flag for something already handled by the value; shader hit flash — heavier for a short modulate.
+- **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"
+
+### Damage flow: HitboxComponent overlap polling
+
+- **Decision**: Hit detection uses `HitboxComponent` (`Area2D`) on both attackers and victims. Each physics frame the victim hitbox polls `get_overlapping_areas()`, resolves the attacker's `COMPONENTS[DamageComponent]`, and applies damage when the overlap is fresh (or when a contact-damage interval elapses). A short `hit_dedup_frames` grace (default 2) keeps an attacker "seen" after leaving so bounce flicker does not count as a new hit. Entries prune themselves once past that grace. Breakables stay body-contact (bullet `body_entered`) so the bounce impulse resolves before `queue_free()`.
+- **Why**: Decouples hit registration from physics enter/exit chatter; sustained enemy contact can tick repeatedly; self-cleaning state avoids unbounded cooldown dictionaries.
+- **Alternatives**: `area_entered` only — one damage forever while glued, and bounce flicker double-hits; wall-clock per-attacker cooldown — magic number that can swallow legitimate late-run hits; signal bus — extra indirection.
 - **Status**: decided (in-codebase)
 
-### Damage flow: HitboxComponent area-vs-area
+### Contact damage interval on DamageComponent
 
-- **Decision**: Hit detection uses `HitboxComponent` (`Area2D`) on both attackers and victims. `area_entered` on the victim's hitbox reads `area.owner.COMPONENTS[DamageComponent]` to get damage and instigator, then calls the victim's `HealthComponent.take_damage()`. Breakables are the exception: they stay body-contact (bullet `body_entered`) so the bounce impulse resolves before `queue_free()`.
-- **Why**: Decouples hit registration from physics; friendly-fire filter is a single instigator check; no new physics layers.
-- **Alternatives**: Area-vs-body — can't filter on DamageComponent; signal bus — extra indirection.
+- **Decision**: `DamageComponent.contact_damage_interval` (seconds). `0` = one hit per continuous overlap (orb). Grunt uses `~0.75s` so a chase that sticks keeps dealing damage.
+- **Why**: Chasers overlap continuously; without a tick they deal damage once and then never again.
+- **Alternatives**: Always re-hit every frame — melts the player; rely only on player i-frames — couples chase DPS to hit-react length; put the interval on the victim — wrong ownership for an attacker property.
+- **Status**: decided (in-codebase)
+
+### Player i-frames on HealthComponent
+
+- **Decision**: `HealthComponent.invulnerable_seconds` (player `0.5`). Non-fatal `take_damage` starts the window; further `take_damage` calls no-op until it expires. Visual: red flash, then alpha blink for the remainder. Lives on `take_damage` so direct callers (breakable body hits) are covered too. Enemies/cactus leave it at `0`.
+- **Why**: Multi-hit health needs readable recovery; separates gameplay invuln from the physics-frame hitbox dedup guard.
+- **Alternatives**: Wall-clock hitbox cooldown as the only guard — papered over orb bounce bugs and could eat real hits; dash-only i-frames — no recovery after a graze; no i-frames — stacked orb + grunt same-frame feels unfair.
 - **Status**: decided (in-codebase)
 
 ### Instigator-based player grace (replaces timestamp check)
@@ -171,10 +185,10 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Author per-tile collision — more setup before the loop is proven.
 - **Status**: decided (in-codebase)
 
-### Bullet is RigidBody2D with circle bounce + capsule hitbox
-- **Decision**: `LastBullet` is a `RigidBody2D` with a circular body shape (world + player + enemy bounce), locked rotation, gravity 0, bounce 1 / friction 0 material, continuous CCD, and per-frame speed renormalization. Hits use a separate capsule/circle `Area2D` under a `%Heading` pivot (or root for the circular orb) that rotates with travel direction. Collision mask is world | player | enemy so the body bounces off entities as well as props.
-- **Why**: Circle bounces are angle-independent; capsule matches the sprite silhouette for hits; Godot 2D has no per-shape layers so the hit area cannot live on the rigid body; entity bounce keeps the projectile feeling physical.
-- **Alternatives**: `CharacterBody2D` + manual `bounce(normal)` — more code, same outcome; capsule on the rigid body — lopsided wall bounces; world-only mask — orb passes through enemies/player bodies (damage-only via hitbox).
+### Bullet is RigidBody2D with script-owned bounce + separate hitbox
+- **Decision**: `LastBullet` / `LastOrb` is a `RigidBody2D` with a circular body shape (world + player + enemy mask), locked rotation, gravity 0, friction 0, **bounce 0** material, continuous CCD, and constant-speed flight. All reflection is owned by `_integrate_forces`: for each contact, reflect `aim_direction` off `get_contact_local_normal` only when moving into the surface (`dot < 0`), then set `linear_velocity = aim_direction * speed`. `_physics_process` does **not** re-derive direction from solver velocity. Hits use a separate circle/capsule `HitboxComponent` Area2D. Bounce SFX and breakable damage still use `body_entered`.
+- **Why**: Solver bounce + script bounce fought each other and caused sticky re-entry (double damage / double SFX). Real contact normals beat center-to-center approximations on capsules and rectangles. Single bounce authority keeps the projectile readable.
+- **Alternatives**: PhysicsMaterial bounce 1 + velocity read-back — previous; double-reflect artifacts; radial bounce only in `body_entered` for CharacterBody2D — wrong normals and still fought the solver; world-only mask + area-driven entity bounce — reverses entity-body bounce feel; wall-clock hit cooldown — papers over the symptom.
 - **Status**: decided (in-codebase)
 
 ### Aim windows measured in real time under Engine.time_scale

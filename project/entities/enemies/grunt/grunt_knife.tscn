@@ -40,6 +40,7 @@ destroy_component = NodePath("../DestroyComponent")
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=1772677854]
 script = ExtResource("4_damage")
+contact_damage_interval = 0.75
 
 [node name="DestroyComponent" type="Node2D" parent="Components" unique_id=415019116 node_paths=PackedStringArray("sprite")]
 unique_name_in_owner = true

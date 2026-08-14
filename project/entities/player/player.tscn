@@ -50,6 +50,7 @@ script = ExtResource("2_handler")
 script = ExtResource("3_health")
 max_health = 3.0
 destroy_component = NodePath("../DestroyComponent")
+invulnerable_seconds = 0.5
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=789470835]
 script = ExtResource("4_damage")

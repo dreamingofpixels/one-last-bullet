@@ -1,0 +1,31 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://entities/enemies/spawner/enemy_spawner.gd" id="1_spawner"]
+[ext_resource type="Script" path="res://entities/enemies/spawner/enemy_wave.gd" id="2_wave"]
+[ext_resource type="Script" path="res://entities/enemies/spawner/enemy_spawn_entry.gd" id="3_entry"]
+[ext_resource type="PackedScene" uid="uid://doagtfaw80f82" path="res://entities/enemies/grunt/grunt_knife.tscn" id="4_grunt"]
+[ext_resource type="PackedScene" uid="uid://bq7w3m5k8tn2r" path="res://entities/enemies/brute/brute.tscn" id="5_brute"]
+
+[sub_resource type="Resource" id="EnemySpawnEntry_grunts"]
+script = ExtResource("3_entry")
+enemy_scene = ExtResource("4_grunt")
+count = 3
+
+[sub_resource type="Resource" id="EnemyWave_1"]
+script = ExtResource("2_wave")
+delay_before = 0.0
+entries = Array[ExtResource("3_entry")]([SubResource("EnemySpawnEntry_grunts")])
+
+[sub_resource type="Resource" id="EnemySpawnEntry_brute"]
+script = ExtResource("3_entry")
+enemy_scene = ExtResource("5_brute")
+count = 1
+
+[sub_resource type="Resource" id="EnemyWave_2"]
+script = ExtResource("2_wave")
+delay_before = 6.0
+entries = Array[ExtResource("3_entry")]([SubResource("EnemySpawnEntry_brute")])
+
+[node name="EnemySpawner" type="Node2D"]
+script = ExtResource("1_spawner")
+waves = Array[ExtResource("2_wave")]([SubResource("EnemyWave_1"), SubResource("EnemyWave_2")])

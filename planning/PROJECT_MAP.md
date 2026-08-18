@@ -20,7 +20,7 @@ A Final Spell/
     ├── areas/
     │   └── level/
     │       ├── desert.tscn     Main playable arena
-    │       ├── level.gd        Level director (spawn, aim start, win/lose)
+    │       ├── level.gd        Level director (nav bake, win/lose, starts EnemySpawner)
     │       └── desert_tilemap.png
     ├── components/             Reusable component scripts + scenes
     │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
@@ -43,7 +43,8 @@ A Final Spell/
     ├── data/                   (empty; upgrades later)
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
-    │   ├── destruction_effect.gd     Spawns detached sprite FX on destroy/die
+    │   ├── destruction_effect.gd     Spawns detached sprite FX on destroy/die; reverse assemble on spawn
+    │   ├── spawn_telegraph_effect.gd Pulsing ground ring at upcoming enemy spawn points
     │   └── dash_afterimage_effect.gd Spawns fading dash afterimages from AnimatedSprite2D frames
     ├── entities/
     │   ├── _base/
@@ -69,6 +70,10 @@ A Final Spell/
     │   │       ├── attack.gd
     │   │       └── dash.gd
     │   └── enemies/
+    │       ├── spawner/
+    │       │   ├── enemy_spawner.tscn / .gd   Wave director (timed overlapping waves, nav-valid spawns)
+    │       │   ├── enemy_wave.gd              Resource: delay_before + spawn entries
+    │       │   └── enemy_spawn_entry.gd       Resource: enemy scene + count
     │       ├── grunt/
     │       │   ├── grunt_knife.tscn / .gd / .png
     │       └── brute/
@@ -117,8 +122,8 @@ A Final Spell/
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls, player, orb projectile, HUD, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
-- `project/areas/level/level.gd` — director: bakes navigation after props initialize, spawns 3 grunts + 1 brute on nav-valid points with a path to the player, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` for enemies/player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched`; optional `@export level_music` → `AudioManager.play_music()`
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls, player, orb projectile, `EnemySpawner`, HUD, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
+- `project/areas/level/level.gd` — director: bakes navigation after props initialize, starts `EnemySpawner`, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` for the player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched` and spawner `wave_started` / `all_cleared`; optional `@export level_music` → `AudioManager.play_music()`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -152,6 +157,7 @@ A Final Spell/
 - `project/entities/chaos_orb/aim_arrow.gd` — drawn aim arrow during aim windows
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — component-driven chaser; Health max 3 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / Navigation / HitboxComponent
 - `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same path/avoidance stack as grunt; left-facing sprite via `MovementComponent.sprite_flip_inverted`; larger collision (r=15); Health max 10 / HealthBar / Damage 3.0 with 0.75s contact tick / Navigation
+- `project/entities/enemies/spawner/enemy_spawner.tscn` + `enemy_spawner.gd` — wave director; inspector `waves` (`EnemyWave` / `EnemySpawnEntry`); nav-valid spawn points with player distance + pack separation; telegraph then reverse pixel-fall assemble; enemies stay inert until assemble finishes; `all_cleared` when every wave is issued and every instanced enemy is dead; desert default: 3 grunts, then 1 brute after 6s
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
@@ -164,7 +170,8 @@ A Final Spell/
 - `project/effects/SmoothPixel.gdshader` — [CptPotato Smooth Pixel Filtering](https://github.com/CptPotato/GodotThings/tree/master/SmoothPixelFiltering) (requires Linear filter on sprites)
 - `project/effects/smooth_pixel_material.tres` — shared `ShaderMaterial` for player, enemies, orb
 - `project/effects/pixel_fall.gdshader` — canvas-item shader: staggered per-pixel fall + ground fade
-- `project/effects/destruction_effect.gd` — `DestructionEffect.play_from_sprite()`; detached copy, tween `progress`, free when done
+- `project/effects/destruction_effect.gd` — `DestructionEffect.play_from_sprite()` (death: `progress` 0 → 1) and `play_assemble_from_sprite()` (spawn: `progress` 1 → 0); detached copy, tween `progress`, free when done
+- `project/effects/spawn_telegraph_effect.gd` — `SpawnTelegraphEffect.play()`; pulsing ground ring at a spawn point, fades during assemble
 - `project/effects/dash_afterimage_effect.gd` — `DashAfterimageEffect.spawn()`; clones the current animated frame into a fading world-space ghost
 - `project/effects/particle_pixel.png` — 1×1 white pixel texture for orb particle VFX
 - `project/effects/orb_impact.tscn` — one-shot `GPUParticles2D` burst for orb world-surface bounces

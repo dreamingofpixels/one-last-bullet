@@ -60,7 +60,7 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 ## Enemies
 - Two chaser enemies (`grunt_knife`, `brute`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking, while still dealing **1 contact damage** on a ~0.75s tick once overlapping.
 - Grunts and brutes have **3 HP** (orb hits chip them; melee still knocks back without damage). Brute HP/damage can be tuned on the scene.
-- Prototype spawns **3** grunts and **1** brute.
+- Enemies arrive in **authored waves** (`EnemySpawner`: count, types, delay between waves). Desert prototype: **3 grunts**, then **1 brute** after **6s** (waves can overlap if the first is not cleared in time). Each spawn telegraphs with a pulsing ground ring, then assembles over **~2s** by playing the destruction pixel-fall in reverse.
 - Player attack knocks enemies back (no melee damage).
 - More enemy types planned later.
 

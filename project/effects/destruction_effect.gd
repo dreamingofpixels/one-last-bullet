@@ -3,25 +3,66 @@ extends RefCounted
 
 const PIXEL_FALL_SHADER: Shader = preload("res://effects/pixel_fall.gdshader")
 const DEFAULT_DURATION: float = 0.7
+const DEFAULT_ASSEMBLE_DURATION: float = 2.0
 
 
 static func play_from_sprite(source: Node2D, duration: float = DEFAULT_DURATION) -> void:
-	if source == null:
+	var fx := _create_fx_sprite(source, 0.0)
+	if fx == null:
 		return
+
+	var mat := fx.material as ShaderMaterial
+	var tween := fx.create_tween()
+	tween.set_ignore_time_scale(true)
+	tween.tween_method(
+		func(value: float) -> void:
+			mat.set_shader_parameter("progress", value),
+		0.0,
+		1.0,
+		duration
+	)
+	tween.tween_callback(fx.queue_free)
+
+
+static func play_assemble_from_sprite(
+	source: Node2D, duration: float = DEFAULT_ASSEMBLE_DURATION
+) -> void:
+	var fx := _create_fx_sprite(source, 1.0)
+	if fx == null:
+		return
+
+	var mat := fx.material as ShaderMaterial
+	var tween := fx.create_tween()
+	tween.set_ignore_time_scale(true)
+	tween.tween_method(
+		func(value: float) -> void:
+			mat.set_shader_parameter("progress", value),
+		1.0,
+		0.0,
+		duration
+	)
+	await tween.finished
+	if is_instance_valid(fx):
+		fx.queue_free()
+
+
+static func _create_fx_sprite(source: Node2D, start_progress: float) -> Sprite2D:
+	if source == null:
+		return null
 
 	var tree := source.get_tree()
 	if tree == null:
-		return
+		return null
 
 	var parent := tree.current_scene as Node
 	if parent == null:
 		parent = source.get_parent()
 	if parent == null:
-		return
+		return null
 
 	var frame_tex: Texture2D = _extract_frame_texture(source)
 	if frame_tex == null:
-		return
+		return null
 
 	var fx := Sprite2D.new()
 	fx.texture = frame_tex
@@ -45,23 +86,13 @@ static func play_from_sprite(source: Node2D, duration: float = DEFAULT_DURATION)
 	var tex_size := frame_tex.get_size()
 	var mat := ShaderMaterial.new()
 	mat.shader = PIXEL_FALL_SHADER
-	mat.set_shader_parameter("progress", 0.0)
+	mat.set_shader_parameter("progress", start_progress)
 	mat.set_shader_parameter("tex_size", tex_size)
 	fx.material = mat
 
 	parent.add_child(fx)
 	fx.global_transform = source.global_transform
-
-	var tween := fx.create_tween()
-	tween.set_ignore_time_scale(true)
-	tween.tween_method(
-		func(value: float) -> void:
-			mat.set_shader_parameter("progress", value),
-		0.0,
-		1.0,
-		duration
-	)
-	tween.tween_callback(fx.queue_free)
+	return fx
 
 
 ## Flatten Sprite2D / AnimatedSprite2D to a single ImageTexture so pixel_fall

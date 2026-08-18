@@ -67,9 +67,21 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase); **revisit** — design doc says player fires orb in any direction at level start
 
 ### Single basic enemy: chase + contact kill
-- **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. Prototype spawns 3 grunts. A second chaser (`brute`) uses the same chase/contact-damage model; prototype also spawns 1 brute.
+- **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. A second chaser (`brute`) uses the same chase/contact-damage model. Desert delivers them as waves (3 grunts, then 1 brute) rather than all at once.
 - **Why**: Simple pressure while the orb/attack loop is proven. Brute is a size/art variant of that loop, not a new AI.
 - **Alternatives**: Ranged enemies first — more systems before the core loop is solid; brute as unique club-melee AI — not needed yet (contact hitbox matches grunt).
+- **Status**: decided (in-codebase)
+
+### Timed overlapping enemy waves
+- **Decision**: Each level owns an `EnemySpawner` with inspector-authored `EnemyWave` / `EnemySpawnEntry` resources (enemy scene, count, `delay_before`). The next wave starts on a timer measured from when the previous wave **begins spawning**, so waves can overlap if the player does not clear the earlier one in time. Level clear waits until every wave has been issued **and** every instanced enemy is dead. Enemies are inert (no collision, no AI) until their assemble VFX finishes.
+- **Why**: Fixed-total rooms still need a readable delivery cadence; a single dump of the whole roster is harder to read and easier to cheese by kiting a clump. Timer-from-start keeps pressure climbing without a "wave cleared" pause. Counting pending+alive avoids a false clear in the gap between waves.
+- **Alternatives**: Spawn the whole roster at once — previous prototype; wait until a wave is fully killed before the delay — calmer but less arcade; overlap from wave *end* (assemble finished) — hides the authored delay behind VFX time; random encounter tables with no wave list — harder to author a specific room.
+- **Status**: decided (in-codebase)
+
+### Spawn telegraph + reverse pixel-fall assemble
+- **Decision**: Before an enemy becomes active, a pulsing ground ring marks the spawn point (`SpawnTelegraphEffect`, ~0.6s). The enemy sprite then plays `pixel_fall.gdshader` **backwards** (`progress` 1 → 0 over ~2s) via `DestructionEffect.play_assemble_from_sprite()`, reusing the death look so spawn and destroy read as the same material.
+- **Why**: The ring is readable at a glance so the player can move off the point; reverse crumble makes the new body feel like it is being built rather than popping in. Sharing the death shader keeps one VFX language.
+- **Alternatives**: Instant spawn with no warning — cheap deaths on the spawn point; particles-only telegraph — weaker link to the existing pixel-fall language; animate on the live sprite instead of a detached copy — fights process-disabled inert enemies and death's detached-FX pattern.
 - **Status**: decided (in-codebase)
 
 ### Game title: A Final Spell
@@ -211,7 +223,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Enemy pathfinding uses a baked NavigationRegion2D plus agent avoidance
-- **Decision**: Enemy movement now paths on one `NavigationRegion2D` baked at runtime from an explicit arena outline minus `world`-layer static colliders. `LowerGround`, `Cliffs`, `Objects`, and `Walls` contribute source geometry through a `navigation_source` group; `level.gd` bakes once before enemy spawn and re-bakes on a short debounce when breakables die. The navmesh now erodes by **15 px** (the brute radius) so narrow cliff/rock pockets are removed. Each enemy owns a `NavigationComponent` (`NavigationAgent2D`) that repaths toward the player, uses avoidance against other enemies only, and triggers a stuck watchdog that stops and forces a repath if the body makes almost no progress for a short window. Enemy spawns are projected onto the navmesh and rejected if they are off-mesh or lack a valid path to the player's nav position.
+- **Decision**: Enemy movement now paths on one `NavigationRegion2D` baked at runtime from an explicit arena outline minus `world`-layer static colliders. `LowerGround`, `Cliffs`, `Objects`, and `Walls` contribute source geometry through a `navigation_source` group; `level.gd` bakes once before `EnemySpawner.start()` and re-bakes on a short debounce when breakables die. The navmesh now erodes by **15 px** (the brute radius) so narrow cliff/rock pockets are removed. Each enemy owns a `NavigationComponent` (`NavigationAgent2D`) that repaths toward the player, uses avoidance against other enemies only, and triggers a stuck watchdog that stops and forces a repath if the body makes almost no progress for a short window. Enemy spawns are projected onto the navmesh and rejected if they are off-mesh or lack a valid path to the player's nav position.
 - **Why**: The desert TileSet's navigation polygons overlapped across `TileMapLayer`s and the ground layer re-filled the walkable space under cliff-face colliders, so tile-authored navigation would route enemies straight into walls. Baking against the runtime colliders keeps pathing aligned with the actual level, the larger erosion radius removes "looks open but is physically too tight" pockets, the watchdog recovers from knockback/corner stalls, and nav-validated spawns prevent enemies from starting in unreachable slivers.
 - **Alternatives**: Keep TileSet navigation layers — one-nav-polygon-per-cell limits, no shared agent-radius inset, and plateau cells conflict across layers; keep the smaller **12 px** erosion radius — preserves routes that still trap the brute and sometimes the grunt in diagonal corners; rely on `NavigationObstacle2D` / physics separation only — enemies still path into blocked routes and then jam; remove enemy-enemy body collision and depend only on avoidance — weaker hard separation when avoidance fails.
 - **Status**: decided (in-codebase)
@@ -271,7 +283,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Destruction VFX: detached sprite + canvas pixel-fall shader
-- **Decision**: On breakable/enemy/player death, disable collision, emit gameplay signals immediately, spawn a detached `Sprite2D` copy with `pixel_fall.gdshader`, then `queue_free()` the entity. `DestructionEffect.play_from_sprite()` owns the FX life cycle (tween `progress` → free). For `AnimatedSprite2D` sources, the current frame is extracted via `sprite_frames.get_frame_texture` and flattened to an `ImageTexture` so the shader sees one frame's `tex_size` and full 0..1 UVs (not the whole sheet).
+- **Decision**: On breakable/enemy/player death, disable collision, emit gameplay signals immediately, spawn a detached `Sprite2D` copy with `pixel_fall.gdshader`, then `queue_free()` the entity. `DestructionEffect.play_from_sprite()` owns the FX life cycle (tween `progress` 0 → 1, then free). Enemy spawn reuses the same helper in reverse (`play_assemble_from_sprite()`, `progress` 1 → 0 over ~2s). For `AnimatedSprite2D` sources, the current frame is extracted via `sprite_frames.get_frame_texture` and flattened to an `ImageTexture` so the shader sees one frame's `tex_size` and full 0..1 UVs (not the whole sheet).
 - **Why**: Gameplay stays snappy (win/lose and bounce timing unchanged) while pixels crumble visually; one helper works for props and characters without delaying entity teardown.
 - **Alternatives**: Animate in-place and delay `queue_free()` — risks leftover collision and win-count timing bugs; GPU particles of colored quads — heavier setup and less 1:1 with sprite art; CPU `Image` pixel scatter — more code for the same look; pass the full spritesheet to the shader — crumbles all frames at once.
 - **Status**: decided (in-codebase)

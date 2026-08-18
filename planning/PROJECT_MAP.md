@@ -34,7 +34,7 @@ A Final Spell/
     │   ├── navigation_component.gd / .tscn  NavigationAgent2D chase + avoidance for enemies
     │   ├── attack_component.gd / .tscn   Player arc swing; knocks enemies (orb deflect gated by flag)
     │   ├── orb_tether_component.gd / .tscn  Proximity focus + tether capture/release for the orb
-    │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames + dash SFX
+    │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames, ghost alpha, afterimages, dash SFX, + 4s cooldown ring
     │   └── directional_sprite_component.gd / .tscn  8-way logical facing (4-way visual) via AnimatedSprite2D
     ├── audio/
     │   ├── audio_manager.gd / .tscn   Autoload: Music/SFX pools + bus helpers
@@ -43,7 +43,8 @@ A Final Spell/
     ├── data/                   (empty; upgrades later)
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
-    │   └── destruction_effect.gd     Spawns detached sprite FX on destroy/die
+    │   ├── destruction_effect.gd     Spawns detached sprite FX on destroy/die
+    │   └── dash_afterimage_effect.gd Spawns fading dash afterimages from AnimatedSprite2D frames
     ├── entities/
     │   ├── _base/
     │   │   ├── state.gd        Base State class (signal finished, enter/exit/update/handle_input)
@@ -131,7 +132,7 @@ A Final Spell/
 - `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the player by group, repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false); optional `swing_sound` (unassigned)
 - `project/components/orb_tether_component.gd` — focus radius (32 px), `bind_orb()` / `begin_opening_tether()`; capture/release via `try_tether_press()` on the tether action; short post-release cooldown
-- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; plays `dash_sound`; `start(dir)` / `is_dashing()` / `can_dash()`
+- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()`
 - `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
 ### State machine base
@@ -164,6 +165,7 @@ A Final Spell/
 - `project/effects/smooth_pixel_material.tres` — shared `ShaderMaterial` for player, enemies, orb
 - `project/effects/pixel_fall.gdshader` — canvas-item shader: staggered per-pixel fall + ground fade
 - `project/effects/destruction_effect.gd` — `DestructionEffect.play_from_sprite()`; detached copy, tween `progress`, free when done
+- `project/effects/dash_afterimage_effect.gd` — `DashAfterimageEffect.spawn()`; clones the current animated frame into a fading world-space ghost
 - `project/effects/particle_pixel.png` — 1×1 white pixel texture for orb particle VFX
 - `project/effects/orb_impact.tscn` — one-shot `GPUParticles2D` burst for orb world-surface bounces
 - `project/effects/orb_impact_effect.gd` — `OrbImpactEffect.play_at()`; spawns impact scene at position/normal, frees on `finished`

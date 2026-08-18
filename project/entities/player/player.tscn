@@ -69,7 +69,7 @@ sprite = NodePath("../../PlayerSprite")
 [node name="MovementComponent" type="Node2D" parent="Components" unique_id=1815320275]
 unique_name_in_owner = true
 script = ExtResource("6_movement")
-move_speed = 130.0
+move_speed = 110.0
 
 [node name="AttackComponent" parent="Components" unique_id=2121984031 instance=ExtResource("8_attack")]
 unique_name_in_owner = true
@@ -80,11 +80,9 @@ same_direction_dot_threshold = null
 sprite_angle_offset = null
 lock_movement = null
 
-[node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("hitbox_component") instance=ExtResource("8_dash")]
+[node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("animated_sprite", "hitbox_component") instance=ExtResource("8_dash")]
 unique_name_in_owner = true
-dash_distance = null
-dash_speed = null
-dash_cooldown = null
+animated_sprite = NodePath("../../PlayerSprite")
 hitbox_component = NodePath("../HitboxComponent")
 
 [node name="OrbTetherComponent" parent="Components" unique_id=1870992403 instance=ExtResource("8_tether")]

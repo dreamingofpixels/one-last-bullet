@@ -57,7 +57,7 @@ sprite = NodePath("../../Sprite2D")
 [node name="MovementComponent" type="Node2D" parent="Components" unique_id=1827114338]
 unique_name_in_owner = true
 script = ExtResource("7_movement")
-move_speed = 40.0
+move_speed = 55.0
 sprite = NodePath("../../Sprite2D")
 sprite_flip_inverted = true
 
@@ -66,13 +66,13 @@ unique_name_in_owner = true
 
 [node name="NavigationComponent" parent="Components" unique_id=1689105257 node_paths=PackedStringArray("movement_component", "knockback_component") instance=ExtResource("11_navigation")]
 unique_name_in_owner = true
+path_desired_distance = 4.0
+target_desired_distance = 4.0
 avoidance_enabled = true
+radius = 15.0
 neighbor_distance = 48.0
 max_neighbors = 6
 time_horizon_agents = 0.5
-radius = 15.0
-path_desired_distance = 4.0
-target_desired_distance = 4.0
 avoidance_priority = 0.9
 movement_component = NodePath("../MovementComponent")
 knockback_component = NodePath("../KnockbackComponent")

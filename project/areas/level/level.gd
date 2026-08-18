@@ -5,12 +5,15 @@ const BRUTE_SCENE := preload("res://entities/enemies/brute/brute.tscn")
 const ENEMY_COUNT := 3
 const MIN_SPAWN_DISTANCE := 120.0
 const PLAY_RECT := Rect2(24.0, 24.0, 592.0, 312.0)
+const SPAWN_NAV_TOLERANCE := 8.0
 
 @export var level_music: AudioStream
 
+@onready var navigation_region: NavigationRegion2D = %Navigation
 @onready var player: CharacterBody2D = %Player
 @onready var enemies: Node2D = %Enemies
 @onready var chaos_orb: RigidBody2D = %ChaosOrb
+@onready var rebake_timer: Timer = %RebakeTimer
 @onready var status_label: Label = %StatusLabel
 
 var _enemies_alive: int = 0
@@ -30,11 +33,16 @@ func _ready() -> void:
 	chaos_orb.deflected.connect(_on_orb_deflected)
 	chaos_orb.tethered.connect(_on_orb_tethered)
 	chaos_orb.tether_released.connect(_on_orb_tether_released)
+	rebake_timer.timeout.connect(_on_rebake_timer_timeout)
 
 	var player_destroy: DestroyComponent = player.COMPONENTS.get(DestroyComponent)
 	if player_destroy:
 		player_destroy.destroyed.connect(_on_player_died)
 
+	_connect_breakable_destroy_signals()
+	await get_tree().physics_frame
+	navigation_region.bake_navigation_polygon(true)
+	await navigation_region.bake_finished
 	_spawn_enemies()
 	player.begin_level(chaos_orb)
 	# begin_level emits tethered; keep the opening prompt instead of "Tethered!".
@@ -66,14 +74,56 @@ func _spawn_enemy(scene: PackedScene) -> void:
 
 
 func _pick_spawn_position() -> Vector2:
+	var player_nav_position := _closest_nav_point(player.global_position)
 	for _attempt in 40:
 		var pos := Vector2(
 			randf_range(PLAY_RECT.position.x, PLAY_RECT.end.x),
 			randf_range(PLAY_RECT.position.y, PLAY_RECT.end.y)
 		)
-		if pos.distance_to(player.global_position) >= MIN_SPAWN_DISTANCE:
-			return pos
-	return Vector2(PLAY_RECT.position.x + 40.0, PLAY_RECT.position.y + 40.0)
+		if pos.distance_to(player.global_position) < MIN_SPAWN_DISTANCE:
+			continue
+
+		var nav_pos: Variant = _validated_spawn_position(pos, player_nav_position)
+		if nav_pos != null:
+			return nav_pos
+
+	var fallback := Vector2(PLAY_RECT.position.x + 40.0, PLAY_RECT.position.y + 40.0)
+	var fallback_nav_position: Variant = _validated_spawn_position(fallback, player_nav_position)
+	return fallback_nav_position if fallback_nav_position != null else player_nav_position
+
+
+func _validated_spawn_position(candidate: Vector2, player_nav_position: Vector2) -> Variant:
+	var nav_position := _closest_nav_point(candidate)
+	if nav_position.distance_to(candidate) > SPAWN_NAV_TOLERANCE:
+		return null
+	if nav_position.distance_to(player_nav_position) < MIN_SPAWN_DISTANCE:
+		return null
+
+	var path := NavigationServer2D.map_get_path(
+		navigation_region.get_navigation_map(),
+		nav_position,
+		player_nav_position,
+		true
+	)
+	if path.size() < 2:
+		return null
+
+	return nav_position
+
+
+func _closest_nav_point(point: Vector2) -> Vector2:
+	return NavigationServer2D.map_get_closest_point(navigation_region.get_navigation_map(), point)
+
+
+func _connect_breakable_destroy_signals() -> void:
+	for breakable in get_tree().get_nodes_in_group("breakables"):
+		var breakable_node := breakable as Node
+		if breakable_node == null or not breakable_node.has_method("get"):
+			continue
+		var components: Dictionary = breakable_node.get("COMPONENTS")
+		var destroy_component: DestroyComponent = components.get(DestroyComponent)
+		if destroy_component and not destroy_component.destroyed.is_connected(_on_breakable_destroyed):
+			destroy_component.destroyed.connect(_on_breakable_destroyed)
 
 
 func _on_orb_launched() -> void:
@@ -106,6 +156,17 @@ func _on_enemy_died(_node: Node = null) -> void:
 		_cleared = true
 		Engine.time_scale = 1.0
 		status_label.text = "Cleared! Press R to restart"
+
+
+func _on_breakable_destroyed(_node: Node = null) -> void:
+	rebake_timer.start()
+
+
+func _on_rebake_timer_timeout() -> void:
+	if navigation_region.is_baking():
+		rebake_timer.start()
+		return
+	navigation_region.bake_navigation_polygon(true)
 
 
 func _on_player_died(_node: Node = null) -> void:

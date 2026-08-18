@@ -58,7 +58,7 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 - Fun should come from discovering interesting synergies across those categories.
 
 ## Enemies
-- Two chaser enemies (`grunt_knife`, `brute`) **chase the player** and deal **1 contact damage** on a ~0.75s tick while overlapping.
+- Two chaser enemies (`grunt_knife`, `brute`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking, while still dealing **1 contact damage** on a ~0.75s tick once overlapping.
 - Grunts and brutes have **3 HP** (orb hits chip them; melee still knocks back without damage). Brute HP/damage can be tuned on the scene.
 - Prototype spawns **3** grunts and **1** brute.
 - Player attack knocks enemies back (no melee damage).

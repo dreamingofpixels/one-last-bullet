@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
 [ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="8_knockback"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="9_hbar"]
+[ext_resource type="PackedScene" path="res://components/navigation_component.tscn" id="10_navigation"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0
@@ -60,6 +61,19 @@ sprite = NodePath("../../Sprite2D")
 
 [node name="KnockbackComponent" parent="Components" unique_id=567020924 instance=ExtResource("8_knockback")]
 unique_name_in_owner = true
+
+[node name="NavigationComponent" parent="Components" unique_id=1267490989 node_paths=PackedStringArray("movement_component", "knockback_component") instance=ExtResource("10_navigation")]
+unique_name_in_owner = true
+avoidance_enabled = true
+neighbor_distance = 48.0
+max_neighbors = 6
+time_horizon_agents = 0.5
+radius = 11.0
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+avoidance_priority = 0.5
+movement_component = NodePath("../MovementComponent")
+knockback_component = NodePath("../KnockbackComponent")
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=487823933 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true

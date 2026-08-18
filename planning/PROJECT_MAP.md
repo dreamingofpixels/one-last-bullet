@@ -29,8 +29,9 @@ A Final Spell/
     │   ├── damage_component.gd / .tscn    Damage + instigator + optional contact tick interval
     │   ├── hitbox_component.gd / .tscn    Area2D; polls overlaps; frame dedup + contact ticks
     │   ├── destroy_component.gd / .tscn   Disables collisions, destroy SFX, pixel-fall FX, emits destroyed(node)
-    │   ├── movement_component.gd / .tscn  move(dir) / stop() with optional sprite flip
+    │   ├── movement_component.gd / .tscn  move(dir) / move_velocity() / stop() with optional sprite flip
     │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D)
+    │   ├── navigation_component.gd / .tscn  NavigationAgent2D chase + avoidance for enemies
     │   ├── attack_component.gd / .tscn   Player arc swing; knocks enemies (orb deflect gated by flag)
     │   ├── orb_tether_component.gd / .tscn  Proximity focus + tether capture/release for the orb
     │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames + dash SFX
@@ -115,8 +116,8 @@ A Final Spell/
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
-- `project/areas/level/level.gd` — director: spawn 3 grunts + 1 brute, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` and orb `deflected` / `tethered` / `tether_released` / `launched`; optional `@export level_music` → `AudioManager.play_music()`
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls, player, orb projectile, HUD, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
+- `project/areas/level/level.gd` — director: bakes navigation after props initialize, spawns 3 grunts + 1 brute on nav-valid points with a path to the player, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` for enemies/player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched`; optional `@export level_music` → `AudioManager.play_music()`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -125,8 +126,9 @@ A Final Spell/
 - `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter), `contact_damage_interval` (0 = once per overlap)
 - `project/components/hitbox_component.gd` — `Area2D`; physics-frame overlap poll of attacker `HitboxComponent`s; frame dedup via `hit_dedup_frames`; contact ticks from `DamageComponent.contact_damage_interval`; skips if instigator == owner; `set_invulnerable(bool)` clears overlap state and toggles monitoring (deferred)
 - `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `destroy_sound`, plays `DestructionEffect`, frees owner
-- `project/components/movement_component.gd` — `move(dir)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h`
+- `project/components/movement_component.gd` — `move(dir)` / `move_velocity(velocity)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h` with `sprite_flip_inverted` for left-facing art
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`
+- `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the player by group, repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false); optional `swing_sound` (unassigned)
 - `project/components/orb_tether_component.gd` — focus radius (32 px), `bind_orb()` / `begin_opening_tether()`; capture/release via `try_tether_press()` on the tether action; short post-release cooldown
 - `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; plays `dash_sound`; `start(dir)` / `is_dashing()` / `can_dash()`
@@ -147,8 +149,8 @@ A Final Spell/
 - `project/entities/chaos_orb/chaos_orb.tscn` + `chaos_orb.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` API; tether orbit probes world/player/enemy layers and breaks on contact or on dealing damage; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); opening release emits `launched` (no boost); mid-combat release / forced break emits `tether_released` (+10% boost); instigator-based player grace; trail particles while flying/tethered; world-surface impact bursts via `OrbImpactEffect`; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
 - `project/entities/chaos_orb/chaos_orb_legacy.tscn` + `chaos_orb.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
 - `project/entities/chaos_orb/aim_arrow.gd` — drawn aim arrow during aim windows
-- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health max 3 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / HitboxComponent
-- `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same chase/contact-damage stack as grunt; left-facing sprite (`flip_h` inverted); larger collision (r=15); Health max 10 / HealthBar / Damage 3.0 with 0.75s contact tick
+- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — component-driven chaser; Health max 3 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / Navigation / HitboxComponent
+- `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same path/avoidance stack as grunt; left-facing sprite via `MovementComponent.sprite_flip_inverted`; larger collision (r=15); Health max 10 / HealthBar / Damage 3.0 with 0.75s contact tick / Navigation
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
@@ -182,9 +184,10 @@ A Final Spell/
 | Group | Used by |
 |-------|---------|
 | `player` | Player root |
-| `enemies` | GruntKnife root |
+| `enemies` | Enemy roots |
 | `orb` | ChaosOrb root (`chaos_orb.gd`) |
 | `breakables` | Breakable props (cactus, etc.) |
+| `navigation_source` | Desert navmesh contributors (`LowerGround`, `Cliffs`, `Objects`, `Walls`) |
 
 ## Input actions
 
@@ -206,6 +209,7 @@ P1 keyboard/mouse actions use `device: -1` (any keyboard/mouse). P2 is gamepad-o
 - Every combat/movable entity root declares `var COMPONENTS: Dictionary = {}`.
 - Instance `component_handler.tscn` as the `Components` child; add component scenes as its children. `ComponentHandler._ready()` registers them into `owner.COMPONENTS` keyed by **script class** (e.g. `COMPONENTS[HealthComponent]`).
 - Same-entity cross-component refs use `@export` NodePaths wired in the `.tscn`; cross-entity refs use `area.owner.COMPONENTS[SomeComponent]` at collision time.
+- Enemy navigation comes from a baked `NavigationRegion2D`, not TileSet navigation layers. Source geometry is collected with the `navigation_source` group and `world`-layer colliders.
 - State machine states are `Node` children of `StateMachine`; state scripts extend `State`; emit `finished("state_name")` to transition (lowercase child node name, or `"previous"`).
 - Player input always goes through the `Controls` node's `PlayerAction` children; never hardcode action strings in state or component scripts. `apply_player_index(n)` appends `""` / `"_2"` / `"_3"` / `"_4"` suffix at `_ready` time.
 - Prefer `%UniqueName` for required node references; fail fast on missing required nodes (see `.cursor/rules/godot-node-references.mdc`).

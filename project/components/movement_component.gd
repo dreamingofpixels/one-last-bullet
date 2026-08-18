@@ -6,15 +6,22 @@ class_name MovementComponent extends Node2D
 @export var friction: float = 1.0
 ## Optional: flips the sprite when moving left/right.
 @export var sprite: Sprite2D
+@export var sprite_flip_inverted: bool = false
 
 
 func move(direction: Vector2) -> void:
 	if direction.length_squared() > 0.0001:
-		owner.velocity = owner.velocity.lerp(direction.normalized() * move_speed, acceleration)
-		if sprite and direction.x != 0.0:
-			sprite.flip_h = direction.x < 0.0
+		move_velocity(direction.normalized() * move_speed)
 	else:
 		stop()
+
+
+func move_velocity(target_velocity: Vector2) -> void:
+	owner.velocity = owner.velocity.lerp(target_velocity, acceleration)
+	if sprite and target_velocity.x != 0.0:
+		sprite.flip_h = target_velocity.x < 0.0
+		if sprite_flip_inverted:
+			sprite.flip_h = not sprite.flip_h
 	owner.move_and_slide()
 
 

@@ -1,6 +1,4 @@
-# Tavern Roguelike — Decision Log
-
-*Working title from the design doc; final name TBD (replacing "One Last Bullet").*
+# A Final Spell — Decision Log
 
 This is a living log of decisions that shape the game and codebase. Add entries when a choice affects multiple systems or would be costly to reverse.
 
@@ -45,7 +43,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: revisit — only matters when `deflect_orb_enabled` is true; code kept.
 
 ### Orb tether capture: focus range, orbit, release on tangent
-- **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 32 px, it shows an `OrbInFocus` overlay. The dedicated `tether` input (right click / gamepad X; `TetherAction` under Controls) captures it into a `TETHERED` orbit around the player (radius clamped to capture distance); a second tether press or one full revolution releases it along the current tangent at full bullet speed. Attack remains melee-only and does not capture/release. Player movement and dash are locked while tethered. Each release multiplies orb `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus post-release grace. Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` / `break_tether` on the bullet.
+- **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 32 px, it shows an `OrbInFocus` overlay. The dedicated `tether` input (right click / gamepad X; `TetherAction` under Controls) captures it into a `TETHERED` orbit around the player (radius clamped to capture distance); a second tether press or one full revolution releases it along the current tangent at full orb speed. Attack remains melee-only and does not capture/release. Player movement and dash are locked while tethered. Each release multiplies orb `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus post-release grace. Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` / `break_tether` on the orb.
 - **Why**: Separate tether from attack so melee knockback stays available near the orb; clearer "grab and sling" fantasy than batting; locking the player while the orb orbits makes the sling a committed stance; stacking speed/damage rewards repeated successful slings.
 - **Alternatives**: Consume attack for capture/release (previous) — blocked melee while near the orb; keep arc deflect (parked behind flag); free movement while tethered — weaker commitment and easier to cheese positioning; no release boost — less reward for risking the tether; temporary boost that decays — more bookkeeping for little clarity; hold-to-orbit / release-on-button-up — less deliberate release timing; aim-directed slingshot on release — more UI and less "continue forward" readability; inert tether (no enemy damage) — weaker as a spinning weapon.
 - **Status**: decided (in-codebase); playtest may restore arc deflect.
@@ -59,7 +57,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Forced tether release never parks the orb
 - **Decision**: Forced tether breaks (solid/entity contact or dealing damage) launch into free space instead of trusting a raw tangent bounce. Exit direction uses a real contact normal (`get_rest_info`, center-to-center only as fallback) and `_safe_exit_direction`: reflect only when inbound, then bias outbound if the result still points into the surface. Hitbox-triggered breaks are deferred one physics tick so freeze/velocity are not mutated mid-solver after a kinematic orbit teleport. `_finish_tether_release` depenetrates up to the body radius (8 px, 2 px steps) before asserting velocity. Flying bounce reflects **once** off the summed inbound contact normals (avoids two opposite surfaces cancelling back into the first). A never-still watchdog unsticks the orb after 12 consecutive stalled physics ticks (~0.06 s at 200 Hz) by depenetrating and picking an escape along overlapping normals (fallback: invert `aim_direction`). `can_sleep` is off. Collision layers/masks are unchanged.
 - **Why**: Tethered orbit teleports a frozen rigid body, so a break can leave the orb overlapping a grunt/wall/player. Inspector dumps showed `FLYING`, non-zero velocity, `freeze`/`sleeping` false, and a frozen transform — the solver refused the motion. Sequential per-contact bounce made two-body wedges permanent.
-- **Alternatives**: Add the bullet layer to grunt/player masks so `move_and_slide` also treats the orb as solid — changes the whole game into "orb is a moving obstacle"; remove player/enemy from the orb body mask and script entity bounce — different flying feel; only `sleeping = false` on release — inspector already showed awake; only nudge along tangent — still launches into the blocker when the tangent is inbound.
+- **Alternatives**: Add the orb layer to grunt/player masks so `move_and_slide` also treats the orb as solid — changes the whole game into "orb is a moving obstacle"; remove player/enemy from the orb body mask and script entity bounce — different flying feel; only `sleeping = false` on release — inspector already showed awake; only nudge along tangent — still launches into the blocker when the tangent is inbound.
 - **Status**: decided (in-codebase); see also "Tether breaks on solid/entity contact and on dealing damage"
 
 ### Level start: opening tether instead of slow-mo aim
@@ -74,11 +72,17 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Ranged enemies first — more systems before the core loop is solid; brute as unique club-melee AI — not needed yet (contact hitbox matches grunt).
 - **Status**: decided (in-codebase)
 
+### Game title: A Final Spell
+- **Decision**: The game is titled **A Final Spell**. Code, scenes, groups, and physics layer names use **orb** / **ChaosOrb** (not bullet).
+- **Why**: The fantasy is one remaining spell, not a gun; the old title no longer matched the orb-of-chaos loop.
+- **Alternatives**: Keep "One Last Bullet" — mismatches wizard/orb fantasy; "Tavern Roguelike" — genre label, not a title; "Orbital" / "Chaos Orb" puns — less clear about the one-spell hook.
+- **Status**: decided (in-codebase)
+
 ### Wizard fantasy; orb of chaos (replaces sheriff / one bullet)
 - **Decision**: Player is a **wizard** with one spell left — the **orb of chaos**. Setting is **tavern roguelike** with varied stages/environments, not a western sheriff defending a saloon.
 - **Why**: Design doc refocused on magic arcade survival; orb tether/redirect is the core hook, not gun fantasy.
 - **Alternatives**: Keep sheriff + bullet western theme — superseded by design doc; generic fantasy mage with many spells — dilutes the one-spell scarcity.
-- **Status**: decided (design); art/prototype still uses desert arena and legacy "bullet" code names
+- **Status**: decided (design); prototype still uses a desert arena
 
 ### Mana drops vanish if not picked up quickly
 - **Decision**: Enemies drop **mana** that disappears after a short window. Mana is spent in the between-level shop.
@@ -154,7 +158,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Damage flow: HitboxComponent overlap polling
 
-- **Decision**: Hit detection uses `HitboxComponent` (`Area2D`) on both attackers and victims. Each physics frame the victim hitbox polls `get_overlapping_areas()`, resolves the attacker's `COMPONENTS[DamageComponent]`, and applies damage when the overlap is fresh (or when a contact-damage interval elapses). A short `hit_dedup_frames` grace (default 2) keeps an attacker "seen" after leaving so bounce flicker does not count as a new hit. Entries prune themselves once past that grace. Breakables stay body-contact (bullet `body_entered`) so the bounce impulse resolves before `queue_free()`.
+- **Decision**: Hit detection uses `HitboxComponent` (`Area2D`) on both attackers and victims. Each physics frame the victim hitbox polls `get_overlapping_areas()`, resolves the attacker's `COMPONENTS[DamageComponent]`, and applies damage when the overlap is fresh (or when a contact-damage interval elapses). A short `hit_dedup_frames` grace (default 2) keeps an attacker "seen" after leaving so bounce flicker does not count as a new hit. Entries prune themselves once past that grace. Breakables stay body-contact (orb `body_entered`) so the bounce impulse resolves before `queue_free()`.
 - **Why**: Decouples hit registration from physics enter/exit chatter; sustained enemy contact can tick repeatedly; self-cleaning state avoids unbounded cooldown dictionaries.
 - **Alternatives**: `area_entered` only — one damage forever while glued, and bounce flicker double-hits; wall-clock per-attacker cooldown — magic number that can swallow legitimate late-run hits; signal bus — extra indirection.
 - **Status**: decided (in-codebase)
@@ -201,13 +205,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase); supersedes "no autoloads yet"
 
 ### Arena walls as StaticBody2D border slabs
-- **Decision**: Bullet/player world collision uses four `StaticBody2D` wall slabs around the viewport, not TileMap physics polygons.
-- **Why**: Current desert tileset has no physics layer; border slabs keep the bullet on-screen cheaply.
+- **Decision**: Orb/player world collision uses four `StaticBody2D` wall slabs around the viewport, not TileMap physics polygons.
+- **Why**: Current desert tileset has no physics layer; border slabs keep the orb on-screen cheaply.
 - **Alternatives**: Author per-tile collision — more setup before the loop is proven.
 - **Status**: decided (in-codebase)
 
-### Bullet is RigidBody2D with script-owned bounce + separate hitbox
-- **Decision**: `LastBullet` / `LastOrb` is a `RigidBody2D` with a circular body shape (world + player + enemy mask), locked rotation, gravity 0, friction 0, **bounce 0** material, continuous CCD, `can_sleep` off, and constant-speed flight. All reflection is owned by `_integrate_forces`: inbound contact normals are summed, then `aim_direction` reflects **once** off that combined normal (only when moving into the surface), then `linear_velocity = aim_direction * speed`. `_physics_process` does **not** re-derive direction from solver velocity. Hits use a separate circle/capsule `HitboxComponent` Area2D. Bounce SFX and breakable damage still use `body_entered`.
+### Orb is RigidBody2D with script-owned bounce + separate hitbox
+- **Decision**: `ChaosOrb` is a `RigidBody2D` with a circular body shape (world + player + enemy mask), locked rotation, gravity 0, friction 0, **bounce 0** material, continuous CCD, `can_sleep` off, and constant-speed flight. All reflection is owned by `_integrate_forces`: inbound contact normals are summed, then `aim_direction` reflects **once** off that combined normal (only when moving into the surface), then `linear_velocity = aim_direction * speed`. `_physics_process` does **not** re-derive direction from solver velocity. Hits use a separate circle/capsule `HitboxComponent` Area2D. Bounce SFX and breakable damage still use `body_entered`.
 - **Why**: Solver bounce + script bounce fought each other and caused sticky re-entry (double damage / double SFX). Real contact normals beat center-to-center approximations on capsules and rectangles. Single bounce authority keeps the projectile readable.
 - **Alternatives**: PhysicsMaterial bounce 1 + velocity read-back — previous; double-reflect artifacts; radial bounce only in `body_entered` for CharacterBody2D — wrong normals and still fought the solver; world-only mask + area-driven entity bounce — reverses entity-body bounce feel; wall-clock hit cooldown — papers over the symptom.
 - **Status**: decided (in-codebase)
@@ -219,9 +223,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — opening aim replaced by opening tether (no time_scale aim window)
 
 ### Post-launch player grace
-- **Decision**: After every launch (opening tether release, deflect, or mid-combat tether release), the bullet ignores the player for 0.3s. While tethered, `instigator` stays pinned to the tethering player for the whole orbit (grace timer cleared mid-tether so it does not expire early).
+- **Decision**: After every launch (opening tether release, deflect, or mid-combat tether release), the orb ignores the player for 0.3s. While tethered, `instigator` stays pinned to the tethering player for the whole orbit (grace timer cleared mid-tether so it does not expire early).
 - **Why**: Deflecting / tethering requires proximity; without grace the player dies on the same frame they bat or release the orb.
-- **Alternatives**: Teleport bullet away on deflect — less readable; disable player hit forever until leave range — easier to cheese.
+- **Alternatives**: Teleport orb away on deflect — less readable; disable player hit forever until leave range — easier to cheese.
 - **Status**: decided (in-codebase)
 
 ### KnockbackComponent for shove without damage
@@ -231,7 +235,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Dash: fixed distance with i-frames and phase-through
-- **Decision**: Player dashes 50 px toward **current facing** (8-way via `DirectionalSpriteComponent.facing_vector()`) at 400 px/s via `DashComponent` + `Dash` state. Idle dash uses last facing; dash does not read mouse/aim. While dashing: hitbox monitoring off (immune to bullet and enemies), body `collision_layer`/`collision_mask` cleared so the player phases through props/enemies/walls, no movement input, no attacking. 0.5 s cooldown. Starts only from Idle/Walk (does not cancel an attack swing). Space is `dash`; attack keeps left click / gamepad A.
+- **Decision**: Player dashes 50 px toward **current facing** (8-way via `DirectionalSpriteComponent.facing_vector()`) at 400 px/s via `DashComponent` + `Dash` state. Idle dash uses last facing; dash does not read mouse/aim. While dashing: hitbox monitoring off (immune to orb and enemies), body `collision_layer`/`collision_mask` cleared so the player phases through props/enemies/walls, no movement input, no attacking. 0.5 s cooldown. Starts only from Idle/Walk (does not cancel an attack swing). Space is `dash`; attack keeps left click / gamepad A.
 - **Why**: Readable dodge through the orb, chasers, and clutter; fixed distance is easy to learn and tune; facing-direction dash matches movement/strafe intent and frees aim for the attack arc; phase-through keeps the dash reliable in a prop-filled arena.
 - **Alternatives**: Aim-direction dash (mouse / right stick) — coupled dodge to attack aim and fought strafe play; reuse `KnockbackComponent`'s decaying shove — wrong curve (fade-out vs constant speed) and no i-frame API; velocity-based dodge that keeps movement control — less committed and harder to read; interrupt attack with dash — too many cancel options for prototype; keep world collision during dash — props truncate the dash unpredictably; separate prop vs wall physics layers so walls still block — extra layer setup before it is needed.
 - **Status**: decided (in-codebase)
@@ -242,14 +246,14 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: One general object scene with `is_destructible` exports — becomes flag soup for TNT later; fully separate scene/script per art file — duplicated physics setup.
 - **Status**: decided (in-codebase)
 
-### Breakables bounce then destroy via bullet body contact
-- **Decision**: Breakables (cactus) live on the `world` physics layer like rocks/walls. The bullet destroys them via its `RigidBody2D.body_entered` contact (not the leading capsule `Hitbox` area), so the bounce impulse is solved before `queue_free()`.
-- **Why**: Props should reshape bullet paths; using the leading hitbox would destroy the body before bounce. No fifth physics layer needed.
+### Breakables bounce then destroy via orb body contact
+- **Decision**: Breakables (cactus) live on the `world` physics layer like rocks/walls. The orb destroys them via its `RigidBody2D.body_entered` contact (not the leading capsule `Hitbox` area), so the bounce impulse is solved before `queue_free()`.
+- **Why**: Props should reshape orb paths; using the leading hitbox would destroy the body before bounce. No fifth physics layer needed.
 - **Alternatives**: Punch-through (no bounce) — less spatial play; dedicated `breakable` layer + hitbox area — destroys before bounce; multi-hit health — deferred.
 - **Status**: decided (in-codebase)
 
-### Pixel art rendering: smooth pixel shader + aligned bullet speed
-- **Decision**: Character sprites (player, enemies, bullet) use shared `smooth_pixel_material.tres` (CptPotato-style derivative filtering) with **Linear** sprite filter. Bullet speed is **180 px/s** (3 px/frame at 60 Hz). Physics interpolation is **off**.
+### Pixel art rendering: smooth pixel shader + aligned orb speed
+- **Decision**: Character sprites (player, enemies, orb) use shared `smooth_pixel_material.tres` (CptPotato-style derivative filtering) with **Linear** sprite filter. Orb speed is **180 px/s** (3 px/frame at 60 Hz). Physics interpolation is **off**.
 - **Why**: Nearest-neighbor + sub-pixel motion/rotation caused visible shimmer; the smooth pixel shader antialiases rotated/scaled sampling without blurring integer-scale art as badly as plain Linear. Disabling physics interpolation avoids in-between sub-pixel draw frames.
 - **Alternatives**: `%VisualOffset` pixel snap — removed; fought the shader; 8-way rotation snap — removed; physics interpolation on — reintroduced jitter on pixel art; snap 2D transforms to pixel on — fights smooth pixel filtering.
 - **Status**: decided (in-codebase)

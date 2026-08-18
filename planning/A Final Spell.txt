@@ -1,20 +1,20 @@
-Tavern Roguelike
+A Final Spell
 
 Overview
 You are a wizard stuck in a room with enemies. You have only one spell left to shoot: the orb of chaos. Game starts with you firing that orb, which will bounce around the stage damaging any enemies it hits but also damaging you if you hit it.
-To help you kill your enemies you can re-direct the bullet by being close to it and pressing a button. The orb then travels around you and you can release it in order to aim it where you want it to go.
+To help you kill your enemies you can re-direct the orb by being close to it and pressing a button. The orb then travels around you and you can release it in order to aim it where you want it to go.
 
 Enemies drop mana which needs to be picked up quickly and can later be used to upgrade the orb
 
 Goal of the Game
-You win the level when all enemies are dead. You lose if you die. You can die from enemies or getting hit by the bullet. After winning 10 levels you win the run.
+You win the level when all enemies are dead. You lose if you die. You can die from enemies or getting hit by the orb. After winning 10 levels you win the run.
 
 Story
 Very lean. You are a wizard defending yourself from various nefarious beings. Doesent have to be more complicated then that. The game is more of a gameplay focused arcade game. 
 
 
 The orb
-Shot by the player at the beginning of the game in any direction from where they are standing (center bottom screen). Then the orb will travel and bounce around freely forever. The speed should be slow enough that the player can interact with the bullet but fast enough that avoiding it should be a challenge. The orbs speed and damage increases each time you redirect it
+Shot by the player at the beginning of the game in any direction from where they are standing (center bottom screen). Then the orb will travel and bounce around freely forever. The speed should be slow enough that the player can interact with the orb but fast enough that avoiding it should be a challenge. The orbs speed and damage increases each time you redirect it
 
 
 Stage
@@ -23,7 +23,7 @@ Breaking some things can yield various powerups for the player.
 Enemies will also drop mana which the player can pickup. But the mana disappears after a while so you need to be fast.
 
 Progression
-After each level the player enters a ìshopî where they can spend mana on various randomized upgrades. It can be things that improve the bullet, or the player, or curses the enemies somehow. Much of the fun should be in finding interesting synergies.
+After each level the player enters a ‚Äúshop‚Äù where they can spend mana on various randomized upgrades. It can be things that improve the orb, or the player, or curses the enemies somehow. Much of the fun should be in finding interesting synergies.
 
 
 Enemies

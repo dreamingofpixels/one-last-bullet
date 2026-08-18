@@ -3,7 +3,7 @@ class_name AttackComponent extends Area2D
 ## Player melee arc: authored CollisionPolygon2D that knocks enemies (and optionally reflects the orb).
 
 const PHYSICS_LAYER_ENEMY := 4
-const PHYSICS_LAYER_BULLET := 8
+const PHYSICS_LAYER_ORB := 8
 
 @export var knockback_force: float = 220.0
 @export var attack_cooldown: float = 0.35
@@ -31,7 +31,7 @@ var _hit_enemies: Dictionary = {}
 
 func _ready() -> void:
 	collision_layer = 0
-	collision_mask = PHYSICS_LAYER_ENEMY | PHYSICS_LAYER_BULLET
+	collision_mask = PHYSICS_LAYER_ENEMY | PHYSICS_LAYER_ORB
 	monitoring = false
 	monitorable = false
 	collision_polygon.disabled = true
@@ -111,7 +111,7 @@ func _resolve_hit(body: Node) -> void:
 	if not monitoring or body == null or not is_instance_valid(body):
 		return
 
-	if body.is_in_group("bullet"):
+	if body.is_in_group("orb"):
 		_try_deflect_orb(body)
 		return
 

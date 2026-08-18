@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d3k3j8jrv1xkj"
-path="res://.godot/imported/orb_in_focus.png-bd3f30c2df5cbab49ba0392ab1488220.ctex"
+uid="uid://bl2jhjc05fdil"
+path="res://.godot/imported/desert_tilemap_2.png-858fd20b7e5c688e272837e72a598c23.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://entities/chaos_orb/orb_in_focus.png"
-dest_files=["res://.godot/imported/orb_in_focus.png-bd3f30c2df5cbab49ba0392ab1488220.ctex"]
+source_file="res://areas/level/desert_tilemap_2.png"
+dest_files=["res://.godot/imported/desert_tilemap_2.png-858fd20b7e5c688e272837e72a598c23.ctex"]
 
 [params]
 

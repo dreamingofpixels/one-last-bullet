@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="SoundEvent" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://audio/sound_event.gd" id="1_script"]
-[ext_resource type="AudioStream" uid="uid://c2ha3tf350sda" path="res://entities/last_orb/last_orb_sfx/impact_soft.ogg" id="2_stream"]
+[ext_resource type="AudioStream" uid="uid://c2ha3tf350sda" path="res://entities/chaos_orb/last_orb_sfx/impact_soft.ogg" id="2_stream"]
 
 [resource]
 script = ExtResource("1_script")

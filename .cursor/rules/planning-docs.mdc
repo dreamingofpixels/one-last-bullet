@@ -1,5 +1,5 @@
 ---
-description: Always consult and maintain the One Last Bullet planning docs
+description: Always consult and maintain the A Final Spell planning docs
 alwaysApply: true
 ---
 
@@ -7,17 +7,17 @@ alwaysApply: true
 
 Before doing substantive work in this repo — answering design questions, proposing changes, editing code in `project/`, adding systems — **read these three files first**:
 
-- `planning/GAME_BRIEF.md` — what the game is (story, loop, bullet/redirect, shop, saloon stages, open questions)
+- `planning/GAME_BRIEF.md` — what the game is (story, loop, orb/tether, shop, stages, open questions)
 - `planning/DECISIONS.md` — why the codebase looks the way it does (gameplay + technical decisions)
 - `planning/PROJECT_MAP.md` — where things live (autoloads, key scenes/scripts, groups, conventions)
 
-`planning/One Last Bullet.txt` is the source-of-truth design document. If it and the planning docs conflict, ask which to trust before acting.
+`planning/A Final Spell.txt` is the source-of-truth design document. If it and the planning docs conflict, ask which to trust before acting.
 
 ## When to update the planning docs
 
 Update them **in the same change** whenever your work does any of the following:
 
-- **GAME_BRIEF.md** — changes any gameplay rule, loop step, economy number the brief lists, bullet/redirect/shop/stage semantics, or moves an item out of "open questions" into "decided".
+- **GAME_BRIEF.md** — changes any gameplay rule, loop step, economy number the brief lists, orb/tether/shop/stage semantics, or moves an item out of "open questions" into "decided".
 - **DECISIONS.md** — introduces or reverses an architectural or design decision (new autoload, replacing a system, changing data model, new failure condition, upgrade model chosen, etc.). Add a new entry in the existing format (`Decision` / `Why` / `Alternatives` / `Status`).
 - **PROJECT_MAP.md** — adds/removes/renames an autoload, scene, script, group, or physics layer; changes an entry point; or establishes a new convention.
 

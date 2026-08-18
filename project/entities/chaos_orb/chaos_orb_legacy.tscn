@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://de3u8ce1h7abb"]
 
-[ext_resource type="Script" uid="uid://dlea7fiafdu0g" path="res://entities/last_orb/last_bullet.gd" id="1_6hh1f"]
-[ext_resource type="Texture2D" uid="uid://c2ho71np0ounl" path="res://entities/last_orb/last_bullet.png" id="1_w6la0"]
-[ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/last_orb/aim_arrow.gd" id="2_aim"]
+[ext_resource type="Script" uid="uid://dlea7fiafdu0g" path="res://entities/chaos_orb/chaos_orb.gd" id="1_6hh1f"]
+[ext_resource type="Texture2D" uid="uid://c2ho71np0ounl" path="res://entities/chaos_orb/chaos_orb_legacy.png" id="1_w6la0"]
+[ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/chaos_orb/aim_arrow.gd" id="2_aim"]
 [ext_resource type="Material" uid="uid://xd8op6ggc1kr" path="res://effects/smooth_pixel_material.tres" id="3_smooth"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="5_handler"]
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="6_damage"]
@@ -38,7 +38,7 @@ radius = 4.0
 radius = 4.0
 height = 16.0
 
-[node name="LastBullet" type="RigidBody2D"]
+[node name="ChaosOrbLegacy" type="RigidBody2D"]
 collision_layer = 8
 mass = 0.1
 physics_material_override = SubResource("PhysicsMaterial_bounce")

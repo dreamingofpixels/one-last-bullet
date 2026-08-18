@@ -1,9 +1,7 @@
-# Tavern Roguelike — Game Brief
-
-*Working title from the design doc; final name TBD (replacing "One Last Bullet").*
+# A Final Spell — Game Brief
 
 ## Summary
-Tavern roguelike arcade game. You are a **wizard** with **one spell left**: the **orb of chaos**. Each level starts with that orb in play — it bounces forever, damages enemies on hit, and **hurts you on contact** (player has **3 HP** with brief i-frames after a hit). Steer it mid-combat by getting close and tethering it into an orbit, then releasing it along a chosen tangent; clear the room; spend **mana** on synergistic upgrades; survive **10 levels**.
+Arcade tavern roguelike. You are a **wizard** with **one spell left**: the **orb of chaos**. Each level starts with that orb in play — it bounces forever, damages enemies on hit, and **hurts you on contact** (player has **3 HP** with brief i-frames after a hit). Steer it mid-combat by getting close and tethering it into an orbit, then releasing it along a chosen tangent; clear the room; spend **mana** on synergistic upgrades; survive **10 levels**.
 
 ## Story (current)
 Very lean. You are a wizard defending yourself from various nefarious beings. No deeper plot required — the game is gameplay-first arcade.
@@ -80,4 +78,3 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 - **Camera / view**: player uses 4-direction diagonal sprites in a top-down-ish arena; confirm long-term camera for larger stages.
 - **Difficulty curve**: how enemy count, obstacles, and layout pressure scale across 10 levels.
 - **Arc deflect rollback**: `AttackComponent.deflect_orb_enabled` is false; may restore if tether does not pan out.
-- **Final game name**: replace working title and legacy "bullet" naming in code/UI.

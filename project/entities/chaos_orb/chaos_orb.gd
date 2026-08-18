@@ -5,7 +5,7 @@ signal deflected(by: Node)
 signal tethered(by: Node)
 signal tether_released(by: Node)
 
-enum BulletState { FLYING, TETHERED }
+enum OrbState { FLYING, TETHERED }
 
 const PHYSICS_LAYER_WORLD := 1
 const PHYSICS_LAYER_PLAYER := 2
@@ -41,7 +41,7 @@ var COMPONENTS: Dictionary = {}
 @onready var orb_in_focus: Sprite2D = %OrbInFocus
 @onready var trail_particles: GPUParticles2D = %TrailParticles
 
-var state: BulletState = BulletState.FLYING
+var state: OrbState = OrbState.FLYING
 var aim_direction: Vector2 = Vector2.RIGHT
 var _player: Node2D = null
 var _grace_clear_msec: int = 0
@@ -62,7 +62,7 @@ var _stall_ticks: int = 0
 
 
 func _ready() -> void:
-	add_to_group("bullet")
+	add_to_group("orb")
 	gravity_scale = 0.0
 	lock_rotation = true
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
@@ -71,7 +71,7 @@ func _ready() -> void:
 	linear_damp = 0.0
 	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	angular_damp = 0.0
-	collision_layer = 8  # bullet layer
+	collision_layer = 8  # orb layer
 	collision_mask = PHYSICS_MASK_PROBE
 	contact_monitor = true
 	max_contacts_reported = 4
@@ -95,7 +95,7 @@ func _ready() -> void:
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
-	if state != BulletState.FLYING:
+	if state != OrbState.FLYING:
 		return
 	if aim_direction.length_squared() < 0.0001:
 		aim_direction = Vector2.RIGHT
@@ -128,12 +128,12 @@ func _physics_process(delta: float) -> void:
 
 	if _break_pending:
 		_break_pending = false
-		if state == BulletState.TETHERED:
+		if state == OrbState.TETHERED:
 			break_tether(_pending_break_dir)
 		_pending_break_dir = Vector2.ZERO
 
 	match state:
-		BulletState.FLYING:
+		OrbState.FLYING:
 			# Keep constant speed; direction is owned by aim_direction / _integrate_forces.
 			if aim_direction.length_squared() < 0.0001:
 				aim_direction = Vector2.RIGHT
@@ -144,7 +144,7 @@ func _physics_process(delta: float) -> void:
 				damage_component.instigator = null
 				_grace_clear_msec = 0
 			_update_never_still_watchdog(delta)
-		BulletState.TETHERED:
+		OrbState.TETHERED:
 			_update_tether(delta)
 
 
@@ -164,7 +164,7 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	_break_pending = false
 	_pending_break_dir = Vector2.ZERO
 
-	state = BulletState.TETHERED
+	state = OrbState.TETHERED
 	freeze = true
 	linear_velocity = Vector2.ZERO
 	aim_arrow.visible = false
@@ -179,7 +179,7 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 
 
 func deflect(new_velocity: Vector2, instigator: Node) -> void:
-	if state != BulletState.FLYING:
+	if state != OrbState.FLYING:
 		return
 	aim_direction = new_velocity.normalized() if new_velocity.length_squared() > 0.0001 else Vector2.RIGHT
 	linear_velocity = aim_direction * speed
@@ -192,7 +192,7 @@ func deflect(new_velocity: Vector2, instigator: Node) -> void:
 
 
 func begin_tether(player: Node2D, radius: float) -> void:
-	if state != BulletState.FLYING:
+	if state != OrbState.FLYING:
 		return
 	if not is_instance_valid(player):
 		return
@@ -214,7 +214,7 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	_break_pending = false
 	_pending_break_dir = Vector2.ZERO
 
-	state = BulletState.TETHERED
+	state = OrbState.TETHERED
 	freeze = true
 	linear_velocity = Vector2.ZERO
 	damage_component.instigator = player
@@ -228,7 +228,7 @@ func begin_tether(player: Node2D, radius: float) -> void:
 
 
 func release_tether() -> void:
-	if state != BulletState.TETHERED:
+	if state != OrbState.TETHERED:
 		return
 
 	var was_opening := _opening_tether
@@ -238,7 +238,7 @@ func release_tether() -> void:
 
 ## Forced break from collision or dealing damage. Applies boost (unless opening).
 func break_tether(exit_velocity: Vector2) -> void:
-	if state != BulletState.TETHERED or _tether_broke_this_frame:
+	if state != OrbState.TETHERED or _tether_broke_this_frame:
 		return
 
 	_tether_broke_this_frame = true
@@ -253,18 +253,18 @@ func break_tether(exit_velocity: Vector2) -> void:
 
 func set_in_focus(value: bool) -> void:
 	# While tethered the focus indicator stays on regardless of caller requests.
-	if state == BulletState.TETHERED:
+	if state == OrbState.TETHERED:
 		value = true
 	_in_focus = value
 	orb_in_focus.visible = _in_focus
 
 
 func is_flying() -> bool:
-	return state == BulletState.FLYING
+	return state == OrbState.FLYING
 
 
 func is_tethered() -> bool:
-	return state == BulletState.TETHERED
+	return state == OrbState.TETHERED
 
 
 func get_tether_player() -> Node2D:
@@ -292,7 +292,7 @@ func _finish_tether_release(
 		aim_direction = Vector2.RIGHT
 	if not was_opening:
 		_apply_tether_release_boost()
-	state = BulletState.FLYING
+	state = OrbState.FLYING
 	freeze = false
 	_break_pending = false
 	_pending_break_dir = Vector2.ZERO
@@ -472,12 +472,12 @@ func _apply_heading() -> void:
 
 
 func _update_trail() -> void:
-	var moving := state == BulletState.TETHERED or (state == BulletState.FLYING and not freeze)
+	var moving := state == OrbState.TETHERED or (state == OrbState.FLYING and not freeze)
 	trail_particles.emitting = moving
 	if not moving:
 		return
 
-	var travel_dir: Vector2 = _tether_tangent() if state == BulletState.TETHERED else aim_direction
+	var travel_dir: Vector2 = _tether_tangent() if state == OrbState.TETHERED else aim_direction
 	if travel_dir.length_squared() > 0.0001:
 		trail_particles.rotation = travel_dir.angle() + PI
 
@@ -646,7 +646,7 @@ func _spawn_world_impact(position: Vector2, normal: Vector2) -> void:
 
 
 func _on_hitbox_area_entered(area: Area2D) -> void:
-	if state != BulletState.TETHERED or _tether_broke_this_frame or _break_pending:
+	if state != OrbState.TETHERED or _tether_broke_this_frame or _break_pending:
 		return
 	if damage_component.damage <= 0.0:
 		return
@@ -676,7 +676,7 @@ func _on_hitbox_area_entered(area: Area2D) -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	if state != BulletState.FLYING:
+	if state != OrbState.FLYING:
 		return
 	if bounce_sound:
 		AudioManager.play_at(bounce_sound, global_position)

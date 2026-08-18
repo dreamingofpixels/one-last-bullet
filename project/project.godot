@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="One Last Bullet"
+config/name="A Final Spell"
 run/main_scene="uid://drul7vfq10oin"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
@@ -179,7 +179,7 @@ aim_right_2={
 2d_physics/layer_1="world"
 2d_physics/layer_2="player"
 2d_physics/layer_3="enemy"
-2d_physics/layer_4="bullet"
+2d_physics/layer_4="orb"
 
 [physics]
 

@@ -1,15 +1,13 @@
-# Tavern Roguelike — Project Map
-
-*Working title from the design doc; final name TBD (replacing "One Last Bullet"). Legacy "bullet" names remain in code until rename.*
+# A Final Spell — Project Map
 
 This is a high-level map of the repo: where things live, how the core systems connect, and the conventions the project uses.
 
 ## Repo layout
 ```
-Tavern Roguelike/          (repo folder still "One Last Bullet" until rename)
+A Final Spell/
 ├── planning/
-│   ├── One Last Bullet.txt     Source-of-truth design document (title in doc: Tavern Roguelike)
-│   ├── One Last Bullet.docx    Word export of the design doc
+│   ├── A Final Spell.txt       Source-of-truth design document
+│   ├── A Final Spell.docx      Word export of the design doc
 │   ├── GAME_BRIEF.md           Living brief
 │   ├── DECISIONS.md            Living decision log
 │   └── PROJECT_MAP.md          Living project map (this file)
@@ -51,9 +49,9 @@ Tavern Roguelike/          (repo folder still "One Last Bullet" until rename)
     │   │   └── state_machine.gd  StateMachine: states_map, 2-deep stack, force_state()
     │   ├── entity_destroyed.wav / .tres   Shared death SFX (SoundEvent)
     │   ├── entity_damaged.wav / _2.wav / .tres   Shared non-fatal hit SFX
-    │   ├── last_orb/
-    │   │   ├── last_orb.tscn / orb.png / orb_in_focus.png   (active desert projectile)
-    │   │   ├── last_bullet.tscn / .gd / .png  (kept as alternate; script shared)
+    │   ├── chaos_orb/
+    │   │   ├── chaos_orb.tscn / chaos_orb.gd / orb.png / orb_in_focus.png   (active desert projectile)
+    │   │   ├── chaos_orb_legacy.tscn / chaos_orb_legacy.png  (kept as alternate; script shared)
     │   │   ├── aim_arrow.gd
     │   │   └── last_orb_sfx/         bounce / begin_tether / release_tether clips + SoundEvents
     │   ├── player/
@@ -110,7 +108,7 @@ Tavern Roguelike/          (repo folder still "One Last Bullet" until rename)
 | 1 | world |
 | 2 | player |
 | 3 | enemy |
-| 4 | bullet | *(legacy name; orb of chaos projectile)* |
+| 4 | orb |
 
 ---
 
@@ -118,7 +116,7 @@ Tavern Roguelike/          (repo folder still "One Last Bullet" until rename)
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, walls, player, orb projectile, HUD, fixed `Camera2D`)
-- `project/areas/level/level.gd` — director: spawn 3 grunts + 1 brute, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` and bullet `deflected` / `tethered` / `tether_released` / `launched`; optional `@export level_music` → `AudioManager.play_music()`
+- `project/areas/level/level.gd` — director: spawn 3 grunts + 1 brute, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` and orb `deflected` / `tethered` / `tether_released` / `launched`; optional `@export level_music` → `AudioManager.play_music()`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -146,22 +144,22 @@ Tavern Roguelike/          (repo folder still "One Last Bullet" until rename)
 - `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
-- `project/entities/last_orb/last_orb.tscn` + `last_bullet.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` API; tether orbit probes world/player/enemy layers and breaks on contact or on dealing damage; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); opening release emits `launched` (no boost); mid-combat release / forced break emits `tether_released` (+10% boost); instigator-based player grace; trail particles while flying/tethered; world-surface impact bursts via `OrbImpactEffect`; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
-- `project/entities/last_orb/last_bullet.tscn` + `last_bullet.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
-- `project/entities/last_orb/aim_arrow.gd` — drawn aim arrow during aim windows
+- `project/entities/chaos_orb/chaos_orb.tscn` + `chaos_orb.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` API; tether orbit probes world/player/enemy layers and breaks on contact or on dealing damage; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); opening release emits `launched` (no boost); mid-combat release / forced break emits `tether_released` (+10% boost); instigator-based player grace; trail particles while flying/tethered; world-surface impact bursts via `OrbImpactEffect`; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
+- `project/entities/chaos_orb/chaos_orb_legacy.tscn` + `chaos_orb.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
+- `project/entities/chaos_orb/aim_arrow.gd` — drawn aim arrow during aim windows
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — chase + component death; yields while `KnockbackComponent.is_active()`; Health max 3 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / HitboxComponent
 - `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same chase/contact-damage stack as grunt; left-facing sprite (`flip_h` inverted); larger collision (r=15); Health max 10 / HealthBar / Damage 3.0 with 0.75s contact tick
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
-- `project/objects/_base/breakable.gd` — `extends LevelObject`; `COMPONENTS` dict; `breakables` group; destroyed via `COMPONENTS[HealthComponent].take_damage()` from bullet `body_entered`
+- `project/objects/_base/breakable.gd` — `extends LevelObject`; `COMPONENTS` dict; `breakables` group; destroyed via `COMPONENTS[HealthComponent].take_damage()` from orb `body_entered`
 - `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
 - `project/objects/cactai/cactus.tscn` — breakable cactus; Components: HealthComponent + HealthBarComponent + DestroyComponent
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 
 ### Effects
 - `project/effects/SmoothPixel.gdshader` — [CptPotato Smooth Pixel Filtering](https://github.com/CptPotato/GodotThings/tree/master/SmoothPixelFiltering) (requires Linear filter on sprites)
-- `project/effects/smooth_pixel_material.tres` — shared `ShaderMaterial` for player, enemies, bullet
+- `project/effects/smooth_pixel_material.tres` — shared `ShaderMaterial` for player, enemies, orb
 - `project/effects/pixel_fall.gdshader` — canvas-item shader: staggered per-pixel fall + ground fade
 - `project/effects/destruction_effect.gd` — `DestructionEffect.play_from_sprite()`; detached copy, tween `progress`, free when done
 - `project/effects/particle_pixel.png` — 1×1 white pixel texture for orb particle VFX
@@ -185,7 +183,7 @@ Tavern Roguelike/          (repo folder still "One Last Bullet" until rename)
 |-------|---------|
 | `player` | Player root |
 | `enemies` | GruntKnife root |
-| `bullet` | LastBullet / LastOrb root (shared `last_bullet.gd`; legacy group name) |
+| `orb` | ChaosOrb root (`chaos_orb.gd`) |
 | `breakables` | Breakable props (cactus, etc.) |
 
 ## Input actions

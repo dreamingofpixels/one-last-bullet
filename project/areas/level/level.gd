@@ -10,7 +10,7 @@ const PLAY_RECT := Rect2(24.0, 24.0, 592.0, 312.0)
 
 @onready var player: CharacterBody2D = %Player
 @onready var enemies: Node2D = %Enemies
-@onready var last_bullet: RigidBody2D = %LastBullet
+@onready var chaos_orb: RigidBody2D = %ChaosOrb
 @onready var status_label: Label = %StatusLabel
 
 var _enemies_alive: int = 0
@@ -26,17 +26,17 @@ func _ready() -> void:
 	if level_music:
 		AudioManager.play_music(level_music)
 
-	last_bullet.launched.connect(_on_bullet_launched)
-	last_bullet.deflected.connect(_on_bullet_deflected)
-	last_bullet.tethered.connect(_on_bullet_tethered)
-	last_bullet.tether_released.connect(_on_bullet_tether_released)
+	chaos_orb.launched.connect(_on_orb_launched)
+	chaos_orb.deflected.connect(_on_orb_deflected)
+	chaos_orb.tethered.connect(_on_orb_tethered)
+	chaos_orb.tether_released.connect(_on_orb_tether_released)
 
 	var player_destroy: DestroyComponent = player.COMPONENTS.get(DestroyComponent)
 	if player_destroy:
 		player_destroy.destroyed.connect(_on_player_died)
 
 	_spawn_enemies()
-	player.begin_level(last_bullet)
+	player.begin_level(chaos_orb)
 	# begin_level emits tethered; keep the opening prompt instead of "Tethered!".
 	status_label.text = "Tether to release"
 
@@ -76,25 +76,25 @@ func _pick_spawn_position() -> Vector2:
 	return Vector2(PLAY_RECT.position.x + 40.0, PLAY_RECT.position.y + 40.0)
 
 
-func _on_bullet_launched() -> void:
+func _on_orb_launched() -> void:
 	if _game_over or _cleared:
 		return
-	status_label.text = "Clear the saloon"
+	status_label.text = "Clear the room"
 
 
-func _on_bullet_deflected(_by: Node = null) -> void:
+func _on_orb_deflected(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
 	status_label.text = "Deflected!"
 
 
-func _on_bullet_tethered(_by: Node = null) -> void:
+func _on_orb_tethered(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
 	status_label.text = "Tethered!"
 
 
-func _on_bullet_tether_released(_by: Node = null) -> void:
+func _on_orb_tether_released(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
 	status_label.text = "Released!"

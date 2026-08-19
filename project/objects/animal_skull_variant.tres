@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelObjectVariant" load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://c7ley58ad3nr6" path="res://objects/_base/level_object_variant.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://oxf11q1j48tq" path="res://objects/animal_skull.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_script")
+texture = ExtResource("2_tex")
+collision_size = Vector2(14, 12)
+collision_offset = Vector2(0, -6)
+texture_offset = Vector2(0, 0)

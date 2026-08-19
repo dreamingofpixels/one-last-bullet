@@ -87,12 +87,17 @@ A Final Spell/
         │   ├── cactus.tscn               Breakable; picks cactus_1..4 at runtime
         │   ├── cactus_1..4.png
         │   └── variants/                 LevelObjectVariant .tres per art
+        ├── animal_skull.tscn             Breakable skull prop; 3 HP; single variant (16×16)
+        ├── animal_skull.png
+        ├── animal_skull_variant.tres     LevelObjectVariant for the skull (collision 14×12)
         ├── mana/
         │   └── mana_picked_up.ogg        (design economy resource; pickup scene not wired yet)
         └── rocks/
-            ├── rock.tscn                 Solid; picks from rock variants at runtime
+            ├── rock.tscn                 Solid; picks from rock variants at runtime (no health)
+            ├── big_rock.tscn             Breakable rock; 3 HP; single variant (big_rock.png 28×22)
             ├── rock_1.png
-            └── variants/
+            ├── big_rock.png
+            └── variants/                 rock_1.tres + big_rock.tres (LevelObjectVariant resources)
 ```
 
 ## Godot project entry
@@ -163,8 +168,10 @@ A Final Spell/
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
 - `project/objects/_base/breakable.gd` — `extends LevelObject`; `COMPONENTS` dict; `breakables` group; destroyed via `COMPONENTS[HealthComponent].take_damage()` from orb `body_entered`
 - `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
-- `project/objects/cactai/cactus.tscn` — breakable cactus; Components: HealthComponent + HealthBarComponent + DestroyComponent
+- `project/objects/cactai/cactus.tscn` — breakable cactus; `max_health = 1.0` (one-shot); Components: HealthComponent + HealthBarComponent + DestroyComponent
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
+- `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 3.0`; single variant (`big_rock.tres`); not yet placed in any level
+- `project/objects/animal_skull.tscn` — breakable skull; `max_health = 3.0`; single variant (`animal_skull_variant.tres`); not yet placed in any level
 
 ### Effects
 - `project/effects/SmoothPixel.gdshader` — [CptPotato Smooth Pixel Filtering](https://github.com/CptPotato/GodotThings/tree/master/SmoothPixelFiltering) (requires Linear filter on sprites)

@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://burfr4m62vdxl" path="res://objects/_base/breakable.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://c7ley58ad3nr6" path="res://objects/_base/level_object_variant.gd" id="2_rpnqn"]
+[ext_resource type="Texture2D" uid="uid://ch7pxwysex5yq" path="res://objects/rocks/big_rock.png" id="2_tex"]
+[ext_resource type="Resource" path="res://objects/rocks/variants/big_rock.tres" id="3_v1"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="7_handler"]
+[ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="8_health"]
+[ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="9_destroy"]
+[ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="10_hbar"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_placeholder"]
+size = Vector2(24, 16)
+
+[node name="BigRock" type="StaticBody2D"]
+collision_mask = 0
+script = ExtResource("1_script")
+variants = Array[ExtResource("2_rpnqn")]([ExtResource("3_v1")])
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+texture = ExtResource("2_tex")
+offset = Vector2(0, -11)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -8)
+shape = SubResource("RectangleShape2D_placeholder")
+
+[node name="Components" type="Node2D" parent="."]
+script = ExtResource("7_handler")
+
+[node name="HealthComponent" type="Node2D" parent="Components" node_paths=PackedStringArray("destroy_component")]
+script = ExtResource("8_health")
+max_health = 3.0
+destroy_component = NodePath("../DestroyComponent")
+
+[node name="HealthBarComponent" parent="Components" instance=ExtResource("10_hbar") node_paths=PackedStringArray("health_component")]
+health_component = NodePath("../HealthComponent")
+offset = Vector2(0, -24)
+
+[node name="DestroyComponent" type="Node2D" parent="Components" node_paths=PackedStringArray("sprite")]
+script = ExtResource("9_destroy")
+sprite = NodePath("../../Sprite2D")

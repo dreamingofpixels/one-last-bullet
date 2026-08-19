@@ -167,12 +167,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Inheritance (`Enemy extends Character`) — becomes flag soup for diverse entities; NodePath exports without dict — O(n) get_node calls; signal bus — more indirection than needed for a small game.
 - **Status**: decided (in-codebase)
 
-### Health: multi-hit via max_health (player/grunt = 3)
+### Health: multi-hit via max_health (player/grunt = 3; multi-hit breakables = 3)
 
-- **Decision**: `HealthComponent.max_health` defaults to `1.0` (still fine for one-shot breakables). Player and grunt set `max_health = 3.0`. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`. Non-fatal hits can start gameplay i-frames (see below).
-- **Why**: Keeps rules in data; multi-hit is a slider per entity, not special-case code. Shared flash covers entities and breakables without per-scene VFX scripts.
+- **Decision**: `HealthComponent.max_health` defaults to `1.0` (one-shot breakables like cactus). Player and grunt set `max_health = 3.0`. `big_rock.tscn` and `animal_skull.tscn` also use `max_health = 3.0` — three orb hits to destroy. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`. Non-fatal hits can start gameplay i-frames (see below).
+- **Why**: Keeps rules in data; multi-hit is a slider per entity, not special-case code. Shared flash covers entities and breakables without per-scene VFX scripts. Multi-hit props give the orb a reason to revisit the same obstacle and create longer spatial fights around tougher terrain.
 - **Alternatives**: One-hit-kill for everyone (`max_health = 1.0`) — previous design; too harsh with tether proximity; a bool `is_one_shot` — extra flag for something already handled by the value; shader hit flash — heavier for a short modulate.
-- **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"
+- **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"; `big_rock` / `animal_skull` multi-hit breakables added (not yet placed in any level)
 
 ### Damage-reveal percentage health bars
 - **Decision**: Every `HealthComponent` owner (player, enemies, breakables) instances `HealthBarComponent`: an 18×2 px world-space bar drawn with `_draw`, fill width = `% of max_health` (not absolute HP, so a 10-HP brute and a 100-HP boss use the same pixel width). Hidden until `damage_taken`; stays visible for **1.5 s**, refreshing on each hit. Per-scene `offset` places it above the sprite.

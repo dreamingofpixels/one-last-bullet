@@ -12,6 +12,7 @@
 [ext_resource type="Script" uid="uid://b68fxg5v7nmgm" path="res://entities/enemies/spawner/enemy_spawn_entry.gd" id="9_v5loy"]
 [ext_resource type="PackedScene" uid="uid://doagtfaw80f82" path="res://entities/enemies/grunt/grunt_knife.tscn" id="10_4ykq2"]
 [ext_resource type="PackedScene" uid="uid://bq7w3m5k8tn2r" path="res://entities/enemies/brute/brute.tscn" id="11_mc6if"]
+[ext_resource type="PackedScene" path="res://effects/time_slow_overlay.tscn" id="12_timeslow"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_egukw"]
 texture = ExtResource("3_wa2qb")
@@ -309,7 +310,11 @@ unique_name_in_owner = true
 wait_time = 0.2
 one_shot = true
 
+[node name="TimeSlowOverlay" parent="." instance=ExtResource("12_timeslow") unique_id=2012731845]
+unique_name_in_owner = true
+
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1083207069]
+layer = 20
 
 [node name="StatusLabel" type="Label" parent="HUD" unique_id=1947038518]
 unique_name_in_owner = true

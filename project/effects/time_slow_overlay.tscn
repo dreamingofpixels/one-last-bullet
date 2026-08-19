@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://b3xqmv7y4c8et"]
+
+[ext_resource type="Script" path="res://effects/time_slow_overlay.gd" id="1_script"]
+[ext_resource type="Shader" path="res://effects/time_slow.gdshader" id="2_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_overlay"]
+shader = ExtResource("2_shader")
+shader_parameter/intensity = 0.0
+shader_parameter/vignette_color = Color(0.06, 0.04, 0.14, 1)
+shader_parameter/vignette_strength = 1.2
+shader_parameter/vignette_inner = 0.32
+shader_parameter/tint_color = Color(0.55, 0.45, 1, 1)
+shader_parameter/tint_strength = 0.18
+shader_parameter/desat_strength = 0.35
+
+[node name="TimeSlowOverlay" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_script")
+
+[node name="OverlayRect" type="ColorRect" parent="."]
+unique_name_in_owner = true
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+material = SubResource("ShaderMaterial_overlay")

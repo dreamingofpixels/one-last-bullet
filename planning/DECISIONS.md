@@ -66,9 +66,15 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Add the orb layer to grunt/player masks so `move_and_slide` also treats the orb as solid — changes the whole game into "orb is a moving obstacle"; remove player/enemy from the orb body mask and script entity bounce — different flying feel; only `sleeping = false` on release — inspector already showed awake; only nudge along tangent — still launches into the blocker when the tangent is inbound.
 - **Status**: decided (in-codebase); see also "Tether breaks on solid/entity contact and on dealing damage"
 
+### Tether time-slow: 50% speed, 0.5 s ramp, vignette overlay
+- **Decision**: Whenever the orb enters `TETHERED` state (including the opening sling at level start), `Engine.time_scale` ramps from its current value down to **0.5** over **0.3 real-world seconds** via a `Tween` set to `ignore_time_scale`. It holds at 0.5 until the orb leaves `TETHERED` (intentional release, forced break, or opening launch), then snaps back to 1.0. A `TimeSlowOverlay` `CanvasLayer` owns the tween and drives a `time_slow.gdshader` shader uniform (`intensity` 0 → 1) in sync, producing a dark-edge vignette with a purple-blue tint. The overlay is a `CanvasLayer` child of HUD in `desert.tscn`; `level.gd` connects `chaos_orb.tethered` / `tether_released` / `launched` to `begin()` / `end()`.
+- **Why**: Slowing time during the tether gives the player a meaningful window to judge the orbit and plan the release angle without removing the spatial/positional commitment. The vignette makes the slow state immediately readable. A real-world ramp avoids the instant cut from the previous aim-window approach; snapping back on release makes the sling feel punchy.
+- **Alternatives**: Scaled-delta ramp — window stretches as time already slows, so 0.5 s becomes 1 s of game time; keep full speed during tether — loses the "deliberate sling" feel; per-player time scale (Godot does not support it natively) — not viable; fade out on release instead of snap — tested as slower and less punchy; shader-only overlay without actual slow — visual only, less impactful.
+- **Status**: decided (in-codebase)
+
 ### Level start: opening tether instead of slow-mo aim
-- **Decision**: At level start the orb spawns already tethered **32 px above** the player (`begin_opening_tether`). Tether (or one full revolution) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost. `OpeningAimComponent`, the Aim state, and global `Engine.time_scale` opening slow-mo are removed. `OrbTetherComponent` owns the orb reference via `bind_orb()`.
-- **Why**: One tether UX for start and mid-combat; removes co-op-hostile global slow-mo; teaches capture/release immediately.
+- **Decision**: At level start the orb spawns already tethered **32 px above** the player (`begin_opening_tether`). Tether (or one full revolution) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost. `OpeningAimComponent`, the Aim state, and the old free-aim global slow-mo are removed. `OrbTetherComponent` owns the orb reference via `bind_orb()`. The opening tether now triggers the same 50%/0.5 s time-slow as mid-combat captures (see tether time-slow entry above).
+- **Why**: One tether UX for start and mid-combat; teaches capture/release immediately; the new tether slow replaces the previous co-op-hostile opening slow-mo without reintroducing a separate system.
 - **Alternatives**: Keep 3s slow-mo free aim — separate system and co-op time_scale issues; **design-doc free aim-and-fire at start** — may return to match source doc; auto-launch upward without tether — skips the core sling lesson; apply boost on opening release — unfair free power on every level start.
 - **Status**: decided (in-codebase); **revisit** — design doc says player fires orb in any direction at level start
 
@@ -244,7 +250,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Opening aim was 3.0s of **wall-clock** time via `Time.get_ticks_msec()`, while `Engine.time_scale = 0.15` during aim. Mid-combat redirect aim windows were already gone.
 - **Why**: Slow-mo must not stretch the intended aim deadline.
 - **Alternatives**: Use scaled `delta` timers — windows become much longer than designed.
-- **Status**: superseded — opening aim replaced by opening tether (no time_scale aim window)
+- **Status**: superseded — opening aim replaced by opening tether; tether slow-mo ramp also uses `ignore_time_scale` tween for the same reason
 
 ### Post-launch player grace
 - **Decision**: After every launch (opening tether release, deflect, or mid-combat tether release), the orb ignores the player for 0.3s. While tethered, `instigator` stays pinned to the tethering player for the whole orbit (grace timer cleared mid-tether so it does not expire early).

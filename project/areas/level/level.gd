@@ -8,6 +8,7 @@ extends Node2D
 @onready var rebake_timer: Timer = %RebakeTimer
 @onready var status_label: Label = %StatusLabel
 @onready var enemy_spawner: EnemySpawner = %EnemySpawner
+@onready var time_slow_overlay: TimeSlowOverlay = %TimeSlowOverlay
 
 var _game_over: bool = false
 var _cleared: bool = false
@@ -78,6 +79,7 @@ func _on_orb_launched() -> void:
 	if _game_over or _cleared:
 		return
 	status_label.text = "Clear the room"
+	time_slow_overlay.end()
 
 
 func _on_orb_deflected(_by: Node = null) -> void:
@@ -90,12 +92,14 @@ func _on_orb_tethered(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
 	status_label.text = "Tethered!"
+	time_slow_overlay.begin()
 
 
 func _on_orb_tether_released(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
 	status_label.text = "Released!"
+	time_slow_overlay.end()
 
 
 func _on_wave_started(wave_index: int, wave_count: int) -> void:
@@ -108,7 +112,7 @@ func _on_all_cleared() -> void:
 	if _game_over:
 		return
 	_cleared = true
-	Engine.time_scale = 1.0
+	time_slow_overlay.end()
 	status_label.text = "Cleared! Press R to restart"
 
 
@@ -128,5 +132,5 @@ func _on_player_died(_node: Node = null) -> void:
 		return
 	_game_over = true
 	enemy_spawner.stop()
-	Engine.time_scale = 1.0
+	time_slow_overlay.end()
 	status_label.text = "You died. Press R to restart"

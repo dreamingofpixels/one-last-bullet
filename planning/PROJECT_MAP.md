@@ -122,8 +122,8 @@ A Final Spell/
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls, player, orb projectile, `EnemySpawner`, HUD, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
-- `project/areas/level/level.gd` — director: bakes navigation after props initialize, waits until the nav map answers path queries, starts `EnemySpawner`, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` for the player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched` and spawner `wave_started` / `all_cleared`; optional `@export level_music` → `AudioManager.play_music()`
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls, player, orb projectile, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
+- `project/areas/level/level.gd` — director: bakes navigation after props initialize, waits until the nav map answers path queries, starts `EnemySpawner`, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` for the player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched` and spawner `wave_started` / `all_cleared`; `tethered` → `TimeSlowOverlay.begin()`; `tether_released` / `launched` → `TimeSlowOverlay.end()`; optional `@export level_music` → `AudioManager.play_music()`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -176,6 +176,8 @@ A Final Spell/
 - `project/effects/particle_pixel.png` — 1×1 white pixel texture for orb particle VFX
 - `project/effects/orb_impact.tscn` — one-shot `GPUParticles2D` burst for orb world-surface bounces
 - `project/effects/orb_impact_effect.gd` — `OrbImpactEffect.play_at()`; spawns impact scene at position/normal, frees on `finished`
+- `project/effects/time_slow.gdshader` — canvas-item shader: vignette + purple-blue tint; `intensity` uniform (0 = off, 1 = full)
+- `project/effects/time_slow_overlay.tscn` + `time_slow_overlay.gd` — `TimeSlowOverlay` (`CanvasLayer`, layer −1); owns a fullscreen `ColorRect` with the time-slow shader; `begin()` ramps `Engine.time_scale` 1.0 → 0.5 over 0.5 real seconds and drives shader intensity; `end()` snaps both back; instanced in `desert.tscn` HUD (before `StatusLabel`)
 
 ### Audio
 - `project/audio/audio_manager.tscn` — autoload; Music A/B crossfade; 8 global + 16 positional pooled players (oldest-voice steal); `play` / `play_at` / `play_music` / bus volume helpers

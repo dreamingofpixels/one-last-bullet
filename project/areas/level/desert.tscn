@@ -183,18 +183,17 @@ enemy_scene = ExtResource("11_mc6if")
 [sub_resource type="Resource" id="Resource_igk5d"]
 script = ExtResource("9_v5loy")
 enemy_scene = ExtResource("10_4ykq2")
-count = 2
 metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 
 [sub_resource type="Resource" id="Resource_obfif"]
 script = ExtResource("8_igk5d")
-delay_before = 6.0
+delay_before = 10.0
 entries = Array[ExtResource("9_v5loy")]([SubResource("EnemySpawnEntry_brute"), SubResource("Resource_igk5d")])
 
 [sub_resource type="Resource" id="Resource_ocl8a"]
 script = ExtResource("9_v5loy")
 enemy_scene = ExtResource("10_4ykq2")
-count = 4
+count = 2
 metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 
 [sub_resource type="Resource" id="Resource_f08up"]
@@ -204,7 +203,7 @@ metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 
 [sub_resource type="Resource" id="Resource_egukw"]
 script = ExtResource("8_igk5d")
-delay_before = 8.0
+delay_before = 12.0
 entries = Array[ExtResource("9_v5loy")]([SubResource("Resource_ocl8a"), SubResource("Resource_f08up")])
 metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
 

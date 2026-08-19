@@ -12,6 +12,20 @@ var _target: Node2D = null
 var _repath_cooldown: float = 0.0
 var _stuck_anchor_position: Vector2 = Vector2.ZERO
 var _stuck_time: float = 0.0
+var _chasing: bool = true
+var _saved_avoidance: bool = true
+
+
+func set_chasing(enabled: bool) -> void:
+	_chasing = enabled
+	set_physics_process(enabled)
+	if enabled:
+		avoidance_enabled = _saved_avoidance
+		_acquire_target()
+	else:
+		_saved_avoidance = avoidance_enabled
+		avoidance_enabled = false
+		velocity = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -26,12 +40,16 @@ func _ready() -> void:
 	velocity_computed.connect(_on_velocity_computed)
 	max_speed = movement_component.move_speed
 	_stuck_anchor_position = body.global_position
+	_saved_avoidance = avoidance_enabled
 
 	await get_tree().physics_frame
-	_acquire_target()
+	if _chasing:
+		_acquire_target()
 
 
 func _physics_process(delta: float) -> void:
+	if not _chasing:
+		return
 	var body := owner as CharacterBody2D
 	if knockback_component.is_active():
 		_reset_stuck_state(body.global_position)
@@ -90,6 +108,8 @@ func _desired_velocity() -> Vector2:
 
 
 func _on_velocity_computed(safe_velocity: Vector2) -> void:
+	if not _chasing:
+		return
 	movement_component.move_velocity(safe_velocity)
 
 

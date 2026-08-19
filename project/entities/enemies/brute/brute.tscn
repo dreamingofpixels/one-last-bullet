@@ -37,7 +37,7 @@ script = ExtResource("3_handler")
 
 [node name="HealthComponent" type="Node2D" parent="Components" unique_id=648504730 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("4_health")
-max_health = 10.0
+max_health = 5.0
 destroy_component = NodePath("../DestroyComponent")
 
 [node name="HealthBarComponent" parent="Components" unique_id=1738291046 node_paths=PackedStringArray("health_component") instance=ExtResource("10_hbar")]
@@ -57,8 +57,7 @@ sprite = NodePath("../../Sprite2D")
 [node name="MovementComponent" type="Node2D" parent="Components" unique_id=1827114338]
 unique_name_in_owner = true
 script = ExtResource("7_movement")
-move_speed = 55.0
-sprite = NodePath("../../Sprite2D")
+move_speed = 50.0
 sprite_flip_inverted = true
 
 [node name="KnockbackComponent" parent="Components" unique_id=645508517 instance=ExtResource("9_knockback")]

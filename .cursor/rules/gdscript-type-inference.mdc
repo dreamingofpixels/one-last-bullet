@@ -1,0 +1,31 @@
+---
+description: GDScript type inference pitfalls — when to use explicit types instead of :=
+globs: **/*.gd
+alwaysApply: false
+---
+
+# GDScript: Explicit types when inference fails
+
+GDScript cannot infer the type of `:=` when the right-hand side passes through a cast (`as SomeType`) or certain method chains. Always use an explicit type annotation in these cases.
+
+## Common failure patterns
+
+```gdscript
+# ❌ BAD — cannot infer type through `as` cast
+var dir := ((orb as Node2D).global_position - owner.global_position).normalized()
+
+# ✅ GOOD — explicit annotation
+var dir: Vector2 = ((orb as Node2D).global_position - owner.global_position).normalized()
+```
+
+```gdscript
+# ❌ BAD — cannot infer through cast + method chain
+var pos := (node as Node2D).global_position
+
+# ✅ GOOD
+var pos: Vector2 = (node as Node2D).global_position
+```
+
+## Rule of thumb
+
+Use `:=` only when the RHS is a plain literal, a constructor (`Vector2(...)`, `Color(...)`), or a call on a **typed** variable. When any `as` cast or an untyped intermediate appears in the expression, write the explicit type.

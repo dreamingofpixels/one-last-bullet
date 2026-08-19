@@ -86,12 +86,6 @@ func _spawn_one(scene: PackedScene) -> void:
 		_try_clear()
 		return
 
-	var saved_layer := enemy.collision_layer
-	var saved_mask := enemy.collision_mask
-	enemy.process_mode = Node.PROCESS_MODE_DISABLED
-	enemy.collision_layer = 0
-	enemy.collision_mask = 0
-
 	var spawn_position := _pick_spawn_position()
 	enemies.add_child(enemy)
 	enemy.global_position = spawn_position
@@ -105,10 +99,7 @@ func _spawn_one(scene: PackedScene) -> void:
 		if destroy_comp.sprite:
 			destroy_comp.sprite.visible = false
 
-	var hitbox: HitboxComponent = enemy.COMPONENTS.get(HitboxComponent)
-	if hitbox:
-		hitbox.monitoring = false
-		hitbox.set_invulnerable(true)
+	_set_spawn_inert(enemy, true)
 
 	SpawnTelegraphEffect.play(self, spawn_position, telegraph_duration, assemble_duration)
 
@@ -127,21 +118,33 @@ func _spawn_one(scene: PackedScene) -> void:
 	if destroy_comp and is_instance_valid(destroy_comp.sprite):
 		destroy_comp.sprite.visible = true
 
-	enemy.collision_layer = saved_layer
-	enemy.collision_mask = saved_mask
-	if hitbox:
-		hitbox.set_invulnerable(false)
-		hitbox.monitoring = true
-	enemy.process_mode = Node.PROCESS_MODE_INHERIT
+	_set_spawn_inert(enemy, false)
 	enemy_spawned.emit(enemy)
+
+
+func _set_spawn_inert(enemy: CharacterBody2D, inert: bool) -> void:
+	for child in enemy.get_children():
+		if child is CollisionShape2D:
+			(child as CollisionShape2D).disabled = inert
+
+	var hitbox: HitboxComponent = enemy.COMPONENTS.get(HitboxComponent)
+	if hitbox:
+		hitbox.monitoring = not inert
+		hitbox.set_invulnerable(inert)
+		for shape in hitbox.get_children():
+			if shape is CollisionShape2D:
+				(shape as CollisionShape2D).disabled = inert
+
+	var navigation: NavigationComponent = enemy.COMPONENTS.get(NavigationComponent)
+	if navigation:
+		navigation.set_chasing(not inert)
 
 
 func _pick_spawn_position() -> Vector2:
 	var player_nav_position := _closest_nav_point(player.global_position)
 	var occupied := _occupied_positions()
-	var fallback_nav: Variant = null
 
-	for _attempt in 40:
+	for _attempt in 80:
 		var pos := Vector2(
 			randf_range(play_rect.position.x, play_rect.end.x),
 			randf_range(play_rect.position.y, play_rect.end.y)
@@ -150,19 +153,31 @@ func _pick_spawn_position() -> Vector2:
 			continue
 
 		var nav_pos: Variant = _validated_spawn_position(pos, player_nav_position)
-		if nav_pos == null:
-			continue
-		if fallback_nav == null:
-			fallback_nav = nav_pos
-		if _is_separated(nav_pos, occupied):
+		if nav_pos != null and _is_separated(nav_pos, occupied):
 			return nav_pos
 
-	if fallback_nav != null:
-		return fallback_nav
+	for candidate in _fallback_candidates():
+		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position)
+		if nav_pos != null and _is_separated(nav_pos, occupied):
+			return nav_pos
 
-	var corner := Vector2(play_rect.position.x + 40.0, play_rect.position.y + 40.0)
-	var corner_nav: Variant = _validated_spawn_position(corner, player_nav_position)
-	return corner_nav if corner_nav != null else player_nav_position
+	for candidate in _fallback_candidates():
+		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position)
+		if nav_pos != null:
+			return nav_pos
+
+	return player_nav_position
+
+
+func _fallback_candidates() -> Array[Vector2]:
+	var inset := 40.0
+	return [
+		play_rect.get_center(),
+		Vector2(play_rect.position.x + inset, play_rect.position.y + inset),
+		Vector2(play_rect.end.x - inset, play_rect.position.y + inset),
+		Vector2(play_rect.position.x + inset, play_rect.end.y - inset),
+		Vector2(play_rect.end.x - inset, play_rect.end.y - inset),
+	]
 
 
 func _validated_spawn_position(candidate: Vector2, player_nav_position: Vector2) -> Variant:

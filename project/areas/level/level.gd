@@ -37,10 +37,24 @@ func _ready() -> void:
 	await get_tree().physics_frame
 	navigation_region.bake_navigation_polygon(true)
 	await navigation_region.bake_finished
+	await _await_navigation_ready()
 	enemy_spawner.start()
 	player.begin_level(chaos_orb)
 	# begin_level emits tethered; keep the opening prompt instead of "Tethered!".
 	status_label.text = "Tether to release"
+
+
+func _await_navigation_ready() -> void:
+	var probe := Vector2(320.0, 180.0)
+	for _attempt in 20:
+		var nav_map := navigation_region.get_navigation_map()
+		var from := NavigationServer2D.map_get_closest_point(nav_map, probe)
+		var to := NavigationServer2D.map_get_closest_point(nav_map, player.global_position)
+		if from.distance_squared_to(Vector2.ZERO) > 1.0 and to.distance_squared_to(Vector2.ZERO) > 1.0:
+			var path := NavigationServer2D.map_get_path(nav_map, from, to, true)
+			if path.size() >= 2:
+				return
+		await get_tree().physics_frame
 
 
 func _unhandled_input(event: InputEvent) -> void:

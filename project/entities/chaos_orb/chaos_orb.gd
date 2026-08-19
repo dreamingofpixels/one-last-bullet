@@ -59,6 +59,8 @@ var _last_impact_frame: int = -1
 var _last_fly_position: Vector2 = Vector2.ZERO
 var _has_last_fly_position: bool = false
 var _stall_ticks: int = 0
+var _tether_damage_frame: int = -1
+var _tether_damaged_ids: Dictionary = {}
 
 
 func _ready() -> void:
@@ -397,13 +399,8 @@ func _break_tether_from_collision(hit: Dictionary, next_angle: float) -> bool:
 
 	var body: Node = collider as Node
 	var entity_root: Node = _resolve_entity_root(body)
-
-	# Damage breakables on contact (same as flying body_entered).
-	if body.is_in_group("breakables") or (entity_root != null and entity_root.is_in_group("breakables")):
-		var breakable: Node = entity_root if entity_root != null and entity_root.is_in_group("breakables") else body
-		var comp = breakable.get("COMPONENTS")
-		if comp and comp.has(HealthComponent):
-			comp[HealthComponent].take_damage(damage_component.damage if damage_component.damage > 0.0 else 1.0)
+	var damage_target: Node = entity_root if entity_root != null else body
+	_try_tether_damage(damage_target)
 
 	var tangent: Vector2 = _tether_tangent_at(next_angle)
 	var normal: Vector2 = _rest_normal_at(global_position)
@@ -435,6 +432,33 @@ func _resolve_entity_root(collider: Node) -> Node:
 	while node != null and node.get("COMPONENTS") == null:
 		node = node.get_parent()
 	return node
+
+
+## Apply tether hit damage once per victim per physics frame (body probe + hitbox can both fire).
+func _try_tether_damage(victim_root: Node) -> bool:
+	if not is_instance_valid(victim_root):
+		return false
+	if is_instance_valid(damage_component.instigator) and damage_component.instigator == victim_root:
+		return false
+
+	var comp = victim_root.get("COMPONENTS")
+	if comp == null or not comp.has(HealthComponent):
+		return false
+
+	var frame: int = Engine.get_physics_frames()
+	if frame != _tether_damage_frame:
+		_tether_damage_frame = frame
+		_tether_damaged_ids.clear()
+
+	var victim_id: int = victim_root.get_instance_id()
+	if _tether_damaged_ids.has(victim_id):
+		return false
+
+	var amount: float = damage_component.damage if damage_component.damage > 0.0 else 1.0
+	var applied: bool = comp[HealthComponent].take_damage(amount)
+	if applied:
+		_tether_damaged_ids[victim_id] = true
+	return applied
 
 
 func _update_tether_pose() -> void:
@@ -658,6 +682,8 @@ func _on_hitbox_area_entered(area: Area2D) -> void:
 	var comp = victim_root.get("COMPONENTS")
 	if comp == null or not comp.has(HealthComponent):
 		return
+
+	_try_tether_damage(victim_root)
 
 	# Friendly-fire: instigator is immune — physical probe still breaks on body contact.
 	if is_instance_valid(damage_component.instigator) and damage_component.instigator == victim_root:

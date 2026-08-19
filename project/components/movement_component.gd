@@ -17,14 +17,26 @@ func move(direction: Vector2) -> void:
 
 
 func move_velocity(target_velocity: Vector2) -> void:
-	owner.velocity = owner.velocity.lerp(target_velocity, acceleration)
+	var body := owner as CharacterBody2D
+	if not _can_slide(body):
+		return
+	body.velocity = body.velocity.lerp(target_velocity, acceleration)
 	if sprite and target_velocity.x != 0.0:
 		sprite.flip_h = target_velocity.x < 0.0
 		if sprite_flip_inverted:
 			sprite.flip_h = not sprite.flip_h
-	owner.move_and_slide()
+	body.move_and_slide()
 
 
 func stop() -> void:
-	owner.velocity = owner.velocity.lerp(Vector2.ZERO, friction)
-	owner.move_and_slide()
+	var body := owner as CharacterBody2D
+	if not _can_slide(body):
+		return
+	body.velocity = body.velocity.lerp(Vector2.ZERO, friction)
+	body.move_and_slide()
+
+
+func _can_slide(body: CharacterBody2D) -> bool:
+	if body == null or not is_instance_valid(body) or not body.is_inside_tree():
+		return false
+	return PhysicsServer2D.body_get_space(body.get_rid()) != RID()

@@ -58,6 +58,10 @@ func _physics_process(delta: float) -> void:
 
 	if owner is CharacterBody2D:
 		var body := owner as CharacterBody2D
+		if not body.is_inside_tree():
+			return
+		if PhysicsServer2D.body_get_space(body.get_rid()) == RID():
+			return
 		body.velocity = _velocity
 		body.move_and_slide()
 	elif owner is Node2D:

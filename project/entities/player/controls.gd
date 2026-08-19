@@ -73,6 +73,18 @@ func is_tether_just_pressed() -> bool:
 	return Input.is_action_just_pressed(tether_action.action)
 
 
+func is_tether_pressed() -> bool:
+	if tether_action.action.is_empty():
+		return false
+	return Input.is_action_pressed(tether_action.action)
+
+
+func is_tether_just_released() -> bool:
+	if tether_action.action.is_empty():
+		return false
+	return Input.is_action_just_released(tether_action.action)
+
+
 func is_dash_just_pressed() -> bool:
 	if dash_action.action.is_empty():
 		return false

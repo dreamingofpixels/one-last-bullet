@@ -53,7 +53,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _attacking or owner.orb_tether_component.is_tethering():
+	if _attacking or owner.orb_tether_component.is_tethering() or owner.orb_tether_component.is_channeling():
 		attack_sprite_hint.visible = false
 		return
 

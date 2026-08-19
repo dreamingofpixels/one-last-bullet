@@ -367,6 +367,8 @@ unique_name_in_owner = true
 [node name="EnemySpawner" parent="." unique_id=127933936 instance=ExtResource("7_spawner")]
 unique_name_in_owner = true
 waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw")])
+assemble_duration = 1.5
+telegraph_duration = 0.3
 
 [node name="ChaosOrb" parent="." unique_id=1109868456 instance=ExtResource("4_bullet")]
 unique_name_in_owner = true

@@ -40,6 +40,7 @@ var COMPONENTS: Dictionary = {}
 @onready var aim_arrow: Node2D = %AimArrow
 @onready var damage_component: DamageComponent = %DamageComponent
 @onready var hitbox_component: HitboxComponent = %HitboxComponent
+@onready var orb_sprite: Sprite2D = %OrbSprite
 @onready var orb_in_focus: Sprite2D = %OrbInFocus
 @onready var trail_particles: GPUParticles2D = %TrailParticles
 
@@ -92,6 +93,7 @@ func _ready() -> void:
 	hitbox_component.area_entered.connect(_on_hitbox_area_entered)
 
 	orb_in_focus.visible = false
+	orb_sprite.visible = false
 	aim_arrow.visible = false
 	hitbox_component.monitoring = false
 	freeze = true
@@ -173,6 +175,7 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	state = OrbState.TETHERED
 	freeze = true
 	linear_velocity = Vector2.ZERO
+	orb_sprite.visible = true
 	aim_arrow.visible = false
 	damage_component.instigator = player
 	_grace_clear_msec = 0

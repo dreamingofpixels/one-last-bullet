@@ -40,7 +40,7 @@ func _ready() -> void:
 	await navigation_region.bake_finished
 	await _await_navigation_ready()
 	enemy_spawner.start()
-	player.begin_level(chaos_orb)
+	await player.begin_level(chaos_orb)
 	# begin_level emits tethered; keep the opening prompt instead of "Tethered!".
 	status_label.text = "Tether to release"
 

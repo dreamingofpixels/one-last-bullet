@@ -11,7 +11,11 @@ func exit() -> void:
 
 func update(_delta: float) -> void:
 	var controls: Controls = owner.controls
-	if owner.orb_tether_component.is_tethering() or owner.orb_tether_component.is_channeling():
+	if (
+		owner.is_assembling()
+		or owner.orb_tether_component.is_tethering()
+		or owner.orb_tether_component.is_channeling()
+	):
 		owner.movement_component.stop()
 		emit_signal("finished", "idle")
 		return
@@ -27,7 +31,7 @@ func update(_delta: float) -> void:
 func handle_input(event: InputEvent) -> void:
 	var controls: Controls = owner.controls
 
-	if owner.orb_tether_component.is_channeling():
+	if owner.is_assembling() or owner.orb_tether_component.is_channeling():
 		return
 
 	if event.is_action_pressed(controls.dash_action.action):

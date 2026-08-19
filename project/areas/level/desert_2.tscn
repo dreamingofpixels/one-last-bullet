@@ -3,8 +3,6 @@
 [ext_resource type="Script" uid="uid://c3eip5fgi2wd" path="res://areas/level/level.gd" id="1_2wpt7"]
 [ext_resource type="Texture2D" uid="uid://bl2jhjc05fdil" path="res://areas/level/desert_tilemap_2.png" id="2_y5q4f"]
 [ext_resource type="Texture2D" uid="uid://b7od4f25gdreb" path="res://areas/level/desert_tilemap.png" id="3_k2esu"]
-[ext_resource type="PackedScene" uid="uid://cloo7hwpiadpr" path="res://objects/cactai/cactus.tscn" id="4_v2ljg"]
-[ext_resource type="PackedScene" path="res://objects/rocks/rock.tscn" id="5_urkfi"]
 [ext_resource type="PackedScene" uid="uid://du4wuw1kmuhnc" path="res://entities/player/player.tscn" id="6_nefyj"]
 [ext_resource type="PackedScene" path="res://entities/enemies/spawner/enemy_spawner.tscn" id="7_l7nu1"]
 [ext_resource type="Script" uid="uid://b51sqf0cf8bcy" path="res://entities/enemies/spawner/enemy_wave.gd" id="8_xf0ev"]
@@ -13,6 +11,9 @@
 [ext_resource type="PackedScene" uid="uid://bq7w3m5k8tn2r" path="res://entities/enemies/brute/brute.tscn" id="11_ufggw"]
 [ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/chaos_orb/chaos_orb.tscn" id="12_q718r"]
 [ext_resource type="PackedScene" uid="uid://b3xqmv7y4c8et" path="res://effects/time_slow_overlay.tscn" id="13_7kjcw"]
+[ext_resource type="PackedScene" uid="uid://cloo7hwpiadpr" path="res://objects/cactai/cactus.tscn" id="14_l8mqp"]
+[ext_resource type="PackedScene" path="res://objects/rocks/big_rock.tscn" id="15_n2gv6"]
+[ext_resource type="PackedScene" path="res://objects/animal_skull.tscn" id="16_m5bp2"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_egukw"]
 texture = ExtResource("2_y5q4f")
@@ -171,7 +172,7 @@ size = Vector2(16, 360)
 [sub_resource type="Resource" id="EnemySpawnEntry_grunts"]
 script = ExtResource("9_l5c64")
 enemy_scene = ExtResource("10_o15o3")
-count = 3
+count = 2
 
 [sub_resource type="Resource" id="EnemyWave_1"]
 script = ExtResource("8_xf0ev")
@@ -184,12 +185,13 @@ enemy_scene = ExtResource("11_ufggw")
 [sub_resource type="Resource" id="Resource_igk5d"]
 script = ExtResource("9_l5c64")
 enemy_scene = ExtResource("10_o15o3")
+count = 3
 metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 
 [sub_resource type="Resource" id="Resource_obfif"]
 script = ExtResource("8_xf0ev")
-delay_before = 10.0
-entries = Array[ExtResource("9_l5c64")]([SubResource("EnemySpawnEntry_brute"), SubResource("Resource_igk5d")])
+delay_before = 6.0
+entries = Array[ExtResource("9_l5c64")]([SubResource("Resource_igk5d")])
 
 [sub_resource type="Resource" id="Resource_ocl8a"]
 script = ExtResource("9_l5c64")
@@ -197,15 +199,10 @@ enemy_scene = ExtResource("10_o15o3")
 count = 2
 metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 
-[sub_resource type="Resource" id="Resource_f08up"]
-script = ExtResource("9_l5c64")
-enemy_scene = ExtResource("11_ufggw")
-metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
-
 [sub_resource type="Resource" id="Resource_egukw"]
 script = ExtResource("8_xf0ev")
-delay_before = 12.0
-entries = Array[ExtResource("9_l5c64")]([SubResource("Resource_ocl8a"), SubResource("Resource_f08up")])
+delay_before = 10.0
+entries = Array[ExtResource("9_l5c64")]([SubResource("EnemySpawnEntry_brute"), SubResource("Resource_ocl8a")])
 metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_arena"]
@@ -237,29 +234,77 @@ navigation_enabled = false
 
 [node name="Objects" type="Node2D" parent="." unique_id=1563161946 groups=["navigation_source"]]
 
-[node name="Cactus1" parent="Objects" unique_id=1722540073 instance=ExtResource("4_v2ljg")]
-position = Vector2(112, 255)
+[node name="NorthCactus1" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(80, 56)
 
-[node name="Cactus2" parent="Objects" unique_id=1778698042 instance=ExtResource("4_v2ljg")]
-position = Vector2(480, 140)
+[node name="NorthCactus2" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(200, 48)
 
-[node name="Cactus3" parent="Objects" unique_id=1895136550 instance=ExtResource("4_v2ljg")]
-position = Vector2(280, 100)
+[node name="NorthCactus3" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(440, 52)
 
-[node name="Cactus5" parent="Objects" unique_id=1313735517 instance=ExtResource("4_v2ljg")]
-position = Vector2(605, 327)
+[node name="NorthCactus4" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(568, 48)
 
-[node name="Cactus4" parent="Objects" unique_id=812608539 instance=ExtResource("4_v2ljg")]
-position = Vector2(612, 47)
+[node name="WestRock1" parent="Objects" instance=ExtResource("15_n2gv6")]
+position = Vector2(64, 172)
 
-[node name="Rock1" parent="Objects" unique_id=2071311393 instance=ExtResource("5_urkfi")]
-position = Vector2(200, 240)
+[node name="WestRock2" parent="Objects" instance=ExtResource("15_n2gv6")]
+position = Vector2(96, 188)
 
-[node name="Rock2" parent="Objects" unique_id=109892578 instance=ExtResource("5_urkfi")]
-position = Vector2(520, 220)
+[node name="WestRock3" parent="Objects" instance=ExtResource("15_n2gv6")]
+position = Vector2(64, 204)
 
-[node name="Rock3" parent="Objects" unique_id=2076299371 instance=ExtResource("5_urkfi")]
-position = Vector2(46, 62)
+[node name="SouthGateRock1" parent="Objects" instance=ExtResource("15_n2gv6")]
+position = Vector2(248, 224)
+
+[node name="SouthGateRock2" parent="Objects" instance=ExtResource("15_n2gv6")]
+position = Vector2(392, 224)
+
+[node name="EastRock1" parent="Objects" instance=ExtResource("15_n2gv6")]
+position = Vector2(584, 168)
+
+[node name="EastRock2" parent="Objects" instance=ExtResource("15_n2gv6")]
+position = Vector2(608, 196)
+
+[node name="EastCactus1" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(520, 176)
+
+[node name="EastCactus2" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(572, 212)
+
+[node name="EastCactus3" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(536, 236)
+
+[node name="BoneSkull1" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(152, 104)
+
+[node name="BoneSkull2" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(224, 132)
+
+[node name="BoneSkull3" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(296, 108)
+
+[node name="BoneSkull4" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(368, 140)
+
+[node name="BoneSkull5" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(440, 116)
+
+[node name="BoneSkull6" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(512, 144)
+
+[node name="CornerCactusLeft" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(72, 300)
+
+[node name="CornerCactusRight" parent="Objects" instance=ExtResource("14_l8mqp")]
+position = Vector2(568, 308)
+
+[node name="CornerSkullLeft" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(120, 252)
+
+[node name="CornerSkullRight" parent="Objects" instance=ExtResource("16_m5bp2")]
+position = Vector2(520, 268)
 
 [node name="Walls" type="StaticBody2D" parent="." unique_id=1771153190 groups=["navigation_source"]]
 collision_mask = 0

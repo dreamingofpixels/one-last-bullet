@@ -43,11 +43,11 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 
 ## Stage
 - **Different stages and environments**, with randomized enemies and obstacles (tavern is one possible setting, not the only one).
-- Prototype arena: `desert.tscn` with border wall colliders (tileset has no physics yet).
+- Prototype arenas: `desert.tscn` and `desert_2.tscn` with border wall colliders (tileset has no physics yet).
 - Solid props (rocks) and breakables (cacti) block movement and bounce the orb.
 - The orb **bounces off** a breakable on contact; some breakables are one-shot (cactus, `max_health = 1`), others require multiple hits (big rock / animal skull, `max_health = 3`). Orb deals **1 damage** per contact regardless.
 - Breaking some objects can yield powerups *(hook only; drops not in prototype yet)*.
-- `big_rock.tscn` (28×22 px) and `animal_skull.tscn` (16×16 px) scenes exist as 3-HP breakables but are **not yet placed in any level**.
+- `big_rock.tscn` (28×22 px) and `animal_skull.tscn` (16×16 px) are 3-HP breakables placed in `desert_2.tscn`.
 - Obstacles can interact with the orb and environment (example: TNT barrel explosion — later).
 - Enemy mana drops vanish after a short time (exact duration TBD).
 

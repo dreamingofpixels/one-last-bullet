@@ -19,7 +19,8 @@ A Final Spell/
     ├── icon.svg
     ├── areas/
     │   └── level/
-    │       ├── desert.tscn     Main playable arena
+│       ├── desert.tscn     Main playable arena
+│       ├── desert_2.tscn   Destructible-only arena variant
     │       ├── level.gd        Level director (nav bake, win/lose, starts EnemySpawner)
     │       └── desert_tilemap.png
     ├── components/             Reusable component scripts + scenes
@@ -128,6 +129,7 @@ A Final Spell/
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls, player, orb projectile, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
+- `project/areas/level/desert_2.tscn` — destructible-focused arena variant using only breakable props in `Objects` (`cactus`, `big_rock`, `animal_skull`) with retuned waves (2 grunts, then 3 grunts at 6s, then 1 brute + 2 grunts at 10s)
 - `project/areas/level/level.gd` — director: bakes navigation after props initialize, waits until the nav map answers path queries, starts `EnemySpawner`, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` for the player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched` and spawner `wave_started` / `all_cleared`; `tethered` → `TimeSlowOverlay.begin()`; `tether_released` / `launched` → `TimeSlowOverlay.end()`; optional `@export level_music` → `AudioManager.play_music()`
 
 ### Components
@@ -170,8 +172,8 @@ A Final Spell/
 - `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
 - `project/objects/cactai/cactus.tscn` — breakable cactus; `max_health = 1.0` (one-shot); Components: HealthComponent + HealthBarComponent + DestroyComponent
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
-- `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 3.0`; single variant (`big_rock.tres`); not yet placed in any level
-- `project/objects/animal_skull.tscn` — breakable skull; `max_health = 3.0`; single variant (`animal_skull_variant.tres`); not yet placed in any level
+- `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 3.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
+- `project/objects/animal_skull.tscn` — breakable skull; `max_health = 3.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
 
 ### Effects
 - `project/effects/SmoothPixel.gdshader` — [CptPotato Smooth Pixel Filtering](https://github.com/CptPotato/GodotThings/tree/master/SmoothPixelFiltering) (requires Linear filter on sprites)

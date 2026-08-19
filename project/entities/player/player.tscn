@@ -84,6 +84,7 @@ hitbox_component = NodePath("../HitboxComponent")
 [node name="OrbTetherComponent" parent="Components" unique_id=1870992403 instance=ExtResource("8_tether")]
 unique_name_in_owner = true
 focus_radius = 48.0
+remote_tether_hold_duration = 1.5
 
 [node name="DirectionalSpriteComponent" parent="Components" unique_id=122017100 node_paths=PackedStringArray("animated_sprite") instance=ExtResource("8_dir")]
 unique_name_in_owner = true

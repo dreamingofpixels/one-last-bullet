@@ -4,7 +4,7 @@ class_name OrbTetherComponent extends Node2D
 ## Also handles remote tether channeling (hold 2s to snap distant orb).
 
 @export var focus_radius: float = 32.0
-@export var min_tether_radius: float = 16.0
+@export var min_tether_radius: float = 24.0
 @export var tether_cooldown: float = 0.25
 @export var tether_enabled: bool = true
 @export var remote_tether_hold_duration: float = 2.0
@@ -36,7 +36,7 @@ func begin_opening_tether(radius: float = -1.0) -> void:
 	var orb := _get_orb()
 	if orb == null or not orb.has_method("begin_opening_tether"):
 		return
-	var r: float = focus_radius if radius < 0.0 else radius
+	var r: float = min_tether_radius if radius < 0.0 else radius
 	orb.begin_opening_tether(owner, r)
 
 
@@ -157,8 +157,8 @@ func _try_immediate_tether(orb: RigidBody2D, distance: float) -> bool:
 	if distance > focus_radius:
 		return false
 
-	var radius: float = clampf(distance, min_tether_radius, focus_radius)
-	orb.begin_tether(owner, radius)
+	# Always target min_tether_radius; orb spirals from its current capture distance.
+	orb.begin_tether(owner, min_tether_radius)
 	return true
 
 
@@ -172,8 +172,9 @@ func _complete_remote_tether(orb: RigidBody2D) -> void:
 	var dir: Vector2 = ((orb as Node2D).global_position - owner.global_position).normalized()
 	if dir.length_squared() < 0.0001:
 		dir = Vector2.UP
-	(orb as Node2D).global_position = owner.global_position + dir * focus_radius
-	orb.begin_tether(owner, focus_radius)
+	# Teleport directly onto the orbit circle so there is no spiral after a remote snap.
+	(orb as Node2D).global_position = owner.global_position + dir * min_tether_radius
+	orb.begin_tether(owner, min_tether_radius)
 	_channeling = false
 	_channel_elapsed = 0.0
 	queue_redraw()

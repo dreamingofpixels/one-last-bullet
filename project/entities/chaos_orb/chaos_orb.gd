@@ -26,7 +26,9 @@ var COMPONENTS: Dictionary = {}
 @export var arrow_length: float = 28.0
 @export var rotate_heading: bool = true
 @export var tether_speed_scale: float = 1.0
-@export var tether_auto_release_turns: float = 1.0
+@export var tether_auto_release_turns: float = 2.0
+## Radial pull-in speed when spiraling to the target orbit radius (px/s, game time).
+@export var tether_radius_align_speed: float = 320.0
 ## Multiplier applied to speed and damage on every tether release (1.1 = +10%).
 @export var tether_release_boost: float = 1.1
 @export var bounce_sound: SoundEvent
@@ -48,6 +50,7 @@ var _grace_clear_msec: int = 0
 var _in_focus: bool = false
 var _tether_player: Node2D = null
 var _tether_radius: float = 32.0
+var _tether_target_radius: float = 32.0
 var _tether_angle: float = 0.0
 var _tether_dir: float = 1.0
 var _tether_swept: float = 0.0
@@ -160,6 +163,7 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	_tether_player = player
 	_player = player
 	_tether_radius = maxf(radius, 1.0)
+	_tether_target_radius = _tether_radius  # opening: already on circle, no spiral
 	_tether_angle = Vector2.UP.angle()  # spawn above player
 	_tether_dir = 1.0  # CCW when starting from rest
 	_tether_swept = 0.0
@@ -202,11 +206,13 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	_opening_tether = false
 	_tether_player = player
 	_player = player
-	_tether_radius = maxf(radius, 1.0)
 
 	var radial: Vector2 = global_position - player.global_position
 	if radial.length_squared() < 0.0001:
-		radial = Vector2.RIGHT * _tether_radius
+		radial = Vector2.RIGHT * maxf(radius, 1.0)
+	# Start orbiting at the actual capture distance; spiral to the target radius.
+	_tether_radius = maxf(radial.length(), 1.0)
+	_tether_target_radius = maxf(radius, 1.0)
 	_tether_angle = radial.angle()
 
 	# Preserve travel sense: positive cross means counterclockwise (dir = +1).
@@ -223,7 +229,10 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	_grace_clear_msec = 0
 	hitbox_component.monitoring = true
 	set_in_focus(true)
-	_update_tether_pose()
+	# Do NOT call _update_tether_pose() here — the orb is already at the correct position;
+	# teleporting to _tether_target_radius on frame 0 would be a snap, not a spiral.
+	aim_direction = _tether_tangent()
+	_apply_heading()
 	if begin_tether_sound:
 		AudioManager.play_at(begin_tether_sound, global_position)
 	tethered.emit(player)
@@ -332,16 +341,20 @@ func _update_tether(delta: float) -> void:
 		release_tether()
 		return
 
-	var angular_speed: float = (speed * tether_speed_scale) / _tether_radius
+	# Spiral: move current radius toward the target orbit radius each tick.
+	var next_radius: float = move_toward(_tether_radius, _tether_target_radius, tether_radius_align_speed * delta)
+
+	var angular_speed: float = (speed * tether_speed_scale) / maxf(_tether_radius, 1.0)
 	var step: float = angular_speed * delta
 	var next_angle: float = _tether_angle + step * _tether_dir
 	var next_pos: Vector2 = (
-		_tether_player.global_position + Vector2.RIGHT.rotated(next_angle) * _tether_radius
+		_tether_player.global_position + Vector2.RIGHT.rotated(next_angle) * next_radius
 	)
 
 	if _probe_tether_collision(global_position, next_pos, next_angle):
 		return
 
+	_tether_radius = next_radius
 	_tether_angle = next_angle
 	_tether_swept += step
 	_update_tether_pose()
@@ -362,7 +375,10 @@ func _probe_tether_collision(from_pos: Vector2, next_pos: Vector2, next_angle: f
 	params.transform = Transform2D(0.0, from_pos)
 	params.motion = motion
 	params.collision_mask = PHYSICS_MASK_PROBE
-	params.exclude = [get_rid()]
+	var excludes: Array[RID] = [get_rid()]
+	if is_instance_valid(_tether_player) and _tether_player is CollisionObject2D:
+		excludes.append((_tether_player as CollisionObject2D).get_rid())
+	params.exclude = excludes
 	params.collide_with_areas = false
 	params.collide_with_bodies = true
 
@@ -479,6 +495,7 @@ func _tether_tangent_at(angle: float) -> Vector2:
 func _clear_tether_vars() -> void:
 	_tether_player = null
 	_tether_radius = 32.0
+	_tether_target_radius = 32.0
 	_tether_angle = 0.0
 	_tether_dir = 1.0
 	_tether_swept = 0.0

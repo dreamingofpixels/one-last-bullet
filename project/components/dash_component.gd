@@ -1,8 +1,10 @@
 class_name DashComponent extends Node2D
 
 ## Fixed-distance dash with i-frames. Self-driven via _physics_process.
-## While dashing, body collision is cleared so the player phases through
-## props, enemies, and walls for the full distance.
+## While dashing, the player phases through props and enemies but still
+## collides with the arena's outer walls (physics layer `wall`).
+
+const PHYSICS_LAYER_WALL := 16
 
 @export var dash_distance: float = 50.0
 @export var dash_speed: float = 400.0
@@ -69,14 +71,18 @@ func can_dash() -> bool:
 	return not _dashing and Time.get_ticks_msec() >= _cooldown_until_msec
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not _dashing:
 		set_physics_process(false)
 		return
 
 	var body := owner as CharacterBody2D
 	var start_pos: Vector2 = body.global_position
-	body.velocity = _direction * dash_speed
+	var step: float = minf(dash_speed * delta, _remaining_distance)
+	if delta > 0.0:
+		body.velocity = _direction * (step / delta)
+	else:
+		body.velocity = Vector2.ZERO
 	body.move_and_slide()
 
 	var moved: float = start_pos.distance_to(body.global_position)
@@ -85,7 +91,8 @@ func _physics_process(_delta: float) -> void:
 		if _distance_since_last_afterimage >= afterimage_interval:
 			_spawn_afterimage(start_pos)
 			_distance_since_last_afterimage = 0.0
-	_remaining_distance -= moved
+	# Consume intended distance so a wall block cannot stall the dash forever.
+	_remaining_distance -= step
 
 	if _remaining_distance <= 0.0:
 		_end_dash()
@@ -112,8 +119,8 @@ func _begin_phase() -> void:
 	var body := owner as CharacterBody2D
 	_saved_collision_mask = body.collision_mask
 	_saved_collision_layer = body.collision_layer
-	body.collision_mask = 0
 	body.collision_layer = 0
+	body.collision_mask = PHYSICS_LAYER_WALL
 
 
 func _end_phase() -> void:

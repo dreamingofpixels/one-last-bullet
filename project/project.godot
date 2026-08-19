@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="A Final Spell"
-run/main_scene="uid://i635i3b0icut"
+run/main_scene="uid://drul7vfq10oin"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -180,6 +180,7 @@ aim_right_2={
 2d_physics/layer_2="player"
 2d_physics/layer_3="enemy"
 2d_physics/layer_4="orb"
+2d_physics/layer_5="wall"
 
 [physics]
 

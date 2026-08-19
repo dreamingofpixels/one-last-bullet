@@ -37,7 +37,7 @@ script = ExtResource("3_handler")
 
 [node name="HealthComponent" type="Node2D" parent="Components" unique_id=648504730 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("4_health")
-max_health = 5.0
+max_health = 50.0
 destroy_component = NodePath("../DestroyComponent")
 
 [node name="HealthBarComponent" parent="Components" unique_id=1738291046 node_paths=PackedStringArray("health_component") instance=ExtResource("10_hbar")]

@@ -122,13 +122,14 @@ A Final Spell/
 | 2 | player |
 | 3 | enemy |
 | 4 | orb |
+| 5 | wall |
 
 ---
 
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls, player, orb projectile, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, player, orb projectile, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
 - `project/areas/level/desert_2.tscn` — destructible-focused arena variant using only breakable props in `Objects` (`cactus`, `big_rock`, `animal_skull`) with retuned waves (2 grunts, then 3 grunts at 6s, then 1 brute + 2 grunts at 10s)
 - `project/areas/level/level.gd` — director: bakes navigation after props initialize, waits until the nav map answers path queries, starts `EnemySpawner`, opening tether via `player.begin_level()`, win/lose/restart; connects `DestroyComponent.destroyed` for the player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched` and spawner `wave_started` / `all_cleared`; `tethered` → `TimeSlowOverlay.begin()`; `tether_released` / `launched` → `TimeSlowOverlay.end()`; optional `@export level_music` → `AudioManager.play_music()`
 
@@ -144,7 +145,7 @@ A Final Spell/
 - `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the player by group, repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls; `set_chasing(bool)` pauses avoidance + physics so assembling enemies do not slide
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false); optional `swing_sound` (unassigned)
 - `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), `min_tether_radius` (24 px); `bind_orb()` / `begin_opening_tether()`; **tap capture**: calls `begin_tether(owner, min_tether_radius)` without moving the orb — orb spirals from capture distance to 24 px orbit; **remote tether channel**: hold tether 2 s out of range → teleports orb to 24 px on player→orb axis and captures (no spiral); `is_channeling()` / `get_channel_progress()`; draws progress ring + line to orb; input centralized in `_process()` (player states only gate movement/dash/attack)
-- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body collision to phase through solids; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()`
+- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body layer and masks only `wall` so the dash phases through props/enemies but stops at outer arena walls; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()`
 - `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
 ### State machine base

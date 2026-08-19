@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dlea7fiafdu0g" path="res://entities/chaos_orb/chaos_orb.gd" id="1_7sc3r"]
 [ext_resource type="Resource" path="res://entities/chaos_orb/last_orb_sfx/orb_bounce.tres" id="2_j5gjm"]
-[ext_resource type="Resource" uid="uid://c26wf2fl3uwof" path="res://entities/chaos_orb/last_orb_sfx/begin_tether.wav" id="3_fxsq4"]
-[ext_resource type="Resource" uid="uid://deyfsy266xuhn" path="res://entities/chaos_orb/last_orb_sfx/release_tether.wav" id="4_3hixe"]
+[ext_resource type="AudioStream" uid="uid://c26wf2fl3uwof" path="res://entities/chaos_orb/last_orb_sfx/begin_tether.wav" id="3_fxsq4"]
+[ext_resource type="AudioStream" uid="uid://deyfsy266xuhn" path="res://entities/chaos_orb/last_orb_sfx/release_tether.wav" id="4_3hixe"]
 [ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/chaos_orb/aim_arrow.gd" id="5_7vndn"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="5_handler"]
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="6_damage"]
@@ -93,6 +93,7 @@ script = ExtResource("5_handler")
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=1545720499]
 unique_name_in_owner = true
 script = ExtResource("6_damage")
+damage = 10.0
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1377224673]
 unique_name_in_owner = true

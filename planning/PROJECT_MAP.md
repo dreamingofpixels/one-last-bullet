@@ -88,14 +88,14 @@ A Final Spell/
         │   ├── cactus.tscn               Breakable; picks cactus_1..4 at runtime
         │   ├── cactus_1..4.png
         │   └── variants/                 LevelObjectVariant .tres per art
-        ├── animal_skull.tscn             Breakable skull prop; 3 HP; single variant (16×16)
+        ├── animal_skull.tscn             Breakable skull prop; 20 HP; single variant (16×16)
         ├── animal_skull.png
         ├── animal_skull_variant.tres     LevelObjectVariant for the skull (collision 14×12)
         ├── mana/
         │   └── mana_picked_up.ogg        (design economy resource; pickup scene not wired yet)
         └── rocks/
             ├── rock.tscn                 Solid; picks from rock variants at runtime (no health)
-            ├── big_rock.tscn             Breakable rock; 3 HP; single variant (big_rock.png 28×22)
+            ├── big_rock.tscn             Breakable rock; 60 HP; single variant (big_rock.png 28×22)
             ├── rock_1.png
             ├── big_rock.png
             └── variants/                 rock_1.tres + big_rock.tres (LevelObjectVariant resources)
@@ -153,7 +153,7 @@ A Final Spell/
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; start flow: `_ready` hides `%PlayerSprite` and sets player inert, `begin_level(orb)` awaits reverse assemble (`DestructionEffect.play_assemble_from_sprite`) then reenables collision/hitbox and begins opening tether; `is_assembling()` gates movement/attack/dash in `idle.gd` and `walk.gd`; tree: Components (Health max 3 + 0.5s i-frames / HealthBar / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; start flow: `_ready` hides `%PlayerSprite` and sets player inert, `begin_level(orb)` awaits reverse assemble (`DestructionEffect.play_assemble_from_sprite`) then reenables collision/hitbox and begins opening tether; `is_assembling()` gates movement/attack/dash in `idle.gd` and `walk.gd`; tree: Components (Health max 30 + 0.5s i-frames / HealthBar / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
 - `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; tether action calls `try_tether_press()`; attack blocked while tethering; walk/dash blocked while tethering
@@ -163,18 +163,18 @@ A Final Spell/
 - `project/entities/chaos_orb/chaos_orb.tscn` + `chaos_orb.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `_ready` keeps orb hidden until opening tether, `begin_opening_tether()` reveals the sprite; API: `begin_opening_tether()` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()`; **orbit is always `min_tether_radius` (24 px)**; tap-capture keeps orb at current position and spirals in via `tether_radius_align_speed` (320 px/s); remote/opening starts already on the 24 px circle (no spiral); auto-release after **two full revolutions** (`tether_auto_release_turns = 2.0`); tether orbit probes world/player/enemy layers and breaks on contact or on dealing damage; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); opening release emits `launched` (no boost); mid-combat release / forced break emits `tether_released` (+10% boost); instigator-based player grace; trail particles while flying/tethered; world-surface impact bursts via `OrbImpactEffect`; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
 - `project/entities/chaos_orb/chaos_orb_legacy.tscn` + `chaos_orb.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
 - `project/entities/chaos_orb/aim_arrow.gd` — drawn aim arrow during aim windows
-- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — component-driven chaser; Health max 3 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / Navigation / HitboxComponent
-- `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same path/avoidance stack as grunt; left-facing sprite via `MovementComponent.sprite_flip_inverted`; larger collision (r=15); Health max 10 / HealthBar / Damage 3.0 with 0.75s contact tick / Navigation
-- `project/entities/enemies/spawner/enemy_spawner.tscn` + `enemy_spawner.gd` — wave director; inspector `waves` (`EnemyWave` / `EnemySpawnEntry`); nav-valid spawn points with player distance + pack separation; telegraph then reverse pixel-fall assemble; assembling enemies keep physics layers but disable shapes/hitbox/chase until assemble finishes; `all_cleared` when every wave is issued and every instanced enemy is dead; desert default: 3 grunts, then 1 brute after 6s
+- `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — component-driven chaser; Health max 20 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / Navigation / HitboxComponent
+- `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same path/avoidance stack as grunt; left-facing sprite via `MovementComponent.sprite_flip_inverted`; larger collision (r=15); Health max 50 / HealthBar / Damage 3.0 with 0.75s contact tick / Navigation
+- `project/entities/enemies/spawner/enemy_spawner.tscn` + `enemy_spawner.gd` — wave director; inspector `waves` (`EnemyWave` / `EnemySpawnEntry`); nav-valid **and physics-clear** spawn points with player distance + pack separation (enemy body overlap vs `world` colliders rejected at spawn-time); telegraph then reverse pixel-fall assemble; assembling enemies keep physics layers but disable shapes/hitbox/chase until assemble finishes; a short depenetration pass runs when collision is re-enabled before chase resumes; `all_cleared` when every wave is issued and every instanced enemy is dead; desert default: 3 grunts, then 1 brute after 6s
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)
 - `project/objects/_base/breakable.gd` — `extends LevelObject`; `COMPONENTS` dict; `breakables` group; destroyed via `COMPONENTS[HealthComponent].take_damage()` from orb `body_entered`
 - `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
-- `project/objects/cactai/cactus.tscn` — breakable cactus; `max_health = 1.0` (one-shot); Components: HealthComponent + HealthBarComponent + DestroyComponent
+- `project/objects/cactai/cactus.tscn` — breakable cactus; `max_health = 5.0`; Components: HealthComponent + HealthBarComponent + DestroyComponent
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
-- `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 3.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
-- `project/objects/animal_skull.tscn` — breakable skull; `max_health = 3.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
+- `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
+- `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
 
 ### Effects
 - `project/effects/SmoothPixel.gdshader` — [CptPotato Smooth Pixel Filtering](https://github.com/CptPotato/GodotThings/tree/master/SmoothPixelFiltering) (requires Linear filter on sprites)

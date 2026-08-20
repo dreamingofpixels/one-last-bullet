@@ -457,6 +457,8 @@ func _resolve_entity_root(collider: Node) -> Node:
 func _try_tether_damage(victim_root: Node) -> bool:
 	if not is_instance_valid(victim_root):
 		return false
+	if damage_component.damage <= 0.0:
+		return false
 	if is_instance_valid(damage_component.instigator) and damage_component.instigator == victim_root:
 		return false
 
@@ -473,8 +475,7 @@ func _try_tether_damage(victim_root: Node) -> bool:
 	if _tether_damaged_ids.has(victim_id):
 		return false
 
-	var amount: float = damage_component.damage if damage_component.damage > 0.0 else 1.0
-	var applied: bool = comp[HealthComponent].take_damage(amount)
+	var applied: bool = comp[HealthComponent].take_damage(damage_component.damage)
 	if applied:
 		_tether_damaged_ids[victim_id] = true
 	return applied
@@ -731,5 +732,5 @@ func _on_body_entered(body: Node) -> void:
 	# Breakables: damage via HealthComponent so the bounce resolves first.
 	if body.is_in_group("breakables"):
 		var comp = body.get("COMPONENTS")
-		if comp and comp.has(HealthComponent):
-			comp[HealthComponent].take_damage(1.0)
+		if comp and comp.has(HealthComponent) and damage_component.damage > 0.0:
+			comp[HealthComponent].take_damage(damage_component.damage)

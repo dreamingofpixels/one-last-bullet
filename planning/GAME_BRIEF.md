@@ -29,7 +29,7 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 - **Design**: shot by the player at level start in any direction from center-bottom; then travels and bounces freely forever. Speed slow enough to tether but fast enough that avoiding it is a challenge. Speed and damage increase each time you redirect it.
 - **Prototype**: player first assembles over ~2 s, then the orb starts tethered **24 px above** the player; tether (or two full revolutions) releases it along the current tangent. Opening tether triggers the same time-slow (50%, 0.5 s ramp) as mid-combat captures.
 - Travels and bounces freely forever (perfectly elastic walls, rocks, breakables, and entity bodies; constant speed). Script owns bounce via contact normals (`_integrate_forces`); physics material bounce is 0 so the solver does not fight it.
-- Damages enemies on hit; deals **1 damage** to the player on contact (not instant kill). Player has brief i-frames after a non-fatal hit.
+- Damages enemies and player on hit based on the orb `DamageComponent` value (**10** in the current scene setup, not instant kill). Player has brief i-frames after a non-fatal hit.
 - Mid-combat steer: get within **48 px**, press tether to capture the orb; it spirals to a fixed **24 px** orbit. Press tether again (or wait two full revolutions) to release it along the current tangent. Player cannot move or dash while tethered. Each release permanently increases orb **speed and damage by 10%** (speed capped at **1500**). While tethered the orb damages enemies; the tethering player is immune via instigator grace for the whole tether and briefly after release. Contact with solids or entities (or dealing damage to a health-bearing target) **breaks the tether**, bounces the orb, and applies the same +10% boost as an intentional release (opening tether still has no boost). The flying orb also **bounces off** player and enemy bodies. Brief post-release grace so the player is not instantly hit again. Arc-deflect of the orb is parked (code kept). Attack swing still knocks enemies and has a short cooldown (~0.35s); it is independent of tether capture/release.
 
 ## Input
@@ -45,7 +45,7 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 - **Different stages and environments**, with randomized enemies and obstacles (tavern is one possible setting, not the only one).
 - Prototype arenas: `desert.tscn` and `desert_2.tscn` with border wall colliders (tileset has no physics yet).
 - Solid props (rocks) and breakables (cacti) block movement and bounce the orb.
-- The orb **bounces off** a breakable on contact; some breakables are one-shot (cactus, `max_health = 1`), others require multiple hits (big rock / animal skull, `max_health = 3`). Orb deals **1 damage** per contact regardless.
+- The orb **bounces off** a breakable on contact. Breakable HP is scene-authored (`cactus` `max_health = 5`, `animal_skull` `max_health = 20`, `big_rock` `max_health = 60`) and orb contact damage comes from the orb `DamageComponent` (**10** in the current scene setup).
 - Breaking some objects can yield powerups *(hook only; drops not in prototype yet)*.
 - `big_rock.tscn` (28×22 px) and `animal_skull.tscn` (16×16 px) are 3-HP breakables placed in `desert_2.tscn`.
 - Obstacles can interact with the orb and environment (example: TNT barrel explosion — later).
@@ -60,7 +60,7 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 
 ## Enemies
 - Two chaser enemies (`grunt_knife`, `brute`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking, while still dealing **1 contact damage** on a ~0.75s tick once overlapping.
-- Grunts and brutes have **3 HP** (orb hits chip them; melee still knocks back without damage). Brute HP/damage can be tuned on the scene.
+- Grunts and brutes use scene-authored HP (`grunt` **20 HP**, `brute` **50 HP**); orb hits chip them and melee still knocks back without damage. Brute HP/damage can be tuned on the scene.
 - Enemies arrive in **authored waves** (`EnemySpawner`: count, types, delay between waves). Desert prototype: **3 grunts**, then **1 brute** after **6s** (waves can overlap if the first is not cleared in time). Each spawn telegraphs with a pulsing ground ring, then assembles over **~2s** by playing the destruction pixel-fall in reverse.
 - Player attack knocks enemies back (no melee damage).
 - More enemy types planned later.

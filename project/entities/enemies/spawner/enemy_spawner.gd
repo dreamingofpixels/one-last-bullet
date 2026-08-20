@@ -7,6 +7,11 @@ signal enemy_died(enemy: Node)
 signal all_cleared
 
 const SPAWN_NAV_TOLERANCE := 8.0
+const PHYSICS_LAYER_WORLD := 1
+const SPAWN_PHYSICS_MARGIN := 2.0
+const SEPARATE_STEP_PX := 2.0
+const SEPARATE_MAX_PUSH_PX := 16.0
+const SEPARATE_MAX_ITERS := 8
 
 @export var waves: Array[EnemyWave] = []
 @export var assemble_duration: float = 2.0
@@ -86,7 +91,8 @@ func _spawn_one(scene: PackedScene) -> void:
 		_try_clear()
 		return
 
-	var spawn_position := _pick_spawn_position()
+	var collision_shape := _get_body_collision_shape(enemy)
+	var spawn_position := _pick_spawn_position(collision_shape)
 	enemies.add_child(enemy)
 	enemy.global_position = spawn_position
 
@@ -119,6 +125,7 @@ func _spawn_one(scene: PackedScene) -> void:
 		destroy_comp.sprite.visible = true
 
 	_set_spawn_inert(enemy, false)
+	_depenetrate_enemy_from_world(enemy)
 	enemy_spawned.emit(enemy)
 
 
@@ -140,7 +147,7 @@ func _set_spawn_inert(enemy: CharacterBody2D, inert: bool) -> void:
 		navigation.set_chasing(not inert)
 
 
-func _pick_spawn_position() -> Vector2:
+func _pick_spawn_position(collision_shape: CollisionShape2D) -> Vector2:
 	var player_nav_position := _closest_nav_point(player.global_position)
 	var occupied := _occupied_positions()
 
@@ -152,20 +159,22 @@ func _pick_spawn_position() -> Vector2:
 		if pos.distance_to(player.global_position) < min_spawn_distance:
 			continue
 
-		var nav_pos: Variant = _validated_spawn_position(pos, player_nav_position)
+		var nav_pos: Variant = _validated_spawn_position(pos, player_nav_position, collision_shape)
 		if nav_pos != null and _is_separated(nav_pos, occupied):
 			return nav_pos
 
 	for candidate in _fallback_candidates():
-		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position)
+		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position, collision_shape)
 		if nav_pos != null and _is_separated(nav_pos, occupied):
 			return nav_pos
 
 	for candidate in _fallback_candidates():
-		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position)
+		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position, collision_shape)
 		if nav_pos != null:
 			return nav_pos
 
+	if _is_physics_clear(player_nav_position, collision_shape):
+		return player_nav_position
 	return player_nav_position
 
 
@@ -180,7 +189,11 @@ func _fallback_candidates() -> Array[Vector2]:
 	]
 
 
-func _validated_spawn_position(candidate: Vector2, player_nav_position: Vector2) -> Variant:
+func _validated_spawn_position(
+	candidate: Vector2,
+	player_nav_position: Vector2,
+	collision_shape: CollisionShape2D
+) -> Variant:
 	var nav_position := _closest_nav_point(candidate)
 	if nav_position.distance_to(candidate) > SPAWN_NAV_TOLERANCE:
 		return null
@@ -195,8 +208,80 @@ func _validated_spawn_position(candidate: Vector2, player_nav_position: Vector2)
 	)
 	if path.size() < 2:
 		return null
+	if not _is_physics_clear(nav_position, collision_shape):
+		return null
 
 	return nav_position
+
+
+func _get_body_collision_shape(enemy: CharacterBody2D) -> CollisionShape2D:
+	for child in enemy.get_children():
+		if child is CollisionShape2D:
+			return child as CollisionShape2D
+	return null
+
+
+func _is_physics_clear(pos: Vector2, collision_shape: CollisionShape2D) -> bool:
+	if collision_shape == null or collision_shape.shape == null:
+		return true
+	var query_shape := _spawn_query_shape(collision_shape.shape)
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = query_shape
+	params.transform = Transform2D(0.0, pos + collision_shape.position)
+	params.collision_mask = PHYSICS_LAYER_WORLD
+	params.collide_with_bodies = true
+	params.collide_with_areas = false
+	var hits: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(params, 1)
+	return hits.is_empty()
+
+
+func _spawn_query_shape(base_shape: Shape2D) -> Shape2D:
+	if base_shape is CircleShape2D:
+		var source_circle := base_shape as CircleShape2D
+		var expanded_circle := CircleShape2D.new()
+		expanded_circle.radius = source_circle.radius + SPAWN_PHYSICS_MARGIN
+		return expanded_circle
+	return base_shape
+
+
+func _depenetrate_enemy_from_world(enemy: CharacterBody2D) -> void:
+	var collision_shape := _get_body_collision_shape(enemy)
+	if collision_shape == null or collision_shape.shape == null:
+		return
+	var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	var pushed: float = 0.0
+
+	for _i in SEPARATE_MAX_ITERS:
+		if pushed >= SEPARATE_MAX_PUSH_PX:
+			return
+		var params := PhysicsShapeQueryParameters2D.new()
+		params.shape = collision_shape.shape
+		params.transform = Transform2D(0.0, enemy.global_position + collision_shape.position)
+		params.collision_mask = PHYSICS_LAYER_WORLD
+		params.collide_with_bodies = true
+		params.collide_with_areas = false
+		params.exclude = [enemy.get_rid()]
+		var overlaps: Array[Dictionary] = space.intersect_shape(params, 4)
+		if overlaps.is_empty():
+			return
+
+		var escape: Vector2 = Vector2.ZERO
+		var rest: Dictionary = space.get_rest_info(params)
+		if not rest.is_empty():
+			escape = rest.get("normal", Vector2.ZERO)
+		if escape.length_squared() < 0.0001:
+			var collider: Object = overlaps[0].get("collider")
+			if collider is Node2D:
+				var from_collider: Vector2 = enemy.global_position - (collider as Node2D).global_position
+				if from_collider.length_squared() > 0.0001:
+					escape = from_collider.normalized()
+		if escape.length_squared() < 0.0001:
+			escape = Vector2.UP
+		escape = escape.normalized()
+
+		var step_px: float = minf(SEPARATE_STEP_PX, SEPARATE_MAX_PUSH_PX - pushed)
+		enemy.global_position += escape * step_px
+		pushed += step_px
 
 
 func _closest_nav_point(point: Vector2) -> Vector2:

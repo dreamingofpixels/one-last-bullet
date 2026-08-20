@@ -22,7 +22,12 @@ var COMPONENTS: Dictionary = {}
 
 @export var speed: float = 180.0
 @export var max_speed: float = 1500.0
-@export var player_grace_seconds: float = 0.3
+@export var player_grace_seconds: float = 1.0
+@export var grace_tint: Color = Color(0.7, 0.85, 1.0, 0.55)
+@export var grace_ring_radius: float = 12.0
+@export var grace_ring_width: float = 1.5
+@export var grace_ring_bg_color: Color = Color(0.7, 0.85, 1.0, 0.35)
+@export var grace_ring_fill_color: Color = Color(0.75, 0.9, 1.0, 0.9)
 @export var arrow_length: float = 28.0
 @export var rotate_heading: bool = true
 @export var tether_speed_scale: float = 1.0
@@ -98,6 +103,7 @@ func _ready() -> void:
 	hitbox_component.monitoring = false
 	freeze = true
 	trail_particles.emitting = false
+	set_process(false)
 	_apply_heading()
 
 
@@ -148,8 +154,7 @@ func _physics_process(delta: float) -> void:
 			_apply_heading()
 			# Clear instigator once grace window elapses.
 			if _grace_clear_msec > 0 and Time.get_ticks_msec() >= _grace_clear_msec:
-				damage_component.instigator = null
-				_grace_clear_msec = 0
+				_end_grace_visual()
 			_update_never_still_watchdog(delta)
 		OrbState.TETHERED:
 			_update_tether(delta)
@@ -178,7 +183,7 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	orb_sprite.visible = true
 	aim_arrow.visible = false
 	damage_component.instigator = player
-	_grace_clear_msec = 0
+	_clear_grace_countdown()
 	hitbox_component.monitoring = true
 	set_in_focus(true)
 	_update_tether_pose()
@@ -195,7 +200,7 @@ func deflect(new_velocity: Vector2, instigator: Node) -> void:
 	if is_instance_valid(instigator):
 		damage_component.instigator = instigator
 		_player = instigator as Node2D
-	_grace_clear_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
+	_begin_grace()
 	_apply_heading()
 	deflected.emit(instigator)
 
@@ -229,7 +234,7 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	freeze = true
 	linear_velocity = Vector2.ZERO
 	damage_component.instigator = player
-	_grace_clear_msec = 0
+	_clear_grace_countdown()
 	hitbox_component.monitoring = true
 	set_in_focus(true)
 	# Do NOT call _update_tether_pose() here — the orb is already at the correct position;
@@ -318,11 +323,11 @@ func _finish_tether_release(
 	if is_instance_valid(by):
 		damage_component.instigator = by
 		_player = by as Node2D
-		_grace_clear_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
+		_begin_grace()
 	else:
 		damage_component.instigator = null
 		_player = null
-		_grace_clear_msec = 0
+		_end_grace_visual()
 	_opening_tether = false
 	_clear_tether_vars()
 	set_in_focus(false)
@@ -336,6 +341,74 @@ func _finish_tether_release(
 		launched.emit()
 	else:
 		tether_released.emit(by)
+
+
+func _begin_grace() -> void:
+	_grace_clear_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
+	set_process(true)
+	_update_grace_visual()
+	queue_redraw()
+
+
+## Clear countdown visual/timer but keep instigator (used while tethered).
+func _clear_grace_countdown() -> void:
+	_grace_clear_msec = 0
+	orb_sprite.modulate = Color.WHITE
+	set_process(false)
+	queue_redraw()
+
+
+## Clear instigator and stop the post-release grace visual.
+func _end_grace_visual() -> void:
+	damage_component.instigator = null
+	_clear_grace_countdown()
+
+
+func _get_grace_remaining_fraction() -> float:
+	if _grace_clear_msec <= 0 or player_grace_seconds <= 0.0:
+		return 0.0
+	var remaining_msec: int = _grace_clear_msec - Time.get_ticks_msec()
+	if remaining_msec <= 0:
+		return 0.0
+	return clampf(float(remaining_msec) / (player_grace_seconds * 1000.0), 0.0, 1.0)
+
+
+func _update_grace_visual() -> void:
+	var fraction: float = _get_grace_remaining_fraction()
+	if fraction <= 0.0:
+		orb_sprite.modulate = Color.WHITE
+		return
+	orb_sprite.modulate = grace_tint.lerp(Color.WHITE, 1.0 - fraction)
+
+
+func _process(_delta: float) -> void:
+	if _grace_clear_msec <= 0:
+		set_process(false)
+		return
+	if Time.get_ticks_msec() >= _grace_clear_msec:
+		_end_grace_visual()
+		return
+	_update_grace_visual()
+	queue_redraw()
+
+
+func _draw() -> void:
+	var fraction: float = _get_grace_remaining_fraction()
+	if fraction <= 0.0:
+		return
+	var bg := Color(grace_ring_bg_color, grace_ring_bg_color.a * fraction)
+	var fill := Color(grace_ring_fill_color, grace_ring_fill_color.a * fraction)
+	draw_arc(Vector2.ZERO, grace_ring_radius, 0.0, TAU, 32, bg, grace_ring_width)
+	var start_angle: float = -PI / 2.0
+	draw_arc(
+		Vector2.ZERO,
+		grace_ring_radius,
+		start_angle,
+		start_angle + TAU * fraction,
+		32,
+		fill,
+		grace_ring_width
+	)
 
 
 func _update_tether(delta: float) -> void:
@@ -419,7 +492,7 @@ func _break_tether_from_collision(hit: Dictionary, next_angle: float) -> bool:
 	var body: Node = collider as Node
 	var entity_root: Node = _resolve_entity_root(body)
 	var damage_target: Node = entity_root if entity_root != null else body
-	_try_tether_damage(damage_target)
+	_try_apply_orb_damage(damage_target)
 
 	var tangent: Vector2 = _tether_tangent_at(next_angle)
 	var normal: Vector2 = _rest_normal_at(global_position)
@@ -453,8 +526,8 @@ func _resolve_entity_root(collider: Node) -> Node:
 	return node
 
 
-## Apply tether hit damage once per victim per physics frame (body probe + hitbox can both fire).
-func _try_tether_damage(victim_root: Node) -> bool:
+## Apply orb damage once per victim per physics frame (flying body + tether probe/hitbox can both fire).
+func _try_apply_orb_damage(victim_root: Node) -> bool:
 	if not is_instance_valid(victim_root):
 		return false
 	if damage_component.damage <= 0.0:
@@ -704,7 +777,7 @@ func _on_hitbox_area_entered(area: Area2D) -> void:
 	if comp == null or not comp.has(HealthComponent):
 		return
 
-	_try_tether_damage(victim_root)
+	_try_apply_orb_damage(victim_root)
 
 	# Friendly-fire: instigator is immune — physical probe still breaks on body contact.
 	if is_instance_valid(damage_component.instigator) and damage_component.instigator == victim_root:
@@ -729,8 +802,7 @@ func _on_body_entered(body: Node) -> void:
 		AudioManager.play_at(bounce_sound, global_position)
 
 	# Bounce direction is owned by _integrate_forces (true contact normals).
-	# Breakables: damage via HealthComponent so the bounce resolves first.
-	if body.is_in_group("breakables"):
-		var comp = body.get("COMPONENTS")
-		if comp and comp.has(HealthComponent) and damage_component.damage > 0.0:
-			comp[HealthComponent].take_damage(damage_component.damage)
+	# Damage on the same body contact so CCD bounce cannot miss the hitbox poll.
+	var victim_root: Node = _resolve_entity_root(body)
+	if victim_root != null:
+		_try_apply_orb_damage(victim_root)

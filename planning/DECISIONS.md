@@ -16,7 +16,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: The player has a single spell — the **orb of chaos**. It enters play at the start of each level and travels/bounces indefinitely.
 - **Why**: Scarcity and danger in the same object; the wizard has one wild spell left to survive the room.
 - **Alternatives**: Multi-shot mana pool — dilutes the hook; orb that despawns — removes the constant threat.
-- **Status**: decided (design); supersedes "One bullet, fired at level start"
+- **Status**: superseded — opening release now spawns a 3-orb spread volley for playtest (see below)
+
+### Opening 3-orb spread volley (playtest)
+- **Decision**: Level start still uses a **single** opening tether. On that tether's first launch (`launched`), the level spawns **two** extra chaos orbs at the same position flying at **±20°** from the release tangent (tunable `opening_volley_spread_degrees`). All three persist and bounce for the rest of the level. Mid-combat tether release stays a **single** orb (no extra volleys). `OrbTetherComponent` targets the `orb` group: focus all in range, tap-capture / remote-channel the **closest** flying orb, **one tether at a time**. Extras enter via `ChaosOrb.begin_flight()` (grace + FLYING, no opening tether).
+- **Why**: Cheap way to try multi-orb chaos without rewriting opening UX; volley-on-release keeps the sling lesson; group-based tether avoids hard-wiring three NodePaths.
+- **Alternatives**: Three independent opening tethers — heavier UX; start with three already flying — skips the sling teach; only one tetherable "main" orb — simpler but weaker multi-orb play; extras despawn after a timer — less room pressure.
+- **Status**: revisit (playtest) — conflicts with design-doc **one spell** scarcity; may revert to single orb
 
 ### Orb damages enemies; hurts player on contact
 - **Decision**: The same projectile is a weapon against enemies and a hazard for the player. HP and orb damage are authored in scene `HealthComponent` / `DamageComponent` values (currently player **30 HP**, grunt **20 HP**, orb damage **10**). Player gets brief i-frames after a non-fatal hit.
@@ -73,10 +79,10 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Level start: opening tether instead of slow-mo aim
-- **Decision**: At level start the player first assembles in over ~2 s using reverse `pixel_fall` (`DestructionEffect.play_assemble_from_sprite`), then the orb appears already tethered **24 px above** the player (`begin_opening_tether`). Tether (or two full revolutions) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost. `OpeningAimComponent`, the Aim state, and the old free-aim global slow-mo are removed. `OrbTetherComponent` owns the orb reference via `bind_orb()`. The opening tether now triggers the same 50%/0.5 s time-slow as mid-combat captures (see tether time-slow entry above). `level.gd` starts `EnemySpawner` and the player intro from the same post-nav-ready moment, so enemy telegraphs run while the player is assembling and the tether begins as that intro finishes.
+- **Decision**: At level start the player first assembles in over ~2 s using reverse `pixel_fall` (`DestructionEffect.play_assemble_from_sprite`), then **one** orb appears already tethered **24 px above** the player (`begin_opening_tether`). Tether (or two full revolutions) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost; `level.gd` then spawns two extras at ±spread (`begin_flight`). `OpeningAimComponent`, the Aim state, and the old free-aim global slow-mo are removed. `OrbTetherComponent.bind_orb()` is only for the opening sling; mid-combat uses the `orb` group. The opening tether now triggers the same 50%/0.5 s time-slow as mid-combat captures (see tether time-slow entry above). `level.gd` starts `EnemySpawner` and the player intro from the same post-nav-ready moment, so enemy telegraphs run while the player is assembling and the tether begins as that intro finishes.
 - **Why**: One tether UX for start and mid-combat; teaches capture/release immediately; adding a short player assemble gives the same material language as enemy spawns and avoids visible pop-in while nav bake settles. Letting enemy telegraphs start at the same time preserves the original room pressure timing instead of delaying wave pacing behind the intro.
 - **Alternatives**: Keep 3s slow-mo free aim — separate system and co-op time_scale issues; **design-doc free aim-and-fire at start** — may return to match source doc; auto-launch upward without tether — skips the core sling lesson; apply boost on opening release — unfair free power on every level start; keep player visible instantly while only enemies assemble — less coherent spawn language and more start-of-level pop-in; delay enemy spawns until after assembly — cleaner intro staging, but pushes combat pacing later than intended.
-- **Status**: decided (in-codebase); **revisit** — design doc says player fires orb in any direction at level start
+- **Status**: decided (in-codebase); **revisit** — design doc says player fires orb in any direction at level start; multi-orb volley is a separate playtest (see opening volley entry)
 
 ### Single basic enemy: chase + contact kill
 - **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. A second chaser (`brute`) uses the same chase/contact-damage model. Desert delivers them as waves (3 grunts, then 1 brute) rather than all at once.
@@ -144,7 +150,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 - **Tether feel**: orbit radius / auto-release after forced breaks; entity punch-through means only world solids snap the tether.
 - **Attack cooldown / charges**: swing cooldown 0.35s; tether post-release cooldown 0.25s.
-- **Opening shot UX**: design doc says free aim-and-fire at level start; prototype uses opening tether.
+- **Opening shot UX**: design doc says free aim-and-fire at level start; prototype uses opening tether + 3-orb spread volley (conflicts with one-spell scarcity).
 - **Mana vanish duration**: how long before drops disappear?
 - **Shop draft size and reroll rules**: how many offers, costs, rerolls?
 - **Camera / view perspective**: player uses 4-direction diagonal sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena. Confirm long-term camera for larger stages.

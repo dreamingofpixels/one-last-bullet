@@ -180,6 +180,36 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	tethered.emit(player)
 
 
+## Spawn already flying (opening volley extras). Skips opening tether; applies grace.
+func begin_flight(direction: Vector2, instigator: Node = null) -> void:
+	_opening_tether = false
+	_clear_tether_vars()
+	if direction.length_squared() > 0.0001:
+		aim_direction = direction.normalized()
+	elif aim_direction.length_squared() < 0.0001:
+		aim_direction = Vector2.RIGHT
+
+	state = OrbState.FLYING
+	freeze = false
+	orb_sprite.visible = true
+	aim_arrow.visible = false
+	hitbox_component.monitoring = true
+	set_in_focus(false)
+	_separate_from_overlaps()
+	linear_velocity = aim_direction * maxf(speed, 0.001)
+	_reset_stall_tracker()
+	_apply_heading()
+
+	if is_instance_valid(instigator):
+		damage_component.instigator = instigator
+		_player = instigator as Node2D
+		_begin_grace()
+	else:
+		damage_component.instigator = null
+		_player = null
+		_end_grace_visual()
+
+
 func deflect(new_velocity: Vector2, instigator: Node) -> void:
 	if state != OrbState.FLYING:
 		return

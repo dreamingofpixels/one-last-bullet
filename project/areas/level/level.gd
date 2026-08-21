@@ -1,6 +1,10 @@
 extends Node2D
 
+const CHAOS_ORB_SCENE := preload("res://entities/chaos_orb/chaos_orb.tscn")
+
 @export var level_music: AudioStream
+## Half-angle of the opening release fan (degrees). Extra orbs fly at ± this from the launch tangent.
+@export var opening_volley_spread_degrees: float = 20.0
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
 @onready var player: CharacterBody2D = %Player
@@ -12,6 +16,7 @@ extends Node2D
 
 var _game_over: bool = false
 var _cleared: bool = false
+var _opening_volley_spawned: bool = false
 
 
 func _ready() -> void:
@@ -22,10 +27,7 @@ func _ready() -> void:
 	if level_music:
 		AudioManager.play_music(level_music)
 
-	chaos_orb.launched.connect(_on_orb_launched)
-	chaos_orb.deflected.connect(_on_orb_deflected)
-	chaos_orb.tethered.connect(_on_orb_tethered)
-	chaos_orb.tether_released.connect(_on_orb_tether_released)
+	_connect_orb_signals(chaos_orb, true)
 	rebake_timer.timeout.connect(_on_rebake_timer_timeout)
 	enemy_spawner.wave_started.connect(_on_wave_started)
 	enemy_spawner.all_cleared.connect(_on_all_cleared)
@@ -43,6 +45,17 @@ func _ready() -> void:
 	await player.begin_level(chaos_orb)
 	# begin_level emits tethered; keep the opening prompt instead of "Tethered!".
 	status_label.text = "Tether to release"
+
+
+func _connect_orb_signals(orb: RigidBody2D, include_launched: bool) -> void:
+	if include_launched and not orb.launched.is_connected(_on_orb_launched):
+		orb.launched.connect(_on_orb_launched)
+	if not orb.deflected.is_connected(_on_orb_deflected):
+		orb.deflected.connect(_on_orb_deflected)
+	if not orb.tethered.is_connected(_on_orb_tethered):
+		orb.tethered.connect(_on_orb_tethered)
+	if not orb.tether_released.is_connected(_on_orb_tether_released):
+		orb.tether_released.connect(_on_orb_tether_released)
 
 
 func _await_navigation_ready() -> void:
@@ -80,6 +93,39 @@ func _on_orb_launched() -> void:
 		return
 	status_label.text = "Clear the room"
 	time_slow_overlay.end()
+	_spawn_opening_volley()
+
+
+func _spawn_opening_volley() -> void:
+	if _opening_volley_spawned:
+		return
+	_opening_volley_spawned = true
+	if not chaos_orb.has_method("begin_flight"):
+		return
+
+	var launch_dir: Vector2 = chaos_orb.aim_direction
+	if launch_dir.length_squared() < 0.0001:
+		launch_dir = Vector2.UP
+	else:
+		launch_dir = launch_dir.normalized()
+
+	var spread_rad: float = deg_to_rad(opening_volley_spread_degrees)
+	var source_damage: float = 0.0
+	var source_components = chaos_orb.get("COMPONENTS")
+	if source_components is Dictionary and source_components.has(DamageComponent):
+		source_damage = (source_components[DamageComponent] as DamageComponent).damage
+
+	for sign_f in [-1.0, 1.0]:
+		var extra: RigidBody2D = CHAOS_ORB_SCENE.instantiate() as RigidBody2D
+		add_child(extra)
+		extra.global_position = chaos_orb.global_position
+		extra.speed = chaos_orb.speed
+		if source_damage > 0.0:
+			var extra_components = extra.get("COMPONENTS")
+			if extra_components is Dictionary and extra_components.has(DamageComponent):
+				(extra_components[DamageComponent] as DamageComponent).damage = source_damage
+		_connect_orb_signals(extra, false)
+		extra.begin_flight(launch_dir.rotated(spread_rad * sign_f), player)
 
 
 func _on_orb_deflected(_by: Node = null) -> void:

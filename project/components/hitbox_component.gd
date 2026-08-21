@@ -62,11 +62,6 @@ func _resolve_attacker_root(collider: Node) -> Node:
 
 
 func _poll_attacker(attacker: Node, attacker_id: int, frame: int, now_msec: int) -> void:
-	# Orb damage is applied on RigidBody2D body contact / tether probe, not here —
-	# otherwise a full overlap would double-hit with chaos_orb._on_body_entered.
-	if attacker.is_in_group("orb"):
-		return
-
 	var comp = attacker.get("COMPONENTS")
 	if comp == null or not comp.has(DamageComponent):
 		return

@@ -8,9 +8,8 @@ signal tether_released(by: Node)
 enum OrbState { FLYING, TETHERED }
 
 const PHYSICS_LAYER_WORLD := 1
-const PHYSICS_LAYER_PLAYER := 2
-const PHYSICS_LAYER_ENEMY := 4
-const PHYSICS_MASK_PROBE := PHYSICS_LAYER_WORLD | PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_ENEMY
+## Body / tether probe / depenetrate only hit world solids (walls, rocks, breakables).
+## Player and enemies are punch-through; damage comes from HitboxComponent overlap.
 const SEPARATE_STEP_PX := 2.0
 const SEPARATE_MAX_ITERS := 4
 const SEPARATE_MAX_PUSH_PX := 8.0
@@ -62,8 +61,6 @@ var _tether_dir: float = 1.0
 var _tether_swept: float = 0.0
 var _opening_tether: bool = false
 var _tether_broke_this_frame: bool = false
-var _break_pending: bool = false
-var _pending_break_dir: Vector2 = Vector2.ZERO
 var _last_impact_frame: int = -1
 var _last_fly_position: Vector2 = Vector2.ZERO
 var _has_last_fly_position: bool = false
@@ -83,7 +80,7 @@ func _ready() -> void:
 	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	angular_damp = 0.0
 	collision_layer = 8  # orb layer
-	collision_mask = PHYSICS_MASK_PROBE
+	collision_mask = PHYSICS_LAYER_WORLD
 	contact_monitor = true
 	max_contacts_reported = 4
 	can_sleep = false
@@ -95,7 +92,6 @@ func _ready() -> void:
 	physics_material_override = mat
 
 	body_entered.connect(_on_body_entered)
-	hitbox_component.area_entered.connect(_on_hitbox_area_entered)
 
 	orb_in_focus.visible = false
 	orb_sprite.visible = false
@@ -139,12 +135,6 @@ func _physics_process(delta: float) -> void:
 	_tether_broke_this_frame = false
 	_update_trail()
 
-	if _break_pending:
-		_break_pending = false
-		if state == OrbState.TETHERED:
-			break_tether(_pending_break_dir)
-		_pending_break_dir = Vector2.ZERO
-
 	match state:
 		OrbState.FLYING:
 			# Keep constant speed; direction is owned by aim_direction / _integrate_forces.
@@ -174,8 +164,6 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	_tether_angle = Vector2.UP.angle()  # spawn above player
 	_tether_dir = 1.0  # CCW when starting from rest
 	_tether_swept = 0.0
-	_break_pending = false
-	_pending_break_dir = Vector2.ZERO
 
 	state = OrbState.TETHERED
 	freeze = true
@@ -201,6 +189,7 @@ func deflect(new_velocity: Vector2, instigator: Node) -> void:
 		damage_component.instigator = instigator
 		_player = instigator as Node2D
 	_begin_grace()
+	hitbox_component.monitoring = true
 	_apply_heading()
 	deflected.emit(instigator)
 
@@ -227,8 +216,6 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	var cross_z: float = radial.x * linear_velocity.y - radial.y * linear_velocity.x
 	_tether_dir = 1.0 if cross_z >= 0.0 else -1.0
 	_tether_swept = 0.0
-	_break_pending = false
-	_pending_break_dir = Vector2.ZERO
 
 	state = OrbState.TETHERED
 	freeze = true
@@ -313,8 +300,6 @@ func _finish_tether_release(
 		_apply_tether_release_boost()
 	state = OrbState.FLYING
 	freeze = false
-	_break_pending = false
-	_pending_break_dir = Vector2.ZERO
 	_separate_from_overlaps()
 	# Always launch at full speed — never leave the orb parked.
 	linear_velocity = aim_direction * maxf(speed, 0.001)
@@ -450,7 +435,7 @@ func _probe_tether_collision(from_pos: Vector2, next_pos: Vector2, next_angle: f
 	params.shape = shape
 	params.transform = Transform2D(0.0, from_pos)
 	params.motion = motion
-	params.collision_mask = PHYSICS_MASK_PROBE
+	params.collision_mask = PHYSICS_LAYER_WORLD
 	var excludes: Array[RID] = [get_rid()]
 	if is_instance_valid(_tether_player) and _tether_player is CollisionObject2D:
 		excludes.append((_tether_player as CollisionObject2D).get_rid())
@@ -625,7 +610,7 @@ func _make_body_query_params(at_pos: Vector2) -> PhysicsShapeQueryParameters2D:
 	var params := PhysicsShapeQueryParameters2D.new()
 	params.shape = body_collision_shape.shape
 	params.transform = Transform2D(0.0, at_pos)
-	params.collision_mask = PHYSICS_MASK_PROBE
+	params.collision_mask = PHYSICS_LAYER_WORLD
 	params.exclude = [get_rid()]
 	params.collide_with_areas = false
 	params.collide_with_bodies = true
@@ -763,38 +748,6 @@ func _spawn_world_impact(position: Vector2, normal: Vector2) -> void:
 	OrbImpactEffect.play_at(parent, position, normal)
 
 
-func _on_hitbox_area_entered(area: Area2D) -> void:
-	if state != OrbState.TETHERED or _tether_broke_this_frame or _break_pending:
-		return
-	if damage_component.damage <= 0.0:
-		return
-
-	var victim_root: Node = _resolve_entity_root(area)
-	if victim_root == null:
-		return
-
-	var comp = victim_root.get("COMPONENTS")
-	if comp == null or not comp.has(HealthComponent):
-		return
-
-	_try_apply_orb_damage(victim_root)
-
-	# Friendly-fire: instigator is immune — physical probe still breaks on body contact.
-	if is_instance_valid(damage_component.instigator) and damage_component.instigator == victim_root:
-		return
-
-	# Defer the actual release to the next physics tick so we do not mutate freeze /
-	# velocity mid-solver after a kinematic teleport.
-	var tangent: Vector2 = _tether_tangent()
-	var normal: Vector2 = _rest_normal_at(global_position)
-	if normal.length_squared() < 0.0001 and victim_root is Node2D:
-		normal = (global_position - (victim_root as Node2D).global_position).normalized()
-	if normal.length_squared() < 0.0001:
-		normal = -tangent
-	_break_pending = true
-	_pending_break_dir = _safe_exit_direction(tangent, normal)
-
-
 func _on_body_entered(body: Node) -> void:
 	if state != OrbState.FLYING:
 		return
@@ -802,7 +755,7 @@ func _on_body_entered(body: Node) -> void:
 		AudioManager.play_at(bounce_sound, global_position)
 
 	# Bounce direction is owned by _integrate_forces (true contact normals).
-	# Damage on the same body contact so CCD bounce cannot miss the hitbox poll.
+	# World solids (walls / rocks / breakables) only — entities are punch-through.
 	var victim_root: Node = _resolve_entity_root(body)
 	if victim_root != null:
 		_try_apply_orb_damage(victim_root)

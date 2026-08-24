@@ -1,17 +1,17 @@
 extends Node2D
 
-const CHAOS_ORB_SCENE := preload("res://entities/chaos_orb/chaos_orb.tscn")
+const SHADOW_ORB_SCENE := preload("res://entities/chaos_orb/shadow_orb.tscn")
+const POISON_ORB_SCENE := preload("res://entities/chaos_orb/poison_orb.tscn")
+const ELECTRIC_ORB_SCENE := preload("res://entities/chaos_orb/electric_orb.tscn")
 const MANA_CRYSTAL_SCENE := preload("res://items/mana_crystal.tscn")
+const OPENING_ORB_SPEED := 100.0
 
 @export var level_music: AudioStream
-## How many chaos orbs launch from the summoning circle at level start.
-@export var opening_orb_count: int = 3
 ## Chance (0–1) that a mana crystal spawns when an enemy dies.
 @export var mana_crystal_drop_chance: float = 0.25
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
 @onready var player: CharacterBody2D = %Player
-@onready var chaos_orb: RigidBody2D = %ChaosOrb
 @onready var summoning_circle: SummoningCircle = %SummoningCircle
 @onready var items: Node2D = %Items
 @onready var rebake_timer: Timer = %RebakeTimer
@@ -32,7 +32,6 @@ func _ready() -> void:
 	if level_music:
 		AudioManager.play_music(level_music)
 
-	_connect_orb_signals(chaos_orb)
 	rebake_timer.timeout.connect(_on_rebake_timer_timeout)
 	enemy_spawner.wave_started.connect(_on_wave_started)
 	enemy_spawner.all_cleared.connect(_on_all_cleared)
@@ -98,27 +97,18 @@ func _launch_opening_orbs() -> void:
 	_opening_orbs_spawned = true
 
 	var origin: Vector2 = summoning_circle.get_launch_origin()
-	var count: int = maxi(opening_orb_count, 1)
-
-	for i in count:
-		var direction: Vector2 = Vector2.from_angle(randf() * TAU)
-		if i == 0:
-			chaos_orb.global_position = origin
-			chaos_orb.begin_flight(direction, player)
-			continue
-
-		var extra: RigidBody2D = CHAOS_ORB_SCENE.instantiate() as RigidBody2D
-		add_child(extra)
-		extra.global_position = origin
-		extra.speed = chaos_orb.speed
-		var source_components = chaos_orb.get("COMPONENTS")
-		if source_components is Dictionary and source_components.has(DamageComponent):
-			var source_damage: float = (source_components[DamageComponent] as DamageComponent).damage
-			var extra_components = extra.get("COMPONENTS")
-			if extra_components is Dictionary and extra_components.has(DamageComponent):
-				(extra_components[DamageComponent] as DamageComponent).damage = source_damage
-		_connect_orb_signals(extra)
-		extra.begin_flight(direction, player)
+	var scenes: Array[PackedScene] = [
+		SHADOW_ORB_SCENE,
+		POISON_ORB_SCENE,
+		ELECTRIC_ORB_SCENE,
+	]
+	for scene in scenes:
+		var orb: RigidBody2D = scene.instantiate() as RigidBody2D
+		add_child(orb)
+		orb.global_position = origin
+		orb.speed = OPENING_ORB_SPEED
+		_connect_orb_signals(orb)
+		orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
 
 
 func _on_enemy_died(enemy: Node = null) -> void:

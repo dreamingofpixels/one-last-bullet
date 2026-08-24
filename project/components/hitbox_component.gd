@@ -79,10 +79,20 @@ func _poll_attacker(attacker: Node, attacker_id: int, frame: int, now_msec: int)
 	state["last_seen_frame"] = frame
 
 	if is_fresh or now_msec >= int(state.get("next_damage_msec", 0)):
+		var apply_hp: bool = true
+		if attacker.has_method("should_apply_hitbox_damage"):
+			apply_hp = bool(attacker.should_apply_hitbox_damage(owner))
+
 		var applied := false
-		if health_component:
+		if apply_hp and health_component:
 			applied = health_component.take_damage(dc.damage)
+		elif not apply_hp:
+			# Typed orbs (e.g. Shadow) may skip HP but still count as a hit.
+			applied = true
+
 		if applied:
+			if attacker.has_method("on_hitbox_hit"):
+				attacker.on_hitbox_hit(owner)
 			# Zero interval = single hit per continuous overlap; >0 = contact tick.
 			var interval_msec: int = int(dc.contact_damage_interval * 1000.0)
 			if interval_msec > 0:

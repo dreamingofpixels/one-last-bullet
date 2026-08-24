@@ -5,7 +5,6 @@
 [ext_resource type="AudioStream" uid="uid://yqk6ti4yugp2" path="res://audio/music/desert_loop.mp3" id="2_ynou2"]
 [ext_resource type="PackedScene" uid="uid://du4wuw1kmuhnc" path="res://entities/player/player.tscn" id="3_player"]
 [ext_resource type="Texture2D" uid="uid://bl2jhjc05fdil" path="res://areas/level/desert_tilemap_2.png" id="3_wa2qb"]
-[ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/chaos_orb/chaos_orb.tscn" id="4_bullet"]
 [ext_resource type="PackedScene" uid="uid://bp1eroq2pqtgv" path="res://items/mana_crystal.tscn" id="4_obfif"]
 [ext_resource type="PackedScene" uid="uid://cj84ujxh15v2x" path="res://objects/rocks/big_rock.tscn" id="5_4ykq2"]
 [ext_resource type="PackedScene" uid="uid://cloo7hwpiadpr" path="res://objects/cactai/cactus.tscn" id="5_cactus"]
@@ -384,10 +383,6 @@ unique_name_in_owner = true
 waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw")])
 assemble_duration = 1.5
 telegraph_duration = 0.3
-
-[node name="ChaosOrb" parent="." unique_id=1109868456 instance=ExtResource("4_bullet")]
-unique_name_in_owner = true
-position = Vector2(320, 248)
 
 [node name="Navigation" type="NavigationRegion2D" parent="." unique_id=815083904]
 unique_name_in_owner = true

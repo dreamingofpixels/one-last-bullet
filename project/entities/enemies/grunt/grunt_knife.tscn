@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="8_knockback"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="9_hbar"]
 [ext_resource type="PackedScene" path="res://components/navigation_component.tscn" id="10_navigation"]
+[ext_resource type="PackedScene" path="res://components/status_component.tscn" id="11_status"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0
@@ -85,3 +86,9 @@ health_component = NodePath("../HealthComponent")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1562674629]
 position = Vector2(0, -1)
 shape = SubResource("CircleShape2D_hitbox")
+
+[node name="StatusComponent" parent="Components" unique_id=882341001 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component") instance=ExtResource("11_status")]
+unique_name_in_owner = true
+health_component = NodePath("../HealthComponent")
+navigation_component = NodePath("../NavigationComponent")
+movement_component = NodePath("../MovementComponent")

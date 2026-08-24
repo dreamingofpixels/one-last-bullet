@@ -1,11 +1,11 @@
-extends RigidBody2D
+class_name ChaosOrb extends RigidBody2D
 
 signal launched
 signal deflected(by: Node)
 signal tethered(by: Node)
 signal tether_released(by: Node)
 
-enum OrbState { FLYING, TETHERED }
+enum OrbState { FLYING, TETHERED, POSSESSED }
 
 const PHYSICS_LAYER_WORLD := 1
 ## Body / tether probe / depenetrate only hit world solids (walls, rocks, breakables).
@@ -22,6 +22,8 @@ var COMPONENTS: Dictionary = {}
 @export var speed: float = 180.0
 @export var max_speed: float = 1500.0
 @export var player_grace_seconds: float = 1.0
+## Resting sprite modulate when not in post-launch grace (typed orbs tint here).
+@export var base_modulate: Color = Color.WHITE
 @export var grace_tint: Color = Color(0.7, 0.85, 1.0, 0.55)
 @export var grace_ring_radius: float = 12.0
 @export var grace_ring_width: float = 1.5
@@ -33,7 +35,7 @@ var COMPONENTS: Dictionary = {}
 @export var tether_auto_release_turns: float = 2.0
 ## Radial pull-in speed when spiraling to the target orbit radius (px/s, game time).
 @export var tether_radius_align_speed: float = 320.0
-## Multiplier applied to speed and damage on every tether release (1.1 = +10%).
+## Multiplier applied to speed and damage on Attack redirect and tether release (1.1 = +10%).
 @export var tether_release_boost: float = 1.1
 @export var bounce_sound: SoundEvent
 @export var begin_tether_sound: SoundEvent
@@ -148,6 +150,8 @@ func _physics_process(delta: float) -> void:
 			_update_never_still_watchdog(delta)
 		OrbState.TETHERED:
 			_update_tether(delta)
+		OrbState.POSSESSED:
+			pass
 
 
 # ── Lifecycle API ─────────────────────────────────────────────────────────────
@@ -214,6 +218,7 @@ func deflect(new_velocity: Vector2, instigator: Node) -> void:
 	if state != OrbState.FLYING:
 		return
 	aim_direction = new_velocity.normalized() if new_velocity.length_squared() > 0.0001 else Vector2.RIGHT
+	_apply_tether_release_boost()
 	linear_velocity = aim_direction * speed
 	if is_instance_valid(instigator):
 		damage_component.instigator = instigator
@@ -319,8 +324,22 @@ func is_tethered() -> bool:
 	return state == OrbState.TETHERED
 
 
+func is_possessed() -> bool:
+	return state == OrbState.POSSESSED
+
+
 func get_tether_player() -> Node2D:
 	return _safe_tether_player()
+
+
+## Optional hook for typed orbs: return false to skip HealthComponent damage on hitbox poll.
+func should_apply_hitbox_damage(_victim: Node) -> bool:
+	return true
+
+
+## Optional hook for typed orbs: called after a successful hitbox hit (HP applied or skipped).
+func on_hitbox_hit(_victim: Node) -> void:
+	pass
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────
@@ -385,7 +404,7 @@ func _begin_grace() -> void:
 ## Clear countdown visual/timer but keep instigator (used while tethered).
 func _clear_grace_countdown() -> void:
 	_grace_clear_msec = 0
-	orb_sprite.modulate = Color.WHITE
+	orb_sprite.modulate = base_modulate
 	set_process(false)
 	queue_redraw()
 
@@ -408,9 +427,9 @@ func _get_grace_remaining_fraction() -> float:
 func _update_grace_visual() -> void:
 	var fraction: float = _get_grace_remaining_fraction()
 	if fraction <= 0.0:
-		orb_sprite.modulate = Color.WHITE
+		orb_sprite.modulate = base_modulate
 		return
-	orb_sprite.modulate = grace_tint.lerp(Color.WHITE, 1.0 - fraction)
+	orb_sprite.modulate = grace_tint.lerp(base_modulate, 1.0 - fraction)
 
 
 func _process(_delta: float) -> void:
@@ -622,7 +641,10 @@ func _apply_heading() -> void:
 
 
 func _update_trail() -> void:
-	var moving := state == OrbState.TETHERED or (state == OrbState.FLYING and not freeze)
+	var moving := (
+		state == OrbState.TETHERED
+		or (state == OrbState.FLYING and not freeze)
+	)
 	trail_particles.emitting = moving
 	if not moving:
 		return

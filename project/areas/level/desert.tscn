@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://doagtfaw80f82" path="res://entities/enemies/grunt/grunt_knife.tscn" id="10_4ykq2"]
 [ext_resource type="PackedScene" uid="uid://bq7w3m5k8tn2r" path="res://entities/enemies/brute/brute.tscn" id="11_mc6if"]
 [ext_resource type="PackedScene" uid="uid://b3xqmv7y4c8et" path="res://effects/time_slow_overlay.tscn" id="12_timeslow"]
+[ext_resource type="PackedScene" uid="uid://ni4epc6h4rnd" path="res://objects/summoning_circle/summoning_circle.tscn" id="14_mc6if"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_egukw"]
 texture = ExtResource("3_wa2qb")
@@ -376,6 +377,9 @@ position = Vector2(320, 248)
 [node name="Navigation" type="NavigationRegion2D" parent="." unique_id=815083904]
 unique_name_in_owner = true
 navigation_polygon = SubResource("NavigationPolygon_arena")
+
+[node name="SummoningCircle" parent="Navigation" unique_id=1998274367 instance=ExtResource("14_mc6if")]
+position = Vector2(392, 232)
 
 [node name="RebakeTimer" type="Timer" parent="." unique_id=1320055032]
 unique_name_in_owner = true

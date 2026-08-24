@@ -1,9 +1,10 @@
 extends Node2D
 
-@export var shaft_length: float = 28.0
-@export var shaft_width: float = 2.0
-@export var head_length: float = 8.0
-@export var head_width: float = 8.0
+## Sized to fit inside the 8 px orb body (tip stays within the circle).
+@export var shaft_length: float = 4.0
+@export var shaft_width: float = 1.0
+@export var head_length: float = 3.0
+@export var head_width: float = 4.0
 @export var color: Color = Color(1.0, 0.85, 0.2, 1.0)
 
 

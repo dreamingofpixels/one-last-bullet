@@ -53,7 +53,12 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _attacking or owner.orb_tether_component.is_tethering() or owner.orb_tether_component.is_channeling():
+	if (
+		_attacking
+		or owner.orb_tether_component.is_tethering()
+		or owner.orb_tether_component.is_channeling()
+		or owner.orb_tether_component.has_redirect_target()
+	):
 		attack_sprite_hint.visible = false
 		return
 
@@ -91,6 +96,12 @@ func is_attacking() -> bool:
 
 func can_attack() -> bool:
 	return not _attacking and Time.get_ticks_msec() >= _cooldown_until_msec
+
+
+## Start the attack cooldown without playing a swing (used by proximity orb redirect).
+func consume_cooldown() -> void:
+	_cooldown_until_msec = Time.get_ticks_msec() + int(attack_cooldown * 1000.0)
+	attack_sprite_hint.visible = false
 
 
 ## Called from AnimationPlayer method tracks.

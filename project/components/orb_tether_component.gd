@@ -25,6 +25,10 @@ var _cooldown_until_msec: int = 0
 var _channeling: bool = false
 var _channel_elapsed: float = 0.0
 var _channel_orb: RigidBody2D = null
+## Last non-zero aim so a released gamepad stick does not snap the redirect arrow to +X.
+var _last_redirect_aim: Vector2 = Vector2.RIGHT
+## Closest in-range flying orb currently showing the redirect arrow (or null).
+var _redirect_preview_orb: RigidBody2D = null
 
 
 func _ready() -> void:
@@ -48,6 +52,7 @@ func _process(delta: float) -> void:
 
 	# --- Handle channeling state ---
 	if _channeling:
+		_clear_redirect_preview()
 		var channel_orb := _get_channel_orb()
 		# Cancel: button released, target invalid / not flying, or tether disabled.
 		if (
@@ -69,6 +74,7 @@ func _process(delta: float) -> void:
 	# --- Tether input (centralized) — must run before flying guards so release works while tethered ---
 	if controls.is_tether_just_pressed():
 		if _try_immediate_tether():
+			_clear_redirect_preview()
 			return
 		# Out of range — start channel toward closest flying orb.
 		var remote_target := _find_closest_flying_orb(false)
@@ -79,8 +85,9 @@ func _process(delta: float) -> void:
 			if distance_for_input > focus_radius:
 				_start_remote_channel(remote_target)
 
-	# --- Focus overlay: every flying orb within focus_radius ---
+	# --- Focus overlay + redirect aim arrow on closest in-range flying orb ---
 	_update_focus_overlays()
+	_update_redirect_preview()
 
 
 ## Returns true when this player currently owns a tethered orb.
@@ -100,11 +107,38 @@ func get_channel_progress() -> float:
 	return clampf(_channel_elapsed / remote_tether_hold_duration, 0.0, 1.0)
 
 
+## True when the closest flying orb is in focus range (Attack will redirect instead of melee).
+func has_redirect_target() -> bool:
+	if not tether_enabled or is_tethering() or _channeling:
+		return false
+	return _find_closest_flying_orb(true) != null
+
+
 ## Legacy entry point kept for player states that may still call it (release path).
 func try_tether_press() -> bool:
 	if not tether_enabled:
 		return false
 	return _try_immediate_tether()
+
+
+## Redirect the closest in-range flying orb along player aim. Skips melee; resets dash CD.
+## Independent of the tether recapture cooldown. Returns true if a redirect happened.
+func try_redirect_attack() -> bool:
+	if not tether_enabled or is_tethering() or _channeling:
+		return false
+
+	var target := _find_closest_flying_orb(true)
+	if target == null or not target.has_method("deflect"):
+		return false
+
+	var aim: Vector2 = _get_redirect_aim()
+	target.deflect(aim, owner)
+	_clear_redirect_preview()
+
+	owner.dash_component.reset_cooldown()
+	owner.attack_component.consume_cooldown()
+
+	return true
 
 
 # ── Drawing ───────────────────────────────────────────────────────────────────
@@ -169,6 +203,55 @@ func _update_focus_overlays() -> void:
 			continue
 		var distance: float = origin.distance_to(orb.global_position)
 		orb.set_in_focus(distance <= focus_radius)
+
+
+func _update_redirect_preview() -> void:
+	# Redirect preview is independent of tether recapture cooldown.
+	if not tether_enabled or is_tethering() or _channeling:
+		_clear_redirect_preview()
+		return
+
+	var closest := _find_closest_flying_orb(true)
+	if closest == null or not closest.has_method("set_redirect_preview"):
+		_clear_redirect_preview()
+		return
+
+	# Clear arrow on any previous preview target that is no longer closest.
+	if (
+		_redirect_preview_orb != null
+		and is_instance_valid(_redirect_preview_orb)
+		and _redirect_preview_orb != closest
+		and _redirect_preview_orb.has_method("clear_redirect_preview")
+	):
+		_redirect_preview_orb.clear_redirect_preview()
+
+	_redirect_preview_orb = closest
+	closest.set_redirect_preview(_get_redirect_aim())
+
+
+func _clear_redirect_preview() -> void:
+	if (
+		_redirect_preview_orb != null
+		and is_instance_valid(_redirect_preview_orb)
+		and _redirect_preview_orb.has_method("clear_redirect_preview")
+	):
+		_redirect_preview_orb.clear_redirect_preview()
+	_redirect_preview_orb = null
+
+	# Also clear any stray arrows (e.g. after cooldown cleared all focus earlier).
+	for node in get_tree().get_nodes_in_group("orb"):
+		var orb := node as RigidBody2D
+		if orb == null or not is_instance_valid(orb) or not orb.has_method("clear_redirect_preview"):
+			continue
+		orb.clear_redirect_preview()
+
+
+func _get_redirect_aim() -> Vector2:
+	var controls: Controls = owner.controls
+	var aim: Vector2 = controls.get_aim_vector(owner.global_position)
+	if aim.length_squared() > 0.0001:
+		_last_redirect_aim = aim.normalized()
+	return _last_redirect_aim
 
 
 func _clear_all_focus() -> void:

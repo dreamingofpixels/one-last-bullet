@@ -71,6 +71,15 @@ func can_dash() -> bool:
 	return not _dashing and Time.get_ticks_msec() >= _cooldown_until_msec
 
 
+## Clear dash cooldown so the player can dash immediately (does not cancel an active dash).
+func reset_cooldown() -> void:
+	_cooldown_until_msec = 0
+	if not _dashing and indicator_enabled:
+		visible = false
+		set_process(false)
+		queue_redraw()
+
+
 func _physics_process(delta: float) -> void:
 	if not _dashing:
 		set_physics_process(false)

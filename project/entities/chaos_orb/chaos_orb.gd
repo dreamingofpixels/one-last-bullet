@@ -27,7 +27,7 @@ var COMPONENTS: Dictionary = {}
 @export var grace_ring_width: float = 1.5
 @export var grace_ring_bg_color: Color = Color(0.7, 0.85, 1.0, 0.35)
 @export var grace_ring_fill_color: Color = Color(0.75, 0.9, 1.0, 0.9)
-@export var arrow_length: float = 28.0
+@export var arrow_length: float = 7.0
 @export var rotate_heading: bool = true
 @export var tether_speed_scale: float = 1.0
 @export var tether_auto_release_turns: float = 2.0
@@ -169,7 +169,7 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	freeze = true
 	linear_velocity = Vector2.ZERO
 	orb_sprite.visible = true
-	aim_arrow.visible = false
+	clear_redirect_preview()
 	damage_component.instigator = player
 	_clear_grace_countdown()
 	hitbox_component.monitoring = true
@@ -192,7 +192,7 @@ func begin_flight(direction: Vector2, instigator: Node = null) -> void:
 	state = OrbState.FLYING
 	freeze = false
 	orb_sprite.visible = true
-	aim_arrow.visible = false
+	clear_redirect_preview()
 	hitbox_component.monitoring = true
 	set_in_focus(false)
 	_separate_from_overlaps()
@@ -254,6 +254,7 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	_clear_grace_countdown()
 	hitbox_component.monitoring = true
 	set_in_focus(true)
+	clear_redirect_preview()
 	# Do NOT call _update_tether_pose() here — the orb is already at the correct position;
 	# teleporting to _tether_target_radius on frame 0 would be a snap, not a spiral.
 	aim_direction = _tether_tangent()
@@ -293,6 +294,21 @@ func set_in_focus(value: bool) -> void:
 		value = true
 	_in_focus = value
 	orb_in_focus.visible = _in_focus
+
+
+## Show the aim arrow toward `direction` (player aim). Only while flying.
+func set_redirect_preview(direction: Vector2) -> void:
+	if state != OrbState.FLYING:
+		clear_redirect_preview()
+		return
+	var dir: Vector2 = direction.normalized() if direction.length_squared() > 0.0001 else Vector2.RIGHT
+	aim_arrow.visible = true
+	aim_arrow.rotation = dir.angle()
+	aim_arrow.queue_redraw()
+
+
+func clear_redirect_preview() -> void:
+	aim_arrow.visible = false
 
 
 func is_flying() -> bool:
@@ -346,6 +362,7 @@ func _finish_tether_release(
 	_opening_tether = false
 	_clear_tether_vars()
 	set_in_focus(false)
+	clear_redirect_preview()
 	_apply_heading()
 	if play_release_sound:
 		if release_tether_sound:
@@ -601,7 +618,7 @@ func _apply_tether_release_boost() -> void:
 func _apply_heading() -> void:
 	if rotate_heading:
 		heading.rotation = aim_direction.angle() + PI / 2.0
-	aim_arrow.rotation = aim_direction.angle()
+	# AimArrow rotation is owned by set_redirect_preview (player aim), not flight direction.
 
 
 func _update_trail() -> void:

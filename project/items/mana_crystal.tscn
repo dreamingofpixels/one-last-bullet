@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://bp1eroq2pqtgv"]
+
+[ext_resource type="Texture2D" uid="uid://dk20brhr5ksrw" path="res://items/mana_crystal_blue.png" id="1_70bcx"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_6pmnr"]
+radius = 5.0
+height = 16.0
+
+[node name="ManaCrystal" type="RigidBody2D" unique_id=1806049279]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=209882587]
+texture = ExtResource("1_70bcx")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=214865791]
+shape = SubResource("CapsuleShape2D_6pmnr")

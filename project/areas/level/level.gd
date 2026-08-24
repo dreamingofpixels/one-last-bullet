@@ -131,7 +131,7 @@ func _spawn_opening_volley() -> void:
 func _on_orb_deflected(_by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
-	status_label.text = "Deflected!"
+	status_label.text = "Redirected!"
 
 
 func _on_orb_tethered(_by: Node = null) -> void:

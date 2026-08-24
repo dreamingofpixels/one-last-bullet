@@ -42,5 +42,8 @@ func handle_input(event: InputEvent) -> void:
 	if event.is_action_pressed(controls.attack_action.action):
 		if owner.orb_tether_component.is_tethering():
 			return
-		if owner.attack_component.can_attack():
-			emit_signal("finished", "attack")
+		if not owner.attack_component.can_attack():
+			return
+		if owner.orb_tether_component.try_redirect_attack():
+			return
+		emit_signal("finished", "attack")

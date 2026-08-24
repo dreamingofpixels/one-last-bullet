@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://ni4epc6h4rnd"]
+
+[ext_resource type="Texture2D" uid="uid://rydltayd3s4e" path="res://objects/summoning_circle/summoning_circle.png" id="1_unv68"]
+
+[node name="SummoningCircle" type="Sprite2D" unique_id=1998274367]
+texture = ExtResource("1_unv68")

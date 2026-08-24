@@ -68,6 +68,8 @@ func is_dashing() -> bool:
 
 
 func can_dash() -> bool:
+	if owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal():
+		return false
 	return not _dashing and Time.get_ticks_msec() >= _cooldown_until_msec
 
 

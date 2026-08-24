@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://du4wuw1kmuhnc" path="res://entities/player/player.tscn" id="3_player"]
 [ext_resource type="Texture2D" uid="uid://bl2jhjc05fdil" path="res://areas/level/desert_tilemap_2.png" id="3_wa2qb"]
 [ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/chaos_orb/chaos_orb.tscn" id="4_bullet"]
+[ext_resource type="PackedScene" uid="uid://bp1eroq2pqtgv" path="res://items/mana_crystal.tscn" id="4_obfif"]
 [ext_resource type="PackedScene" uid="uid://cj84ujxh15v2x" path="res://objects/rocks/big_rock.tscn" id="5_4ykq2"]
 [ext_resource type="PackedScene" uid="uid://cloo7hwpiadpr" path="res://objects/cactai/cactus.tscn" id="5_cactus"]
 [ext_resource type="PackedScene" uid="uid://d3fctbf4bn5mf" path="res://objects/animal_skull.tscn" id="6_mc6if"]
@@ -222,6 +223,7 @@ source_geometry_group_name = &"navigation_source"
 
 [node name="Desert" type="Node2D" unique_id=1120075217]
 script = ExtResource("2_level")
+mana_crystal_drop_chance = 0.5
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=652304502]
 position = Vector2(320, 180)
@@ -242,6 +244,10 @@ tile_set = SubResource("TileSet_6pmnr")
 navigation_enabled = false
 
 [node name="Objects" type="Node2D" parent="." unique_id=1563161946 groups=["navigation_source"]]
+
+[node name="SummoningCircle" parent="Objects" unique_id=1998274367 instance=ExtResource("14_mc6if")]
+unique_name_in_owner = true
+position = Vector2(416, 232)
 
 [node name="Cactai" type="Node2D" parent="Objects" unique_id=1701907088]
 
@@ -357,6 +363,12 @@ shape = SubResource("RectangleShape2D_left")
 position = Vector2(648, 180)
 shape = SubResource("RectangleShape2D_right")
 
+[node name="Items" type="Node2D" parent="." unique_id=1034323593]
+unique_name_in_owner = true
+
+[node name="ManaCrystal" parent="Items" unique_id=574868470 instance=ExtResource("4_obfif")]
+position = Vector2(488, 200)
+
 [node name="Player" parent="." unique_id=735883009 instance=ExtResource("3_player")]
 unique_name_in_owner = true
 position = Vector2(320, 288)
@@ -378,9 +390,6 @@ position = Vector2(320, 248)
 unique_name_in_owner = true
 navigation_polygon = SubResource("NavigationPolygon_arena")
 
-[node name="SummoningCircle" parent="Navigation" unique_id=1998274367 instance=ExtResource("14_mc6if")]
-position = Vector2(392, 232)
-
 [node name="RebakeTimer" type="Timer" parent="." unique_id=1320055032]
 unique_name_in_owner = true
 wait_time = 0.2
@@ -401,4 +410,4 @@ offset_bottom = 32.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
-text = "Tether to release"
+text = "Assemble..."

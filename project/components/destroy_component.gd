@@ -9,7 +9,7 @@ signal destroyed(node: Node)
 var _is_destroying: bool = false
 
 
-func self_destroy() -> void:
+func self_destroy(play_sound: bool = true) -> void:
 	if _is_destroying:
 		return
 	_is_destroying = true
@@ -18,7 +18,7 @@ func self_destroy() -> void:
 
 	destroyed.emit(owner)
 
-	if destroy_sound and owner is Node2D:
+	if play_sound and destroy_sound and owner is Node2D:
 		AudioManager.play_at(destroy_sound, (owner as Node2D).global_position)
 
 	if sprite:

@@ -111,6 +111,8 @@ func get_channel_progress() -> float:
 func has_redirect_target() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
 		return false
+	if owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal():
+		return false
 	return _find_closest_flying_orb(true) != null
 
 
@@ -125,6 +127,8 @@ func try_tether_press() -> bool:
 ## Independent of the tether recapture cooldown. Returns true if a redirect happened.
 func try_redirect_attack() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
+		return false
+	if owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal():
 		return false
 
 	var target := _find_closest_flying_orb(true)
@@ -178,6 +182,10 @@ func _try_immediate_tether() -> bool:
 	if Time.get_ticks_msec() < _cooldown_until_msec:
 		return false
 
+	# Prefer nearby mana crystals over orb capture.
+	if _try_pickup_crystal():
+		return true
+
 	# Capture closest flying orb within focus radius.
 	var target := _find_closest_flying_orb(true)
 	if target == null:
@@ -186,6 +194,36 @@ func _try_immediate_tether() -> bool:
 	# Always target min_tether_radius; orb spirals from its current capture distance.
 	target.begin_tether(owner, min_tether_radius)
 	return true
+
+
+func _try_pickup_crystal() -> bool:
+	if owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal():
+		return false
+	var crystal := _find_closest_pickable_crystal(true)
+	if crystal == null:
+		return false
+	if owner.has_method("pick_up_crystal"):
+		return owner.pick_up_crystal(crystal)
+	return crystal.pickup(owner)
+
+
+func _find_closest_pickable_crystal(require_in_focus: bool) -> ManaCrystal:
+	var origin: Vector2 = owner.global_position
+	var best: ManaCrystal = null
+	var best_dist_sq: float = INF
+	for node in get_tree().get_nodes_in_group("mana_crystals"):
+		var crystal := node as ManaCrystal
+		if crystal == null or not is_instance_valid(crystal):
+			continue
+		if not crystal.can_be_picked_up():
+			continue
+		var dist_sq: float = origin.distance_squared_to(crystal.global_position)
+		if require_in_focus and dist_sq > focus_radius * focus_radius:
+			continue
+		if dist_sq < best_dist_sq:
+			best_dist_sq = dist_sq
+			best = crystal
+	return best
 
 
 func _update_focus_overlays() -> void:
@@ -207,7 +245,12 @@ func _update_focus_overlays() -> void:
 
 func _update_redirect_preview() -> void:
 	# Redirect preview is independent of tether recapture cooldown.
-	if not tether_enabled or is_tethering() or _channeling:
+	if (
+		not tether_enabled
+		or is_tethering()
+		or _channeling
+		or (owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal())
+	):
 		_clear_redirect_preview()
 		return
 

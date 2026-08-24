@@ -39,6 +39,8 @@ func handle_input(event: InputEvent) -> void:
 	if event.is_action_pressed(controls.attack_action.action):
 		if owner.orb_tether_component.is_tethering():
 			return
+		if owner.has_method("try_throw_crystal") and owner.try_throw_crystal():
+			return
 		if not owner.attack_component.can_attack():
 			return
 		if owner.orb_tether_component.try_redirect_attack():

@@ -79,11 +79,17 @@ A Final Spell/
     │       │   ├── grunt_knife.tscn / .gd / .png
     │       └── brute/
     │           └── brute.tscn / .gd / .png
-    └── objects/
+│   ├── items/
+│   │   ├── mana_crystal.tscn / .gd / mana_crystal_blue.png   Carry/throw/deposit mana drop
+│   │   ├── item_picked_up.ogg / .tres                       Shared item pickup SoundEvent
+│   │   └── mana_crystal_deposited.ogg / .tres               Crystal deposit SoundEvent
+│   └── objects/
         ├── _base/
         │   ├── level_object_variant.gd   Per-variant texture + collision Resource
         │   ├── level_object.gd           Solid prop base (world layer, random variant)
         │   └── breakable.gd              Breakable props (breakables group + COMPONENTS dict)
+        ├── summoning_circle/
+        │   └── summoning_circle.tscn / .gd / .png   Deposit Area2D + mana_pool; opening orb origin
         ├── cactai/
         │   ├── cactus.tscn               Breakable; picks cactus_1..4 at runtime
         │   ├── cactus_1..4.png
@@ -91,8 +97,6 @@ A Final Spell/
         ├── animal_skull.tscn             Breakable skull prop; 20 HP; single variant (16×16)
         ├── animal_skull.png
         ├── animal_skull_variant.tres     LevelObjectVariant for the skull (collision 14×12)
-        ├── mana/
-        │   └── mana_picked_up.ogg        (design economy resource; pickup scene not wired yet)
         └── rocks/
             ├── rock.tscn                 Solid; picks from rock variants at runtime (no health)
             ├── big_rock.tscn             Breakable rock; 60 HP; single variant (big_rock.png 28×22)
@@ -123,15 +127,15 @@ A Final Spell/
 | 3 | enemy |
 | 4 | orb |
 | 5 | wall |
+| 6 | item |
 
 ---
 
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, player, orb projectile, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
-- `project/areas/level/desert_2.tscn` — destructible-focused arena variant using only breakable props in `Objects` (`cactus`, `big_rock`, `animal_skull`) with retuned waves (2 grunts, then 3 grunts at 6s, then 1 brute + 2 grunts at 10s)
-- `project/areas/level/level.gd` — director: bakes navigation after props initialize, waits until the nav map answers path queries, starts `EnemySpawner`, then awaits `player.begin_level(chaos_orb)` (player reverse-assembles then opening tether); on original orb `launched`, spawns a **3-orb opening volley** (two extras at ±`opening_volley_spread_degrees`, default 20°) via `chaos_orb.tscn` + `begin_flight()` and wires their `tethered` / `tether_released` / `deflected` signals; win/lose/restart; connects `DestroyComponent.destroyed` for the player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` / `launched` and spawner `wave_started` / `all_cleared`; `tethered` → `TimeSlowOverlay.begin()`; `tether_released` / `launched` → `TimeSlowOverlay.end()`; optional `@export level_music` → `AudioManager.play_music()`
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, player, orb projectile, `%SummoningCircle` under Objects, `%Items` for mana crystal drops, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
+- `project/areas/level/level.gd` — director: bakes navigation after props initialize, waits until the nav map answers path queries, starts `EnemySpawner`, then awaits `player.begin_level()` (player reverse-assembles); launches **3 orbs** from `%SummoningCircle` in random directions via `begin_flight()`; on `EnemySpawner.enemy_died`, **25%** chance to spawn `mana_crystal.tscn` under `%Items`; win/lose/restart; connects `DestroyComponent.destroyed` for the player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` and spawner `wave_started` / `all_cleared` / `enemy_died`; `tethered` → `TimeSlowOverlay.begin()`; `tether_released` → `TimeSlowOverlay.end()`; optional `@export level_music` → `AudioManager.play_music()`
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -139,13 +143,13 @@ A Final Spell/
 - `project/components/health_bar_component.gd` — world-space 18×2 px `_draw` bar; fill is `% of max_health` (same pixel width for every entity); hidden until `damage_taken`, then visible for 1.5 s (timer refreshes on each hit); `@export` offset/colors; instanced on player, grunt, brute, and cactus
 - `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter), `contact_damage_interval` (0 = once per overlap)
 - `project/components/hitbox_component.gd` — `Area2D`; physics-frame overlap poll of attacker `HitboxComponent`s; frame dedup via `hit_dedup_frames`; contact ticks from `DamageComponent.contact_damage_interval`; skips if instigator == owner; applies orb damage the same way as other attackers (entities punch-through; breakables stay on body contact); `set_invulnerable(bool)` clears overlap state and toggles monitoring (deferred)
-- `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, plays `destroy_sound`, plays `DestructionEffect`, frees owner
+- `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, optionally plays `destroy_sound` (`self_destroy(play_sound := true)`), plays `DestructionEffect`, frees owner
 - `project/components/movement_component.gd` — `move(dir)` / `move_velocity(velocity)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h` with `sprite_flip_inverted` for left-facing art; skips `move_and_slide` when the body is not in a physics space
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`; same physics-space guard before `move_and_slide`
 - `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the player by group, repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls; `set_chasing(bool)` pauses avoidance + physics so assembling enemies do not slide
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false); `consume_cooldown()` for proximity redirect without a swing; hides `%AttackSpriteHint` while a redirect target exists; optional `swing_sound` (unassigned)
-- `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), `min_tether_radius` (24 px); `bind_orb()` only for opening sling; mid-combat queries the `orb` group — **focus** every flying orb in range, **aim arrow** on closest in range (`set_redirect_preview`), **tap capture** closest in range (spiral to 24 px), **remote channel** locks closest out-of-range flying orb (hold 2 s → teleport to 24 px, no spiral); **one tether at a time** (tap releases owned tether); `try_redirect_attack()` / `has_redirect_target()`; `is_channeling()` / `get_channel_progress()`; draws progress ring + line to channel target; input centralized in `_process()` (player states only gate movement/dash/attack)
-- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body layer and masks only `wall` so the dash phases through props/enemies but stops at outer arena walls; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()` / `reset_cooldown()` (cleared by proximity Attack redirect)
+- `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), `min_tether_radius` (24 px); mid-combat queries the `orb` group — **focus** every flying orb in range, **aim arrow** on closest in range (`set_redirect_preview`), **tap capture** closest in range (spiral to 24 px), **remote channel** locks closest out-of-range flying orb (hold 2 s → teleport to 24 px, no spiral); **mana crystal priority** on tether press (pickup before orb capture); **one tether at a time** (tap releases owned tether); `try_redirect_attack()` / `has_redirect_target()` (suppressed while carrying a crystal); `is_channeling()` / `get_channel_progress()`; draws progress ring + line to channel target; input centralized in `_process()` (player states only gate movement/dash/attack)
+- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body layer and masks only `wall` so the dash phases through props/enemies but stops at outer arena walls; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()` (false while carrying a mana crystal) / `reset_cooldown()` (cleared by proximity Attack redirect)
 - `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
 ### State machine base
@@ -153,14 +157,14 @@ A Final Spell/
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; start flow: `_ready` hides `%PlayerSprite` and sets player inert, `begin_level(orb)` awaits reverse assemble (`DestructionEffect.play_assemble_from_sprite`) then reenables collision/hitbox and begins opening tether; `is_assembling()` gates movement/attack/dash in `idle.gd` and `walk.gd`; tree: Components (Health max 30 + 0.5s i-frames / HealthBar / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
+- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; start flow: `_ready` hides `%PlayerSprite` and sets player inert, `begin_level()` awaits reverse assemble (`DestructionEffect.play_assemble_from_sprite`) then reenables collision/hitbox (orbs launch from the level, not an opening tether); carry API for mana crystals (`pick_up_crystal` / `try_throw_crystal` / `is_carrying_crystal`); `is_assembling()` gates movement/attack/dash in `idle.gd` and `walk.gd`; tree: Components (Health max 30 + 0.5s i-frames / HealthBar / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
-- `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; attack tries `try_redirect_attack()` first (stays idle on success); attack blocked while tethering; walk/dash blocked while tethering
-- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; attack tries `try_redirect_attack()` first (stays walk on success); attack blocked while tethering; forces idle while tethering
+- `project/entities/player/states/idle.gd` — stops movement; transitions to walk, dash, or attack; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays idle on success); attack blocked while tethering; walk/dash blocked while tethering
+- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash, or attack; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays walk on success); attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
-- `project/entities/chaos_orb/chaos_orb.tscn` + `chaos_orb.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%AimArrow` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `_ready` keeps orb hidden until opening tether or `begin_flight()`, `begin_opening_tether()` reveals the sprite; API: `begin_opening_tether()` / `begin_flight(direction, instigator)` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` / `set_redirect_preview()` / `clear_redirect_preview()`; **orbit is always `min_tether_radius` (24 px)**; tap-capture keeps orb at current position and spirals in via `tether_radius_align_speed` (320 px/s); remote/opening starts already on the 24 px circle (no spiral); auto-release after **two full revolutions** (`tether_auto_release_turns = 2.0`); tether orbit probes **world** layer only and breaks on solid contact; flying/tethered **punches through** player and enemies (body mask world-only; orbs also punch through each other); entity damage via victim hitbox poll against orb `HitboxComponent`; breakable damage + bounce SFX on `body_entered` / tether world probe via `_try_apply_orb_damage`; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); opening release emits `launched` (no boost; level spawns ±spread extras); mid-combat release / forced break emits `tether_released` (+10% boost); **1 s** instigator-based player grace after release/deflect/`begin_flight` (ghostly `%OrbSprite` tint + shrinking `_draw` halo while countdown runs); trail particles while flying/tethered; world-surface impact bursts via `OrbImpactEffect`; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
+- `project/entities/chaos_orb/chaos_orb.tscn` + `chaos_orb.gd` — active circular projectile; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%AimArrow` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states FLYING/TETHERED; `_ready` keeps orb hidden until `begin_flight()` / tether; API: `begin_opening_tether()` (unused at level start; kept) / `begin_flight(direction, instigator)` / `deflect()` / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` / `set_redirect_preview()` / `clear_redirect_preview()`; **orbit is always `min_tether_radius` (24 px)**; tap-capture keeps orb at current position and spirals in via `tether_radius_align_speed` (320 px/s); remote starts already on the 24 px circle (no spiral); auto-release after **two full revolutions** (`tether_auto_release_turns = 2.0`); tether orbit probes **world** layer only and breaks on solid contact; flying/tethered **punches through** player and enemies (body mask world-only; orbs also punch through each other); entity + mana-crystal damage via victim hitbox poll against orb `HitboxComponent`; breakable damage + bounce SFX on `body_entered` / tether world probe via `_try_apply_orb_damage`; flying bounce owned by `_integrate_forces` (contact normals; material bounce 0); mid-combat release / forced break emits `tether_released` (+10% boost); **1 s** instigator-based player grace after release/deflect/`begin_flight` (ghostly `%OrbSprite` tint + shrinking `_draw` halo while countdown runs); trail particles while flying/tethered; world-surface impact bursts via `OrbImpactEffect`; SFX via `bounce_sound` / `begin_tether_sound` / `release_tether_sound`; signals `launched`, `deflected`, `tethered`, `tether_released`
 - `project/entities/chaos_orb/chaos_orb_legacy.tscn` + `chaos_orb.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
 - `project/entities/chaos_orb/aim_arrow.gd` — drawn aim arrow on closest in-range flying orb (player aim preview for Attack redirect)
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — component-driven chaser; Health max 20 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / Navigation / HitboxComponent
@@ -175,6 +179,10 @@ A Final Spell/
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 - `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
 - `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
+- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea`; owns `mana_pool`; `deposit(amount)` / `get_launch_origin()`; starts crystal deposit on overlap; unique-named in desert arenas (level root, not under Navigation)
+- `project/items/mana_crystal.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `mana = 5`, Health 20 + HealthBar + Destroy + Hitbox (orb mask); tether pickup (`item_picked_up`), carry offset, Attack throw with slide + sprite bounce; deposit sucks to circle center then credits pool + `mana_crystal_deposited` + pixel-fall (`self_destroy(false)`); orb destroy does not credit pool
+- `project/items/item_picked_up.ogg` + `.tres` — shared SoundEvent for picking up items
+- `project/items/mana_crystal_deposited.ogg` + `.tres` — SoundEvent played when a crystal finishes depositing
 
 ### Effects
 - `project/effects/SmoothPixel.gdshader` — [CptPotato Smooth Pixel Filtering](https://github.com/CptPotato/GodotThings/tree/master/SmoothPixelFiltering) (requires Linear filter on sprites)
@@ -193,7 +201,7 @@ A Final Spell/
 - `project/audio/audio_manager.tscn` — autoload; Music A/B crossfade; 8 global + 16 positional pooled players (oldest-voice steal); `play` / `play_at` / `play_music` / bus volume helpers
 - `project/audio/sound_event.gd` — `SoundEvent` Resource: stream variants, bus, volume_db, pitch range, retrigger cooldown, max voices, avoid_repeat
 - Convention: author a `SoundEvent` `.tres` next to the clip it wraps (same pattern as `LevelObjectVariant`)
-- Wired events: entity destroyed/damaged, dash, orb bounce (`impact_soft`), begin/release tether; attack swing export exists but unassigned
+- Wired events: entity destroyed/damaged, dash, orb bounce (`impact_soft`), begin/release tether, item pickup, mana crystal deposit; attack swing export exists but unassigned
 
 ### Data
 - `project/data/` — reserved for game data (upgrades, enemies, etc.); empty
@@ -206,8 +214,9 @@ A Final Spell/
 |-------|---------|
 | `player` | Player root |
 | `enemies` | Enemy roots |
-| `orb` | ChaosOrb roots (`chaos_orb.gd`); opening volley can place multiple in this group |
+| `orb` | ChaosOrb roots (`chaos_orb.gd`); opening launch places multiple in this group |
 | `breakables` | Breakable props (cactus, etc.) |
+| `mana_crystals` | ManaCrystal roots (`mana_crystal.gd`) |
 | `navigation_source` | Desert navmesh contributors (`LowerGround`, `Cliffs`, `Objects`, `Walls`) |
 
 ## Input actions

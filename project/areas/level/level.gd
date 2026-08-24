@@ -1,14 +1,19 @@
 extends Node2D
 
 const CHAOS_ORB_SCENE := preload("res://entities/chaos_orb/chaos_orb.tscn")
+const MANA_CRYSTAL_SCENE := preload("res://items/mana_crystal.tscn")
 
 @export var level_music: AudioStream
-## Half-angle of the opening release fan (degrees). Extra orbs fly at ± this from the launch tangent.
-@export var opening_volley_spread_degrees: float = 20.0
+## How many chaos orbs launch from the summoning circle at level start.
+@export var opening_orb_count: int = 3
+## Chance (0–1) that a mana crystal spawns when an enemy dies.
+@export var mana_crystal_drop_chance: float = 0.25
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
 @onready var player: CharacterBody2D = %Player
 @onready var chaos_orb: RigidBody2D = %ChaosOrb
+@onready var summoning_circle: SummoningCircle = %SummoningCircle
+@onready var items: Node2D = %Items
 @onready var rebake_timer: Timer = %RebakeTimer
 @onready var status_label: Label = %StatusLabel
 @onready var enemy_spawner: EnemySpawner = %EnemySpawner
@@ -16,21 +21,22 @@ const CHAOS_ORB_SCENE := preload("res://entities/chaos_orb/chaos_orb.tscn")
 
 var _game_over: bool = false
 var _cleared: bool = false
-var _opening_volley_spawned: bool = false
+var _opening_orbs_spawned: bool = false
 
 
 func _ready() -> void:
 	Engine.time_scale = 1.0
 	randomize()
-	status_label.text = "Tether to release"
+	status_label.text = "Assemble..."
 
 	if level_music:
 		AudioManager.play_music(level_music)
 
-	_connect_orb_signals(chaos_orb, true)
+	_connect_orb_signals(chaos_orb)
 	rebake_timer.timeout.connect(_on_rebake_timer_timeout)
 	enemy_spawner.wave_started.connect(_on_wave_started)
 	enemy_spawner.all_cleared.connect(_on_all_cleared)
+	enemy_spawner.enemy_died.connect(_on_enemy_died)
 
 	var player_destroy: DestroyComponent = player.COMPONENTS.get(DestroyComponent)
 	if player_destroy:
@@ -42,14 +48,12 @@ func _ready() -> void:
 	await navigation_region.bake_finished
 	await _await_navigation_ready()
 	enemy_spawner.start()
-	await player.begin_level(chaos_orb)
-	# begin_level emits tethered; keep the opening prompt instead of "Tethered!".
-	status_label.text = "Tether to release"
+	await player.begin_level()
+	_launch_opening_orbs()
+	status_label.text = "Clear the room"
 
 
-func _connect_orb_signals(orb: RigidBody2D, include_launched: bool) -> void:
-	if include_launched and not orb.launched.is_connected(_on_orb_launched):
-		orb.launched.connect(_on_orb_launched)
+func _connect_orb_signals(orb: RigidBody2D) -> void:
 	if not orb.deflected.is_connected(_on_orb_deflected):
 		orb.deflected.connect(_on_orb_deflected)
 	if not orb.tethered.is_connected(_on_orb_tethered):
@@ -88,44 +92,48 @@ func _connect_breakable_destroy_signals() -> void:
 			destroy_component.destroyed.connect(_on_breakable_destroyed)
 
 
-func _on_orb_launched() -> void:
-	if _game_over or _cleared:
+func _launch_opening_orbs() -> void:
+	if _opening_orbs_spawned:
 		return
-	status_label.text = "Clear the room"
-	time_slow_overlay.end()
-	_spawn_opening_volley()
+	_opening_orbs_spawned = true
 
+	var origin: Vector2 = summoning_circle.get_launch_origin()
+	var count: int = maxi(opening_orb_count, 1)
 
-func _spawn_opening_volley() -> void:
-	if _opening_volley_spawned:
-		return
-	_opening_volley_spawned = true
-	if not chaos_orb.has_method("begin_flight"):
-		return
+	for i in count:
+		var direction: Vector2 = Vector2.from_angle(randf() * TAU)
+		if i == 0:
+			chaos_orb.global_position = origin
+			chaos_orb.begin_flight(direction, player)
+			continue
 
-	var launch_dir: Vector2 = chaos_orb.aim_direction
-	if launch_dir.length_squared() < 0.0001:
-		launch_dir = Vector2.UP
-	else:
-		launch_dir = launch_dir.normalized()
-
-	var spread_rad: float = deg_to_rad(opening_volley_spread_degrees)
-	var source_damage: float = 0.0
-	var source_components = chaos_orb.get("COMPONENTS")
-	if source_components is Dictionary and source_components.has(DamageComponent):
-		source_damage = (source_components[DamageComponent] as DamageComponent).damage
-
-	for sign_f in [-1.0, 1.0]:
 		var extra: RigidBody2D = CHAOS_ORB_SCENE.instantiate() as RigidBody2D
 		add_child(extra)
-		extra.global_position = chaos_orb.global_position
+		extra.global_position = origin
 		extra.speed = chaos_orb.speed
-		if source_damage > 0.0:
+		var source_components = chaos_orb.get("COMPONENTS")
+		if source_components is Dictionary and source_components.has(DamageComponent):
+			var source_damage: float = (source_components[DamageComponent] as DamageComponent).damage
 			var extra_components = extra.get("COMPONENTS")
 			if extra_components is Dictionary and extra_components.has(DamageComponent):
 				(extra_components[DamageComponent] as DamageComponent).damage = source_damage
-		_connect_orb_signals(extra, false)
-		extra.begin_flight(launch_dir.rotated(spread_rad * sign_f), player)
+		_connect_orb_signals(extra)
+		extra.begin_flight(direction, player)
+
+
+func _on_enemy_died(enemy: Node = null) -> void:
+	if _game_over or _cleared:
+		return
+	if enemy == null or not is_instance_valid(enemy) or not (enemy is Node2D):
+		return
+	# Capture before any further teardown; drop roll after so position is never wasted work on a miss.
+	var drop_pos: Vector2 = (enemy as Node2D).global_position
+	if randf() > mana_crystal_drop_chance:
+		return
+
+	var crystal: ManaCrystal = MANA_CRYSTAL_SCENE.instantiate() as ManaCrystal
+	items.add_child(crystal)
+	crystal.global_position = drop_pos
 
 
 func _on_orb_deflected(_by: Node = null) -> void:
@@ -180,3 +188,19 @@ func _on_player_died(_node: Node = null) -> void:
 	enemy_spawner.stop()
 	time_slow_overlay.end()
 	status_label.text = "You died. Press R to restart"
+	_drop_carried_crystal_on_death()
+
+
+func _drop_carried_crystal_on_death() -> void:
+	if not player.has_method("get_carried_crystal"):
+		return
+	var crystal: ManaCrystal = player.get_carried_crystal()
+	if crystal == null or not is_instance_valid(crystal):
+		return
+	var drop_pos: Vector2 = player.global_position
+	if not crystal.throw_toward(Vector2.DOWN, items):
+		return
+	player.clear_carried_crystal(crystal)
+	crystal.global_position = drop_pos
+	crystal.linear_velocity = Vector2.ZERO
+	crystal.settle_on_ground()

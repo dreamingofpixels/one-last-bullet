@@ -12,8 +12,9 @@
 [ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/chaos_orb/chaos_orb.tscn" id="12_q718r"]
 [ext_resource type="PackedScene" uid="uid://b3xqmv7y4c8et" path="res://effects/time_slow_overlay.tscn" id="13_7kjcw"]
 [ext_resource type="PackedScene" uid="uid://cloo7hwpiadpr" path="res://objects/cactai/cactus.tscn" id="14_l8mqp"]
-[ext_resource type="PackedScene" path="res://objects/rocks/big_rock.tscn" id="15_n2gv6"]
-[ext_resource type="PackedScene" path="res://objects/animal_skull.tscn" id="16_m5bp2"]
+[ext_resource type="PackedScene" uid="uid://cj84ujxh15v2x" path="res://objects/rocks/big_rock.tscn" id="15_n2gv6"]
+[ext_resource type="PackedScene" uid="uid://d3fctbf4bn5mf" path="res://objects/animal_skull.tscn" id="16_m5bp2"]
+[ext_resource type="PackedScene" uid="uid://ni4epc6h4rnd" path="res://objects/summoning_circle/summoning_circle.tscn" id="17_circle"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_egukw"]
 texture = ExtResource("2_y5q4f")
@@ -178,10 +179,6 @@ count = 2
 script = ExtResource("8_xf0ev")
 entries = Array[ExtResource("9_l5c64")]([SubResource("EnemySpawnEntry_grunts")])
 
-[sub_resource type="Resource" id="EnemySpawnEntry_brute"]
-script = ExtResource("9_l5c64")
-enemy_scene = ExtResource("11_ufggw")
-
 [sub_resource type="Resource" id="Resource_igk5d"]
 script = ExtResource("9_l5c64")
 enemy_scene = ExtResource("10_o15o3")
@@ -192,6 +189,10 @@ metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 script = ExtResource("8_xf0ev")
 delay_before = 6.0
 entries = Array[ExtResource("9_l5c64")]([SubResource("Resource_igk5d")])
+
+[sub_resource type="Resource" id="EnemySpawnEntry_brute"]
+script = ExtResource("9_l5c64")
+enemy_scene = ExtResource("11_ufggw")
 
 [sub_resource type="Resource" id="Resource_ocl8a"]
 script = ExtResource("9_l5c64")
@@ -234,76 +235,76 @@ navigation_enabled = false
 
 [node name="Objects" type="Node2D" parent="." unique_id=1563161946 groups=["navigation_source"]]
 
-[node name="NorthCactus1" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="NorthCactus1" parent="Objects" unique_id=1715516846 instance=ExtResource("14_l8mqp")]
 position = Vector2(80, 56)
 
-[node name="NorthCactus2" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="NorthCactus2" parent="Objects" unique_id=1134017586 instance=ExtResource("14_l8mqp")]
 position = Vector2(200, 48)
 
-[node name="NorthCactus3" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="NorthCactus3" parent="Objects" unique_id=230630593 instance=ExtResource("14_l8mqp")]
 position = Vector2(440, 52)
 
-[node name="NorthCactus4" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="NorthCactus4" parent="Objects" unique_id=1683424358 instance=ExtResource("14_l8mqp")]
 position = Vector2(568, 48)
 
-[node name="WestRock1" parent="Objects" instance=ExtResource("15_n2gv6")]
+[node name="WestRock1" parent="Objects" unique_id=1962367214 instance=ExtResource("15_n2gv6")]
 position = Vector2(64, 172)
 
-[node name="WestRock2" parent="Objects" instance=ExtResource("15_n2gv6")]
+[node name="WestRock2" parent="Objects" unique_id=1898167720 instance=ExtResource("15_n2gv6")]
 position = Vector2(96, 188)
 
-[node name="WestRock3" parent="Objects" instance=ExtResource("15_n2gv6")]
+[node name="WestRock3" parent="Objects" unique_id=1427619182 instance=ExtResource("15_n2gv6")]
 position = Vector2(64, 204)
 
-[node name="SouthGateRock1" parent="Objects" instance=ExtResource("15_n2gv6")]
+[node name="SouthGateRock1" parent="Objects" unique_id=2074251056 instance=ExtResource("15_n2gv6")]
 position = Vector2(248, 224)
 
-[node name="SouthGateRock2" parent="Objects" instance=ExtResource("15_n2gv6")]
+[node name="SouthGateRock2" parent="Objects" unique_id=1806667785 instance=ExtResource("15_n2gv6")]
 position = Vector2(392, 224)
 
-[node name="EastRock1" parent="Objects" instance=ExtResource("15_n2gv6")]
+[node name="EastRock1" parent="Objects" unique_id=1087055092 instance=ExtResource("15_n2gv6")]
 position = Vector2(584, 168)
 
-[node name="EastRock2" parent="Objects" instance=ExtResource("15_n2gv6")]
+[node name="EastRock2" parent="Objects" unique_id=1419595702 instance=ExtResource("15_n2gv6")]
 position = Vector2(608, 196)
 
-[node name="EastCactus1" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="EastCactus1" parent="Objects" unique_id=1312181988 instance=ExtResource("14_l8mqp")]
 position = Vector2(520, 176)
 
-[node name="EastCactus2" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="EastCactus2" parent="Objects" unique_id=648000766 instance=ExtResource("14_l8mqp")]
 position = Vector2(572, 212)
 
-[node name="EastCactus3" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="EastCactus3" parent="Objects" unique_id=1293674641 instance=ExtResource("14_l8mqp")]
 position = Vector2(536, 236)
 
-[node name="BoneSkull1" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="BoneSkull1" parent="Objects" unique_id=1576025699 instance=ExtResource("16_m5bp2")]
 position = Vector2(152, 104)
 
-[node name="BoneSkull2" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="BoneSkull2" parent="Objects" unique_id=1796098909 instance=ExtResource("16_m5bp2")]
 position = Vector2(224, 132)
 
-[node name="BoneSkull3" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="BoneSkull3" parent="Objects" unique_id=336484751 instance=ExtResource("16_m5bp2")]
 position = Vector2(296, 108)
 
-[node name="BoneSkull4" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="BoneSkull4" parent="Objects" unique_id=1582033590 instance=ExtResource("16_m5bp2")]
 position = Vector2(368, 140)
 
-[node name="BoneSkull5" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="BoneSkull5" parent="Objects" unique_id=1918829586 instance=ExtResource("16_m5bp2")]
 position = Vector2(440, 116)
 
-[node name="BoneSkull6" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="BoneSkull6" parent="Objects" unique_id=166577792 instance=ExtResource("16_m5bp2")]
 position = Vector2(512, 144)
 
-[node name="CornerCactusLeft" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="CornerCactusLeft" parent="Objects" unique_id=771337745 instance=ExtResource("14_l8mqp")]
 position = Vector2(72, 300)
 
-[node name="CornerCactusRight" parent="Objects" instance=ExtResource("14_l8mqp")]
+[node name="CornerCactusRight" parent="Objects" unique_id=1632375633 instance=ExtResource("14_l8mqp")]
 position = Vector2(568, 308)
 
-[node name="CornerSkullLeft" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="CornerSkullLeft" parent="Objects" unique_id=757011394 instance=ExtResource("16_m5bp2")]
 position = Vector2(120, 252)
 
-[node name="CornerSkullRight" parent="Objects" instance=ExtResource("16_m5bp2")]
+[node name="CornerSkullRight" parent="Objects" unique_id=1056662590 instance=ExtResource("16_m5bp2")]
 position = Vector2(520, 268)
 
 [node name="Walls" type="StaticBody2D" parent="." unique_id=1771153190 groups=["navigation_source"]]
@@ -342,6 +343,10 @@ waves = Array[ExtResource("8_xf0ev")]([SubResource("EnemyWave_1"), SubResource("
 unique_name_in_owner = true
 position = Vector2(320, 248)
 
+[node name="SummoningCircle" parent="." unique_id=1998274367 instance=ExtResource("17_circle")]
+unique_name_in_owner = true
+position = Vector2(392, 232)
+
 [node name="Navigation" type="NavigationRegion2D" parent="." unique_id=815083904]
 unique_name_in_owner = true
 navigation_polygon = SubResource("NavigationPolygon_arena")
@@ -366,4 +371,4 @@ offset_bottom = 32.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
-text = "Tether to release"
+text = "Assemble..."

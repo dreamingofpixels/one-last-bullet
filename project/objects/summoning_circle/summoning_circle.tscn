@@ -1,6 +1,26 @@
 [gd_scene format=3 uid="uid://ni4epc6h4rnd"]
 
-[ext_resource type="Texture2D" uid="uid://rydltayd3s4e" path="res://objects/summoning_circle/summoning_circle.png" id="1_unv68"]
+[ext_resource type="Script" uid="uid://cqnto3o0teehp" path="res://objects/summoning_circle/summoning_circle.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://rydltayd3s4e" path="res://objects/summoning_circle/summoning_circle.png" id="2_tex"]
 
-[node name="SummoningCircle" type="Sprite2D" unique_id=1998274367]
-texture = ExtResource("1_unv68")
+[sub_resource type="CircleShape2D" id="CircleShape2D_deposit"]
+radius = 22.0
+
+[node name="SummoningCircle" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+z_as_relative = false
+z_index = 0
+texture = ExtResource("2_tex")
+
+[node name="DepositArea" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 32
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DepositArea"]
+shape = SubResource("CircleShape2D_deposit")

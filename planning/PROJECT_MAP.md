@@ -34,7 +34,7 @@ A Final Spell/
     │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D)
     │   ├── navigation_component.gd / .tscn  NavigationAgent2D chase + avoidance for enemies
     │   ├── attack_component.gd / .tscn   Player arc swing; knocks enemies (orb deflect gated by flag); proximity redirect consumes cooldown without swing
-    │   ├── orb_tether_component.gd / .tscn  Proximity focus + tether capture/release + Attack redirect aim arrow
+    │   ├── orb_tether_component.gd / .tscn  Focus + Attack redirect; capture/channel gated by capture_enabled; crystal pickup + circle activate
     │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames, ghost alpha, afterimages, dash SFX, + 4s cooldown ring (reset on Attack redirect)
     │   └── directional_sprite_component.gd / .tscn  8-way logical facing (4-way visual) via AnimatedSprite2D
     ├── audio/
@@ -83,13 +83,16 @@ A Final Spell/
 │   │   ├── mana_crystal.tscn / .gd / mana_crystal_blue.png   Carry/throw/deposit mana drop
 │   │   ├── item_picked_up.ogg / .tres                       Shared item pickup SoundEvent
 │   │   └── mana_crystal_deposited.ogg / .tres               Crystal deposit SoundEvent
+│   ├── ui/
+│   │   └── fonts/
+│   │       └── pixel_medium.fnt / .png   BMFont (atlas PNG is skip-imported; assign the .fnt)
 │   └── objects/
         ├── _base/
         │   ├── level_object_variant.gd   Per-variant texture + collision Resource
         │   ├── level_object.gd           Solid prop base (world layer, random variant)
         │   └── breakable.gd              Breakable props (breakables group + COMPONENTS dict)
         ├── summoning_circle/
-        │   └── summoning_circle.tscn / .gd / .png   Deposit Area2D + mana_pool; opening orb origin
+        │   └── summoning_circle.tscn / .gd / .png   Deposit Area2D + mana_pool label; activate ritual; opening orb origin
         ├── cactai/
         │   ├── cactus.tscn               Breakable; picks cactus_1..4 at runtime
         │   ├── cactus_1..4.png
@@ -109,6 +112,7 @@ A Final Spell/
 - **Project config**: `project/project.godot`
 - **Main scene**: `res://areas/level/desert.tscn` (`uid://drul7vfq10oin`)
 - **Engine**: Godot 4.7, Forward+, stretch `canvas_items` + `expand`, **integer scale mode**, nearest project default texture filter, **snap 2D transforms to pixel off** (conflicts with smooth pixel shader), **physics interpolation off**, 640x360 base resolution
+- **UI font**: project default is `res://ui/fonts/pixel_medium.fnt` (BMFont, native size 16, integer scaling). Assign the `.fnt`, not the atlas PNG.
 - **Physics**: 3D uses Jolt; 2D gameplay uses built-in Godot 2D physics
 - **Editor plugins**: none
 
@@ -148,7 +152,7 @@ A Final Spell/
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`; same physics-space guard before `move_and_slide`
 - `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the player by group, repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls; `set_chasing(bool)` pauses avoidance + physics so assembling enemies do not slide
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false); `consume_cooldown()` for proximity redirect without a swing; hides `%AttackSpriteHint` while a redirect target exists; optional `swing_sound` (unassigned)
-- `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), `min_tether_radius` (24 px); mid-combat queries the `orb` group — **focus** every flying orb in range, **aim arrow** on closest in range (`set_redirect_preview`), **tap capture** closest in range (spiral to 24 px), **remote channel** locks closest out-of-range flying orb (hold 2 s → teleport to 24 px, no spiral); **mana crystal priority** on tether press (pickup before orb capture); **one tether at a time** (tap releases owned tether); `try_redirect_attack()` / `has_redirect_target()` (suppressed while carrying a crystal); `is_channeling()` / `get_channel_progress()`; draws progress ring + line to channel target; input centralized in `_process()` (player states only gate movement/dash/attack)
+- `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), `min_tether_radius` (24 px); mid-combat queries the `orb` group — **focus** every flying orb in range, **aim arrow** on closest in range (`set_redirect_preview`); **`capture_enabled`** (false on player) gates tap capture + remote channel (orbit code kept); tether press order: release owned tether → **summoning circle `try_activate()`** if in `DepositArea` → mana crystal pickup → orb capture (if capture on); `try_redirect_attack()` / `has_redirect_target()` (suppressed while carrying a crystal); `is_channeling()` / `get_channel_progress()`; draws progress ring + line to channel target; input centralized in `_process()` (player states only gate movement/dash/attack)
 - `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body layer and masks only `wall` so the dash phases through props/enemies but stops at outer arena walls; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()` (false while carrying a mana crystal) / `reset_cooldown()` (cleared by proximity Attack redirect)
 - `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
@@ -179,7 +183,7 @@ A Final Spell/
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 - `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
 - `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
-- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea`; owns `mana_pool`; `deposit(amount)` / `get_launch_origin()`; starts crystal deposit on overlap; unique-named in desert arenas (level root, not under Navigation)
+- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool`; `deposit` / `spend` / `try_activate()` / `contains_player()` / `get_launch_origin()`; crystal deposit on overlap; tether-in-circle spends 5 once to activate (sprite blink + rising particles); group `summoning_circle`; unique-named in desert arenas (level root, not under Navigation)
 - `project/items/mana_crystal.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `mana = 5`, Health 20 + HealthBar + Destroy + Hitbox (orb mask); tether pickup (`item_picked_up`), carry offset, Attack throw with slide + sprite bounce; deposit sucks to circle center then credits pool + `mana_crystal_deposited` + pixel-fall (`self_destroy(false)`); orb destroy does not credit pool
 - `project/items/item_picked_up.ogg` + `.tres` — shared SoundEvent for picking up items
 - `project/items/mana_crystal_deposited.ogg` + `.tres` — SoundEvent played when a crystal finishes depositing
@@ -217,6 +221,7 @@ A Final Spell/
 | `orb` | ChaosOrb roots (`chaos_orb.gd`); opening launch places multiple in this group |
 | `breakables` | Breakable props (cactus, etc.) |
 | `mana_crystals` | ManaCrystal roots (`mana_crystal.gd`) |
+| `summoning_circle` | SummoningCircle roots (`summoning_circle.gd`) |
 | `navigation_source` | Desert navmesh contributors (`LowerGround`, `Cliffs`, `Objects`, `Walls`) |
 
 ## Input actions
@@ -246,6 +251,7 @@ P1 keyboard/mouse actions use `device: -1` (any keyboard/mouse). P2 is gamepad-o
 - Audio: define sounds as `SoundEvent` Resources colocated with their clips; play through `AudioManager.play` / `play_at` (pooled players, not per-entity `AudioStreamPlayer` nodes). Buses: Master / Music / SFX via `default_bus_layout.tres`.
 - Player facing: 8-way logical facing; visuals use `<action>_<visual>` names (`idle_sw`, `walk_ne`, …) on a shared `SpriteFrames` resource; `DirectionalSpriteComponent` owns octant snap and cardinal→diagonal visual mapping.
 - Do not hunt for an exported `.exe` to test; use in-editor play (see `.cursor/rules/godot-testing.mdc`).
+- UI text uses `res://ui/fonts/pixel_medium.fnt` (project `gui/theme/custom_font`). Keep the `.fnt` next to `pixel_medium.png`; import the PNG as Skip so only the BMFont importer consumes the atlas. Use font size 16 or integer multiples.
 - Level objects: origin is **bottom-center** of the art; collision size/offset lives in a per-variant `LevelObjectVariant` Resource; shapes are built in code so instances do not share a mutated sub-resource.
 - Keep this file updated when autoloads, scenes, scripts, groups, or physics layers change.
 

@@ -34,7 +34,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Enemies have a **25%** chance to drop a `ManaCrystal` (default **5** mana, **20** HP). Tether within `focus_radius` picks up a crystal **before** capturing an orb. While carried: shown beside the player, dash disabled, Attack throws along aim (slide + sprite bounce, then settle). Pickup plays shared `item_picked_up` SFX. If a crystal enters the summoning circle `DepositArea` (including while carried), it detaches, freezes, and **sucks to the circle center** (cubic ease-in); on arrival it credits `SummoningCircle.mana_pool`, plays `mana_crystal_deposited`, then `DestroyComponent.self_destroy(false)` (pixel-fall, no generic destroy SFX). Orb hitbox damage can destroy crystals; that path does **not** credit the pool and still uses the default destroy SFX. Crystals use physics layer `item` (world mask only) so orbs punch through via hitbox rather than bouncing.
 - **Why**: Makes mana a spatial risk (orb can smash loot; must deliver to the circle) and reuses tether/attack verbs without a new input. Suck-in makes the deposit readable; splitting pickup vs deposit SFX keeps item pickup generic for future loot.
 - **Alternatives**: Auto-collect vanishing mana orbs — less skill; walking into crystals — weaker than tether priority; crystals on `world` layer (orb bounce) — turns loot into pinball obstacles; instant deposit `queue_free` — previous, no suck/VFX; reuse pickup clip for deposit — less feedback that mana reached the pool; vanish timer — deferred (open question).
-- **Status**: decided (in-codebase)
+- **Status**: decided (in-codebase); pool UI + spend/activate ritual added on the circle (see "Summoning circle activation ritual")
 
 ### Orb damages enemies; hurts player on contact
 - **Decision**: The same projectile is a weapon against enemies and a hazard for the player. HP and orb damage are authored in scene `HealthComponent` / `DamageComponent` values (currently player **30 HP**, grunt **20 HP**, orb damage **10**). Player gets brief i-frames after a non-fatal hit.
@@ -64,7 +64,19 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Mid-combat steering is proximity tether. When the flying orb is within 48 px (`focus_radius`), it shows an `OrbInFocus` overlay. The dedicated `tether` input (right click / gamepad X; `TetherAction` under Controls) captures it; the orb keeps its current position and **spirals in** to the fixed **24 px** (`min_tether_radius`) orbit while continuing to travel. A second tether press or **two full revolutions** releases it along the current tangent at full orb speed. Attack remains separate: out of range it is melee-only; in range it redirects (see proximity Attack redirect). Player movement and dash are locked while tethered. Each release multiplies orb `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). While tethered the orb damages enemies; the tethering player is immune via `DamageComponent.instigator` for the whole tether plus **1 s** post-release grace (ghostly tint + shrinking halo on the orb). Short cooldown after release (~0.25s) prevents instant re-grab. Driven by `OrbTetherComponent` on the player + `begin_tether` / `release_tether` / `break_tether` on the orb.
 - **Why**: Separate tether from attack so melee knockback stays available near the orb; clearer "grab and sling" fantasy than batting; locking the player while the orb orbits makes the sling a committed stance; stacking speed/damage rewards repeated successful slings.
 - **Alternatives**: Variable orbit radius (capture distance) — removed because orbit size was unpredictable; teleport on tap to min radius — felt like a snap, spiral is more readable; one revolution — too short, especially at close range; free movement while tethered — weaker commitment and easier to cheese positioning; no release boost — less reward for risking the tether; aim-directed slingshot on release — more UI and less "continue forward" readability; inert tether (no enemy damage) — weaker as a spinning weapon.
-- **Status**: decided (in-codebase); playtest may restore arc deflect.
+- **Status**: revisit — capture/channel parked via `capture_enabled = false` on the player (see "Park orb capture; Attack redirect only" below); code kept
+
+### Park orb capture; Attack redirect only (playtest)
+- **Decision**: Player `OrbTetherComponent.capture_enabled = false`. Tether no longer captures orbs or starts remote channel. Focus overlays, aim arrow, Attack redirect, and mana-crystal pickup remain. Do **not** set `tether_enabled = false` (that also gates redirect). Owned-tether release still works if somehow tethered. Flip `capture_enabled` back on to restore orbit sling.
+- **Why**: Experiment with Attack-only mid-combat aim steer without deleting the tether system.
+- **Alternatives**: Delete tether code — harder to restore; disable `tether_enabled` — also kills redirect and crystal pickup wiring; keep both capture and redirect — previous playtest default.
+- **Status**: decided (in-codebase); revisit after playtest
+
+### Summoning circle activation ritual
+- **Decision**: `SummoningCircle` shows `mana_pool` on `%ManaPoolLabel` (updates on `deposit` / `spend`). `DepositArea` masks player + item. Standing in the circle and pressing tether calls `try_activate()`: spends **5** mana once, then blinks the sprite and emits rising `%ArcaneParticles`. Already-activated or unaffordable presses fall through to crystal pickup. Group `summoning_circle`; further ritual effects TBD.
+- **Why**: Makes the pool readable and gives tether a circle verb while orb capture is parked; 5 mana matches one crystal deposit so activation is one-crystal commit.
+- **Alternatives**: Auto-activate when pool ≥ 5 — less intentional; spend on Attack instead — competes with redirect; deactivate / toggle — deferred until ritual content exists.
+- **Status**: decided (in-codebase)
 
 ### Proximity Attack redirect (aim arrow + dash reset)
 - **Decision**: While a flying orb is within `focus_radius` (48 px), the **closest** in-range orb shows `%AimArrow` aimed with the player's aim (right stick / mouse). Pressing **Attack** then calls `ChaosOrb.deflect()` along that aim — **no melee swing**, no enemy knockback, **no +10% tether boost**. The same Attack also calls `DashComponent.reset_cooldown()` so the player can dash immediately. Shares the normal **0.35 s** attack cooldown (`AttackComponent.consume_cooldown()`). Redirect works even during the short tether recapture cooldown. Multiple in-range orbs still all get `OrbInFocus`; only the closest gets the arrow and is redirected. Out of range (or while tethered/channeling), Attack is the normal melee swing. Arc-contact `deflect_orb_enabled` stays false.
@@ -166,7 +178,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ## Open design tensions
 
-- **Tether feel**: orbit radius / auto-release after forced breaks; entity punch-through means only world solids snap the tether.
+- **Tether feel**: orbit capture parked (`capture_enabled`); Attack-only redirect playtest; entity punch-through means only world solids snap the tether when capture returns.
 - **Attack cooldown / charges**: swing cooldown 0.35s; tether post-release cooldown 0.25s.
 - **Opening shot UX**: design doc says free aim-and-fire at level start from the player; prototype launches three orbs from the summoning circle in random directions (conflicts with one-spell scarcity).
 - **Mana vanish duration**: crystals currently persist until deposited or orb-destroyed; should grounded crystals still time out?

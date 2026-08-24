@@ -2,25 +2,78 @@
 
 [ext_resource type="Script" uid="uid://cqnto3o0teehp" path="res://objects/summoning_circle/summoning_circle.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://rydltayd3s4e" path="res://objects/summoning_circle/summoning_circle.png" id="2_tex"]
+[ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="3_uicfy"]
+[ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="4_pixel"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_deposit"]
 radius = 22.0
 
-[node name="SummoningCircle" type="Node2D"]
+[sub_resource type="LabelSettings" id="LabelSettings_6pmnr"]
+font = ExtResource("3_uicfy")
+font_size = 8
+
+[sub_resource type="Gradient" id="Gradient_arcane"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(0.75, 0.85, 1, 1, 0.55, 0.4, 0.95, 0.85, 0.25, 0.15, 0.55, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_arcane"]
+gradient = SubResource("Gradient_arcane")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_arcane"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_sphere_radius = 14.0
+direction = Vector3(0, -1, 0)
+spread = 22.0
+initial_velocity_min = 18.0
+initial_velocity_max = 42.0
+gravity = Vector3(0, -8, 0)
+scale_min = 2.0
+scale_max = 3.0
+color_ramp = SubResource("GradientTexture1D_arcane")
+
+[node name="SummoningCircle" type="Node2D" unique_id=1057267850]
 script = ExtResource("1_script")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=677143838]
 unique_name_in_owner = true
 z_as_relative = false
-z_index = 0
 texture = ExtResource("2_tex")
 
-[node name="DepositArea" type="Area2D" parent="."]
+[node name="DepositArea" type="Area2D" parent="." unique_id=2040364074]
 unique_name_in_owner = true
 collision_layer = 0
-collision_mask = 32
-monitoring = true
+collision_mask = 34
 monitorable = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DepositArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DepositArea" unique_id=1830142467]
 shape = SubResource("CircleShape2D_deposit")
+
+[node name="ManaPoolLabel" type="Label" parent="." unique_id=392306155]
+unique_name_in_owner = true
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "0"
+label_settings = SubResource("LabelSettings_6pmnr")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ArcaneParticles" type="GPUParticles2D" parent="." unique_id=1847293651]
+unique_name_in_owner = true
+z_index = 1
+texture_filter = 1
+emitting = false
+amount = 28
+lifetime = 0.9
+visibility_rect = Rect2(-80, -120, 160, 160)
+process_material = SubResource("ParticleProcessMaterial_arcane")
+texture = ExtResource("4_pixel")

@@ -32,6 +32,9 @@ window/stretch/scale_mode="integer"
 [gui]
 
 common/snap_controls_to_pixels=false
+theme/custom_font="res://ui/fonts/pixel_medium.fnt"
+theme/custom_font_size=16
+theme/default_font_antialiasing=0
 
 [input]
 

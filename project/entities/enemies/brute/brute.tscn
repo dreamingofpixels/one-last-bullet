@@ -46,7 +46,7 @@ offset = Vector2(0, -22)
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=621483871]
 script = ExtResource("5_damage")
-damage = 3.0
+damage = 10.0
 contact_damage_interval = 0.75
 
 [node name="DestroyComponent" type="Node2D" parent="Components" unique_id=156210785 node_paths=PackedStringArray("sprite")]

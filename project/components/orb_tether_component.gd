@@ -8,6 +8,8 @@ class_name OrbTetherComponent extends Node2D
 @export var min_tether_radius: float = 24.0
 @export var tether_cooldown: float = 0.25
 @export var tether_enabled: bool = true
+## When false, skip orb capture and remote channel; keep crystal pickup, focus, and Attack redirect.
+@export var capture_enabled: bool = true
 @export var remote_tether_hold_duration: float = 2.0
 
 ## Channel visual tuning.
@@ -76,14 +78,15 @@ func _process(delta: float) -> void:
 		if _try_immediate_tether():
 			_clear_redirect_preview()
 			return
-		# Out of range — start channel toward closest flying orb.
-		var remote_target := _find_closest_flying_orb(false)
-		if remote_target != null:
-			var distance_for_input: float = owner.global_position.distance_to(
-				(remote_target as Node2D).global_position
-			)
-			if distance_for_input > focus_radius:
-				_start_remote_channel(remote_target)
+		# Out of range — start channel toward closest flying orb (orb capture only).
+		if capture_enabled:
+			var remote_target := _find_closest_flying_orb(false)
+			if remote_target != null:
+				var distance_for_input: float = owner.global_position.distance_to(
+					(remote_target as Node2D).global_position
+				)
+				if distance_for_input > focus_radius:
+					_start_remote_channel(remote_target)
 
 	# --- Focus overlay + redirect aim arrow on closest in-range flying orb ---
 	_update_focus_overlays()
@@ -182,9 +185,16 @@ func _try_immediate_tether() -> bool:
 	if Time.get_ticks_msec() < _cooldown_until_msec:
 		return false
 
+	# Activate summoning circle while standing in its DepositArea (before crystal pickup).
+	if _try_activate_summoning_circle():
+		return true
+
 	# Prefer nearby mana crystals over orb capture.
 	if _try_pickup_crystal():
 		return true
+
+	if not capture_enabled:
+		return false
 
 	# Capture closest flying orb within focus radius.
 	var target := _find_closest_flying_orb(true)
@@ -194,6 +204,18 @@ func _try_immediate_tether() -> bool:
 	# Always target min_tether_radius; orb spirals from its current capture distance.
 	target.begin_tether(owner, min_tether_radius)
 	return true
+
+
+func _try_activate_summoning_circle() -> bool:
+	for node in get_tree().get_nodes_in_group("summoning_circle"):
+		var circle := node as SummoningCircle
+		if circle == null or not is_instance_valid(circle):
+			continue
+		if not circle.contains_player(owner):
+			continue
+		if circle.try_activate():
+			return true
+	return false
 
 
 func _try_pickup_crystal() -> bool:

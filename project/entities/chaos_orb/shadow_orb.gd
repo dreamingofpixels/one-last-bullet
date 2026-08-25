@@ -69,6 +69,7 @@ func _begin_possession(host: Node2D) -> void:
 	orb_in_focus.visible = false
 	aim_arrow.visible = false
 	trail_particles.emitting = false
+	redirect_particles.emitting = false
 
 	_possession_tick_remaining = 0.0
 	global_position = host.global_position

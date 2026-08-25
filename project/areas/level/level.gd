@@ -9,6 +9,8 @@ const OPENING_ORB_SPEED := 100.0
 @export var level_music: AudioStream
 ## Chance (0–1) that a mana crystal spawns when an enemy dies.
 @export var mana_crystal_drop_chance: float = 0.25
+## When true, flying orbs bounce off players/enemies; when false, they punch through.
+@export var bounce_orbs_off_entities: bool = false
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
 @onready var player: CharacterBody2D = %Player
@@ -28,6 +30,7 @@ func _ready() -> void:
 	Engine.time_scale = 1.0
 	randomize()
 	status_label.text = "Assemble..."
+	ChaosOrb.set_bounce_off_entities(bounce_orbs_off_entities)
 
 	if level_music:
 		AudioManager.play_music(level_music)

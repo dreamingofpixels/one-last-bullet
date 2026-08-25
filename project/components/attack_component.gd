@@ -1,12 +1,15 @@
 class_name AttackComponent extends Area2D
 
 ## Player melee arc: authored CollisionPolygon2D that knocks enemies (and optionally reflects the orb).
+## Parked behind melee_enabled for Attack-redirect-only playtest (nodes/code kept).
 
 const PHYSICS_LAYER_ENEMY := 4
 const PHYSICS_LAYER_ORB := 8
 
 @export var knockback_force: float = 220.0
 @export var attack_cooldown: float = 0.35
+## When false, Attack never swings (sprite/hitbox/knockback dormant). Redirect uses consume_cooldown().
+@export var melee_enabled: bool = false
 ## When false, the arc still knocks enemies but does not deflect the orb (tether steering is active instead).
 @export var deflect_orb_enabled: bool = false
 ## When orb velocity aligns with player→orb (dot > this), push along aim instead of bouncing.
@@ -48,11 +51,15 @@ func _ready() -> void:
 	attack_sprite_hint.offset = Vector2(0.0, -16.0)
 	attack_sprite_hint.rotation = sprite_angle_offset
 	attack_sprite_hint.frame = 2
+	attack_sprite_hint.visible = false
 	body_entered.connect(_on_body_entered)
 	attack_animation.animation_finished.connect(_on_animation_finished)
 
 
 func _process(_delta: float) -> void:
+	if not melee_enabled:
+		attack_sprite_hint.visible = false
+		return
 	if (
 		_attacking
 		or owner.orb_tether_component.is_tethering()
@@ -74,6 +81,8 @@ func _process(_delta: float) -> void:
 
 
 func start(aim_direction: Vector2) -> void:
+	if not melee_enabled:
+		return
 	if not can_attack():
 		return
 	_aim_direction = aim_direction.normalized() if aim_direction.length_squared() > 0.0001 else Vector2.RIGHT
@@ -106,6 +115,10 @@ func consume_cooldown() -> void:
 
 ## Called from AnimationPlayer method tracks.
 func set_hitbox_active(active: bool) -> void:
+	if not melee_enabled:
+		monitoring = false
+		collision_polygon.disabled = true
+		return
 	monitoring = active
 	collision_polygon.disabled = not active
 	if active:
@@ -119,7 +132,7 @@ func _on_body_entered(body: Node2D) -> void:
 
 
 func _resolve_hit(body: Node) -> void:
-	if not monitoring or body == null or not is_instance_valid(body):
+	if not melee_enabled or not monitoring or body == null or not is_instance_valid(body):
 		return
 
 	if body.is_in_group("orb"):

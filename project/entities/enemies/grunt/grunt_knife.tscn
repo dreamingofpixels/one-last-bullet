@@ -11,7 +11,7 @@
 [ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="8_knockback"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="9_hbar"]
 [ext_resource type="PackedScene" path="res://components/navigation_component.tscn" id="10_navigation"]
-[ext_resource type="PackedScene" path="res://components/status_component.tscn" id="11_status"]
+[ext_resource type="PackedScene" uid="uid://doae1sw0x8emo" path="res://components/status_component.tscn" id="11_status"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0

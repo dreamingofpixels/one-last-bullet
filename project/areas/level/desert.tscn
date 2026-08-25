@@ -226,6 +226,7 @@ source_geometry_group_name = &"navigation_source"
 script = ExtResource("2_level")
 level_music = ExtResource("2_ynou2")
 mana_crystal_drop_chance = 0.5
+bounce_orbs_off_entities = true
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=652304502]
 position = Vector2(320, 180)

@@ -40,6 +40,8 @@ func handle_input(event: InputEvent) -> void:
 			return
 
 	if event.is_action_pressed(controls.attack_action.action):
+		if _is_pointer_over_blocking_gui():
+			return
 		if owner.orb_tether_component.is_tethering():
 			return
 		if owner.has_method("try_throw_crystal") and owner.try_throw_crystal():
@@ -48,4 +50,9 @@ func handle_input(event: InputEvent) -> void:
 			return
 		if owner.orb_tether_component.try_redirect_attack():
 			return
-		emit_signal("finished", "attack")
+		# Melee swing parked (AttackComponent.melee_enabled); Attack is redirect-only.
+
+
+func _is_pointer_over_blocking_gui() -> bool:
+	var hovered: Control = owner.get_viewport().gui_get_hovered_control()
+	return hovered != null and hovered.mouse_filter != Control.MOUSE_FILTER_IGNORE

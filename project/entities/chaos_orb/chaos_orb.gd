@@ -8,8 +8,11 @@ signal tether_released(by: Node)
 enum OrbState { FLYING, TETHERED, POSSESSED }
 
 const PHYSICS_LAYER_WORLD := 1
-## Body / tether probe / depenetrate only hit world solids (walls, rocks, breakables).
-## Player and enemies are punch-through; damage comes from HitboxComponent overlap.
+const PHYSICS_LAYER_PLAYER := 2
+const PHYSICS_LAYER_ENEMY := 4
+## Body / tether probe / depenetrate default to world solids (walls, rocks, breakables).
+## When bounce_off_entities is true, flying orbs also bounce off player/enemy bodies.
+## Entity damage still comes from HitboxComponent overlap.
 const SEPARATE_STEP_PX := 2.0
 const SEPARATE_MAX_ITERS := 4
 const SEPARATE_MAX_PUSH_PX := 8.0
@@ -18,6 +21,9 @@ const STALL_TRAVEL_FRACTION := 0.25
 const STALL_TICKS_BEFORE_UNSTICK := 12
 
 var COMPONENTS: Dictionary = {}
+
+## Playtest toggle: when true, flying orbs bounce off player/enemy bodies instead of punching through.
+static var bounce_off_entities: bool = false
 
 @export var speed: float = 180.0
 @export var max_speed: float = 1500.0
@@ -44,6 +50,7 @@ var COMPONENTS: Dictionary = {}
 @onready var body_collision_shape: CollisionShape2D = %CollisionShape2D
 @onready var heading: Node2D = %Heading
 @onready var aim_arrow: Node2D = %AimArrow
+@onready var redirect_particles: GPUParticles2D = %RedirectParticles
 @onready var damage_component: DamageComponent = %DamageComponent
 @onready var hitbox_component: HitboxComponent = %HitboxComponent
 @onready var orb_sprite: Sprite2D = %OrbSprite
@@ -69,6 +76,7 @@ var _has_last_fly_position: bool = false
 var _stall_ticks: int = 0
 var _tether_damage_frame: int = -1
 var _tether_damaged_ids: Dictionary = {}
+var _grace_exception_body: CollisionObject2D = null
 
 
 func _ready() -> void:
@@ -82,7 +90,7 @@ func _ready() -> void:
 	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	angular_damp = 0.0
 	collision_layer = 8  # orb layer
-	collision_mask = PHYSICS_LAYER_WORLD
+	_apply_collision_mask()
 	contact_monitor = true
 	max_contacts_reported = 4
 	can_sleep = false
@@ -98,11 +106,24 @@ func _ready() -> void:
 	orb_in_focus.visible = false
 	orb_sprite.visible = false
 	aim_arrow.visible = false
+	redirect_particles.emitting = false
+	redirect_particles.self_modulate = base_modulate
 	hitbox_component.monitoring = false
 	freeze = true
 	trail_particles.emitting = false
 	set_process(false)
 	_apply_heading()
+
+
+## Apply the current bounce_off_entities flag to every live orb (HUD checkbox).
+static func set_bounce_off_entities(value: bool) -> void:
+	bounce_off_entities = value
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	for node in tree.get_nodes_in_group("orb"):
+		if node is ChaosOrb:
+			(node as ChaosOrb)._apply_collision_mask()
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
@@ -176,6 +197,8 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 	clear_redirect_preview()
 	damage_component.instigator = player
 	_clear_grace_countdown()
+	_clear_grace_exception()
+	_apply_collision_mask()
 	hitbox_component.monitoring = true
 	set_in_focus(true)
 	_update_tether_pose()
@@ -197,6 +220,7 @@ func begin_flight(direction: Vector2, instigator: Node = null) -> void:
 	freeze = false
 	orb_sprite.visible = true
 	clear_redirect_preview()
+	_apply_collision_mask()
 	hitbox_component.monitoring = true
 	set_in_focus(false)
 	_separate_from_overlaps()
@@ -224,6 +248,7 @@ func deflect(new_velocity: Vector2, instigator: Node) -> void:
 		damage_component.instigator = instigator
 		_player = instigator as Node2D
 	_begin_grace()
+	_apply_collision_mask()
 	hitbox_component.monitoring = true
 	_apply_heading()
 	deflected.emit(instigator)
@@ -257,6 +282,8 @@ func begin_tether(player: Node2D, radius: float) -> void:
 	linear_velocity = Vector2.ZERO
 	damage_component.instigator = player
 	_clear_grace_countdown()
+	_clear_grace_exception()
+	_apply_collision_mask()
 	hitbox_component.monitoring = true
 	set_in_focus(true)
 	clear_redirect_preview()
@@ -301,19 +328,22 @@ func set_in_focus(value: bool) -> void:
 	orb_in_focus.visible = _in_focus
 
 
-## Show the aim arrow toward `direction` (player aim). Only while flying.
+## Show a particle stream along `direction` (player aim). Only while flying.
+## AimArrow stays dormant (kept for rollback); RedirectParticles owns the preview.
 func set_redirect_preview(direction: Vector2) -> void:
 	if state != OrbState.FLYING:
 		clear_redirect_preview()
 		return
 	var dir: Vector2 = direction.normalized() if direction.length_squared() > 0.0001 else Vector2.RIGHT
-	aim_arrow.visible = true
-	aim_arrow.rotation = dir.angle()
-	aim_arrow.queue_redraw()
+	aim_arrow.visible = false
+	redirect_particles.rotation = dir.angle()
+	redirect_particles.self_modulate = base_modulate
+	redirect_particles.emitting = true
 
 
 func clear_redirect_preview() -> void:
 	aim_arrow.visible = false
+	redirect_particles.emitting = false
 
 
 func is_flying() -> bool:
@@ -365,6 +395,7 @@ func _finish_tether_release(
 		_apply_tether_release_boost()
 	state = OrbState.FLYING
 	freeze = false
+	_apply_collision_mask()
 	_separate_from_overlaps()
 	# Always launch at full speed — never leave the orb parked.
 	linear_velocity = aim_direction * maxf(speed, 0.001)
@@ -396,6 +427,7 @@ func _finish_tether_release(
 
 func _begin_grace() -> void:
 	_grace_clear_msec = Time.get_ticks_msec() + int(player_grace_seconds * 1000.0)
+	_set_grace_exception(_player)
 	set_process(true)
 	_update_grace_visual()
 	queue_redraw()
@@ -412,7 +444,28 @@ func _clear_grace_countdown() -> void:
 ## Clear instigator and stop the post-release grace visual.
 func _end_grace_visual() -> void:
 	damage_component.instigator = null
+	_clear_grace_exception()
 	_clear_grace_countdown()
+
+
+func _set_grace_exception(body: Node) -> void:
+	_clear_grace_exception()
+	if body is CollisionObject2D and is_instance_valid(body):
+		_grace_exception_body = body as CollisionObject2D
+		add_collision_exception_with(_grace_exception_body)
+
+
+func _clear_grace_exception() -> void:
+	if _grace_exception_body != null and is_instance_valid(_grace_exception_body):
+		remove_collision_exception_with(_grace_exception_body)
+	_grace_exception_body = null
+
+
+func _apply_collision_mask() -> void:
+	if state == OrbState.FLYING and bounce_off_entities:
+		collision_mask = PHYSICS_LAYER_WORLD | PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_ENEMY
+	else:
+		collision_mask = PHYSICS_LAYER_WORLD
 
 
 func _get_grace_remaining_fraction() -> float:
@@ -639,7 +692,7 @@ func _apply_tether_release_boost() -> void:
 func _apply_heading() -> void:
 	if rotate_heading:
 		heading.rotation = aim_direction.angle() + PI / 2.0
-	# AimArrow rotation is owned by set_redirect_preview (player aim), not flight direction.
+	# Redirect preview rotation is owned by set_redirect_preview (player aim), not flight direction.
 
 
 func _update_trail() -> void:
@@ -826,7 +879,12 @@ func _on_body_entered(body: Node) -> void:
 		AudioManager.play_at(bounce_sound, global_position)
 
 	# Bounce direction is owned by _integrate_forces (true contact normals).
-	# World solids (walls / rocks / breakables) only — entities are punch-through.
+	# World solids (walls / rocks / breakables) take body-contact damage.
+	# Player / enemies use hitbox poll only (skip here to avoid double-hit when bouncing).
+	if body.is_in_group("player") or body.is_in_group("enemies"):
+		return
 	var victim_root: Node = _resolve_entity_root(body)
 	if victim_root != null:
+		if victim_root.is_in_group("player") or victim_root.is_in_group("enemies"):
+			return
 		_try_apply_orb_damage(victim_root)

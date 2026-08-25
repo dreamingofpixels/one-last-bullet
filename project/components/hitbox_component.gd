@@ -85,7 +85,7 @@ func _poll_attacker(attacker: Node, attacker_id: int, frame: int, now_msec: int)
 
 		var applied := false
 		if apply_hp and health_component:
-			applied = health_component.take_damage(dc.damage)
+			applied = health_component.take_damage(dc.damage, dc.damage_kind)
 		elif not apply_hp:
 			# Typed orbs (e.g. Shadow) may skip HP but still count as a hit.
 			applied = true

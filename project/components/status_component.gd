@@ -66,12 +66,8 @@ func _tick_poison(delta: float) -> void:
 		return
 
 	if health_component:
-		health_component.take_damage(float(_poison_stacks))
-	_poison_stacks = maxi(_poison_stacks - 1, 0)
-	if _poison_stacks > 0:
-		_poison_tick_remaining = POISON_TICK_INTERVAL
-	else:
-		_poison_tick_remaining = 0.0
+		health_component.take_damage(float(_poison_stacks), HealthComponent.DamageKind.POISON)
+	_poison_tick_remaining = POISON_TICK_INTERVAL
 
 
 func _tick_stun(delta: float) -> void:

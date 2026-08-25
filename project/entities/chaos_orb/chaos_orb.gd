@@ -599,7 +599,9 @@ func _try_apply_orb_damage(victim_root: Node) -> bool:
 	if _tether_damaged_ids.has(victim_id):
 		return false
 
-	var applied: bool = comp[HealthComponent].take_damage(damage_component.damage)
+	var applied: bool = comp[HealthComponent].take_damage(
+		damage_component.damage, damage_component.damage_kind
+	)
 	if applied:
 		_tether_damaged_ids[victim_id] = true
 	return applied

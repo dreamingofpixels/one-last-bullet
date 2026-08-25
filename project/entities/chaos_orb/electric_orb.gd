@@ -1,6 +1,6 @@
 class_name ElectricOrb extends ChaosOrb
 
-const CURRENT_RANGE := 100.0
+const CURRENT_RANGE := 130.0
 const CURRENT_DAMAGE := 5.0
 const CURRENT_SHOCK_STACKS := 3
 const CURRENT_TICK_INTERVAL := 1.0

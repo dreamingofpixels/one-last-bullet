@@ -12,4 +12,4 @@ func on_hitbox_hit(victim: Node) -> void:
 		return
 
 	var status: StatusComponent = comp[StatusComponent] as StatusComponent
-	status.add_stacks(StatusComponent.StatusId.POISON, 1)
+	status.add_stacks(StatusComponent.StatusId.POISON, 3)

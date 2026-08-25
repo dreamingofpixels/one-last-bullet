@@ -25,9 +25,15 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — replaced by typed Shadow/Poison/Electric opening volley (see below)
 
 ### Opening typed orb volley (Shadow / Poison / Electric)
-- **Decision**: Level start launches **one Shadow**, **one Poison**, and **one Electric** orb from the summoning circle in independent random directions (`begin_flight`, player grace). No plain chaos orb is spawned. `chaos_orb.gd` / `.tscn` remain the shared `ChaosOrb` base (`class_name`, `FLYING` / `TETHERED` / `POSSESSED`). Typed scenes tint `orb.png` and override hit hooks. Enemies own a `StatusComponent` for Poison (3 s DoT stacks) and Shock (stun at 10 stacks / 2 s). Shadow follows its host in world space (not reparented) so enemy `queue_free` cannot free the orb. Electric current is a `Line2D` + enemy-mask capsule `Area2D` while a player is within 300 px.
+- **Decision**: Level start launches **one Shadow**, **one Poison**, and **one Electric** orb from the summoning circle in independent random directions (`begin_flight`, player grace). No plain chaos orb is spawned. `chaos_orb.gd` / `.tscn` remain the shared `ChaosOrb` base (`class_name`, `FLYING` / `TETHERED` / `POSSESSED`). Typed scenes tint `orb.png` and override hit hooks. Enemies own a `StatusComponent` for Poison (persistent 3 s DoT stacks) and Shock (stun at 10 stacks / 2 s). Shadow follows its host in world space (not reparented) so enemy `queue_free` cannot free the orb. Electric current is a `Line2D` + enemy-mask capsule `Area2D` while a player is within 300 px.
 - **Why**: Same 3-orb room pressure with readable elemental fantasies; shared bounce/tether/redirect code stays on ChaosOrb; status lives on victims so multiple sources can stack later.
 - **Alternatives**: Keep three identical chaos orbs — no type fantasy; add three typed orbs on top of chaos (6 total) — too dense for the arena; per-orb timers instead of StatusComponent — duplicates DoT/stun logic; parent Shadow into the enemy — orb dies with host teardown; raycast-only current without Area2D — harder to tick continuous overlap cleanly.
+- **Status**: decided (in-codebase)
+
+### Poison stacks persist (no decay)
+- **Decision**: Poison stacks stay on the enemy until death. Each tick still deals damage equal to current stacks; extra stacks do not reset the timer.
+- **Why**: Repeated Poison orb hits should snowball into a lasting curse, not a fading DoT that needs babysitting.
+- **Alternatives**: Remove 1 stack per tick (previous) — weaker investment and harder to read as committed poison; expire after a wall-clock duration — another clock besides the tick; reset the tick timer on add — delays damage already in progress.
 - **Status**: decided (in-codebase)
 
 ### Opening 3-orb spread volley (playtest)
@@ -220,6 +226,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Every `HealthComponent` owner (player, enemies, breakables) instances `HealthBarComponent`: an 18×2 px world-space bar drawn with `_draw`, fill width = `% of max_health` (not absolute HP, so a 10-HP brute and a 100-HP boss use the same pixel width). Hidden until `damage_taken`; stays visible for **1.5 s**, refreshing on each hit. Per-scene `offset` places it above the sprite.
 - **Why**: Upcoming damaging effects can push HP past 100; a percentage bar stays readable without growing. Reveal-on-hit keeps the 640×360 arena uncluttered. Same component on breakables so future multi-hit props get the UI for free.
 - **Alternatives**: Always-visible overhead bars — clutter at higher enemy counts; discrete pips — breaks once max HP is no longer 3; screen-only player HUD — enemies would still need hit confirmation for orb grazes; `ProgressBar`/`ColorRect` nodes — extra nodes and softer pixel alignment vs `_draw`.
+- **Status**: decided (in-codebase)
+
+### Floating damage labels by DamageKind
+- **Decision**: Every successful `HealthComponent.take_damage` spawns a detached world-space number (`DamageLabelEffect` → `damage_label.tscn`) at the owner, parented to `current_scene` so killing blows still show after `queue_free`. Uses `pixel_medium.fnt` at size 8; rises ~20 px over 1 s and fades in the last 0.3 s (`ignore_time_scale`). `DamageKind` selects color: **STANDARD** white (default), **POISON** green (poison DoT ticks only), **SHADOW** black (Shadow possession DPS + Shadow `DamageComponent`). Black numbers use a light outline for readability on dark possessed sprites; white/green use a dark outline. Callers pass the kind (`StatusComponent` → POISON, `ShadowOrb` possession → SHADOW, `DamageComponent.damage_kind` on hitbox/orb breakable paths); Poison orb impact stays STANDARD so hit vs tick stay distinct.
+- **Why**: Instant readable confirmation of chip amounts and elemental source without cluttering permanent HUD; shared HealthComponent path covers player, enemies, breakables, and mana crystals for free.
+- **Alternatives**: Always-white numbers — loses poison/shadow readability; color by attacker type at the label only — duplicates kind logic outside HP; parent labels to the entity — vanish on death before the float finishes; screen-space HUD popups — harder to attribute in a crowded arena.
 - **Status**: decided (in-codebase)
 
 ### Damage flow: HitboxComponent overlap polling

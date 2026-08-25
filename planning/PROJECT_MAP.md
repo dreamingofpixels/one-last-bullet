@@ -25,15 +25,15 @@ A Final Spell/
     │       └── desert_tilemap.png
     ├── components/             Reusable component scripts + scenes
     │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
-    │   ├── health_component.gd / .tscn    HP; flash + optional i-frames; DestroyComponent on death
-    │   ├── health_bar_component.gd / .tscn  Damage-reveal 18×2 px percentage bar above entities
-    │   ├── damage_component.gd / .tscn    Damage + instigator + optional contact tick interval
+│   ├── health_component.gd / .tscn    HP; flash + optional i-frames; DestroyComponent on death; floating damage labels via DamageKind
+│   ├── health_bar_component.gd / .tscn  Damage-reveal 18×2 px percentage bar above entities
+│   ├── damage_component.gd / .tscn    Damage + instigator + optional contact tick interval + damage_kind
     │   ├── hitbox_component.gd / .tscn    Area2D; polls overlaps; frame dedup + contact ticks; optional attacker `should_apply_hitbox_damage` / `on_hitbox_hit`
     │   ├── destroy_component.gd / .tscn   Disables collisions, destroy SFX, pixel-fall FX, emits destroyed(node)
     │   ├── movement_component.gd / .tscn  move(dir) / move_velocity() / stop() with optional sprite flip
     │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D)
     │   ├── navigation_component.gd / .tscn  NavigationAgent2D chase + avoidance for enemies
-    │   ├── status_component.gd / .tscn   Enemy Poison (3s stack DoT) + Shock (stun at 10 stacks / 2s)
+    │   ├── status_component.gd / .tscn   Enemy Poison (persistent 3s stack DoT) + Shock (stun at 10 stacks / 2s)
     │   ├── attack_component.gd / .tscn   Player arc swing; knocks enemies (orb deflect gated by flag); proximity redirect consumes cooldown without swing
     │   ├── orb_tether_component.gd / .tscn  Focus + Attack redirect; capture/channel gated by capture_enabled; crystal pickup + circle activate
     │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames, ghost alpha, afterimages, dash SFX, + 4s cooldown ring (reset on Attack redirect)
@@ -47,7 +47,9 @@ A Final Spell/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
     │   ├── destruction_effect.gd     Spawns detached sprite FX on destroy/die; reverse assemble on spawn
     │   ├── spawn_telegraph_effect.gd Pulsing ground ring at upcoming enemy spawn points
-    │   └── dash_afterimage_effect.gd Spawns fading dash afterimages from AnimatedSprite2D frames
+    │   ├── dash_afterimage_effect.gd Spawns fading dash afterimages from AnimatedSprite2D frames
+    │   ├── damage_label.tscn / .gd / damage_label_effect.gd  Floating damage numbers (white / poison green / shadow black)
+    │   └── …
     ├── entities/
     │   ├── _base/
     │   │   ├── state.gd        Base State class (signal finished, enter/exit/update/handle_input)
@@ -147,15 +149,15 @@ A Final Spell/
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
-- `project/components/health_component.gd` — HP; red flash on hit; optional `invulnerable_seconds` + blink on non-fatal hits; `take_damage` returns bool; plays `damaged_sound` on non-fatal hits; calls `DestroyComponent.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`; sprite via optional export or `DestroyComponent.sprite`
+- `project/components/health_component.gd` — HP; red flash on hit; optional `invulnerable_seconds` + blink on non-fatal hits; `take_damage(amount, kind := STANDARD)` returns bool; `DamageKind` (STANDARD / POISON / SHADOW) tints floating damage labels; plays `damaged_sound` on non-fatal hits; calls `DestroyComponent.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`; sprite via optional export or `DestroyComponent.sprite`
 - `project/components/health_bar_component.gd` — world-space 18×2 px `_draw` bar; fill is `% of max_health` (same pixel width for every entity); hidden until `damage_taken`, then visible for 1.5 s (timer refreshes on each hit); `@export` offset/colors; instanced on player, grunt, brute, and cactus
-- `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter), `contact_damage_interval` (0 = once per overlap)
+- `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter), `contact_damage_interval` (0 = once per overlap), `damage_kind` (label tint; Shadow orb sets SHADOW)
 - `project/components/hitbox_component.gd` — `Area2D`; physics-frame overlap poll of attacker `HitboxComponent`s; frame dedup via `hit_dedup_frames`; contact ticks from `DamageComponent.contact_damage_interval`; skips if instigator == owner; optional attacker hooks `should_apply_hitbox_damage(victim)` / `on_hitbox_hit(victim)` for typed orbs; applies orb damage the same way as other attackers (entities punch-through; breakables stay on body contact); `set_invulnerable(bool)` clears overlap state and toggles monitoring (deferred)
 - `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, optionally plays `destroy_sound` (`self_destroy(play_sound := true)`), plays `DestructionEffect`, frees owner
 - `project/components/movement_component.gd` — `move(dir)` / `move_velocity(velocity)` / `stop()` on `CharacterBody2D` owner; optional sprite `flip_h` with `sprite_flip_inverted` for left-facing art; skips `move_and_slide` when the body is not in a physics space
 - `project/components/knockback_component.gd` — decaying shove; `apply(direction, force)`, `is_active()`; same physics-space guard before `move_and_slide`
 - `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the player by group, repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls; `set_chasing(bool)` pauses avoidance + physics so assembling enemies do not slide
-- `project/components/status_component.gd` — enemy statuses: **Poison** (every 3 s deal `stacks` HP then remove 1 stack; timer does not reset on add) and **Shock** (at 10 stacks stun 2 s via `NavigationComponent.set_chasing(false)` + `MovementComponent.stop()`, then clear Shock; no Shock while stunned); instanced on grunt/brute
+- `project/components/status_component.gd` — enemy statuses: **Poison** (every 3 s deal `stacks` HP; stacks persist until death; timer does not reset on add; ticks call `take_damage(..., POISON)` for green labels) and **Shock** (at 10 stacks stun 2 s via `NavigationComponent.set_chasing(false)` + `MovementComponent.stop()`, then clear Shock; no Shock while stunned); instanced on grunt/brute
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent`; orb deflect behind `deflect_orb_enabled` (default false); `consume_cooldown()` for proximity redirect without a swing; hides `%AttackSpriteHint` while a redirect target exists; optional `swing_sound` (unassigned)
 - `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), `min_tether_radius` (24 px); mid-combat queries the `orb` group — **focus** every flying orb in range, **aim arrow** on closest in range (`set_redirect_preview`); **`capture_enabled`** (false on player) gates tap capture + remote channel (orbit code kept); tether press order: release owned tether → **summoning circle `try_activate()`** if in `DepositArea` → mana crystal pickup → orb capture (if capture on); `try_redirect_attack()` / `has_redirect_target()` (suppressed while carrying a crystal); `is_channeling()` / `get_channel_progress()`; draws progress ring + line to channel target; input centralized in `_process()` (player states only gate movement/dash/attack)
 - `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body layer and masks only `wall` so the dash phases through props/enemies but stops at outer arena walls; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()` (false while carrying a mana crystal) / `reset_cooldown()` (cleared by proximity Attack redirect)
@@ -174,7 +176,7 @@ A Final Spell/
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
 - `project/entities/chaos_orb/chaos_orb.tscn` + `chaos_orb.gd` (`class_name ChaosOrb`) — shared circular projectile base; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%AimArrow` + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states `FLYING` / `TETHERED` / `POSSESSED`; `_ready` keeps orb hidden until `begin_flight()` / tether; API: `begin_opening_tether()` (unused at level start; kept) / `begin_flight(direction, instigator)` / `deflect()` (+10% speed/damage via `tether_release_boost`) / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_in_focus()` / `set_redirect_preview()` / `clear_redirect_preview()` / optional `should_apply_hitbox_damage` / `on_hitbox_hit`; **orbit is always `min_tether_radius` (24 px)**; flying/tethered **punches through** player and enemies; entity + mana-crystal damage via victim hitbox poll; breakable damage + bounce SFX on `body_entered` / tether world probe; `base_modulate` preserves typed tints through grace; signals `launched`, `deflected`, `tethered`, `tether_released` — **not launched at level start** (typed scenes are)
-- `project/entities/chaos_orb/shadow_orb.tscn` + `shadow_orb.gd` — dark-purple tint; skips enemy impact HP; on hit enters `POSSESSED` (hide, follow host in world space, 3 DPS, dark `damage_flash_color`); emerges on `DestroyComponent.destroyed` with random `begin_flight` (no grace)
+- `project/entities/chaos_orb/shadow_orb.tscn` + `shadow_orb.gd` — dark-purple tint; skips enemy impact HP; on hit enters `POSSESSED` (hide, follow host in world space, 3 DPS via `take_damage(..., SHADOW)`, dark `damage_flash_color`); `DamageComponent.damage_kind = SHADOW` for player/breakable contact labels; emerges on `DestroyComponent.destroyed` with random `begin_flight` (no grace)
 - `project/entities/chaos_orb/poison_orb.tscn` + `poison_orb.gd` — green tint; impact + `StatusComponent.add_stacks(POISON, 1)` on enemy hit
 - `project/entities/chaos_orb/electric_orb.tscn` + `electric_orb.gd` — yellow-cyan tint; `%CurrentLine` + `%CurrentArea` / `%CurrentShape` (enemy-mask capsule); while closest player within 300 px, beam ticks 5 HP + 3 Shock per second (skip Shock while stunned)
 - `project/entities/chaos_orb/chaos_orb_legacy.tscn` + `chaos_orb.gd` — alternate capsule-sprite projectile (kept for rollback); `%OrbSprite` + `%OrbInFocus` under `%Heading`
@@ -206,6 +208,8 @@ A Final Spell/
 - `project/effects/particle_pixel.png` — 1×1 white pixel texture for orb particle VFX
 - `project/effects/orb_impact.tscn` — one-shot `GPUParticles2D` burst for orb world-surface bounces
 - `project/effects/orb_impact_effect.gd` — `OrbImpactEffect.play_at()`; spawns impact scene at position/normal, frees on `finished`
+- `project/effects/damage_label.tscn` + `damage_label.gd` — world-space floating damage number (`%Label`, `pixel_medium.fnt` size 8); rises ~20 px over 1 s and fades in the last 0.3 s (`ignore_time_scale`)
+- `project/effects/damage_label_effect.gd` — `DamageLabelEffect.spawn_at(origin, amount, kind)`; parents detached label to `current_scene`; colors STANDARD white / POISON green / SHADOW black (light outline on black)
 - `project/effects/time_slow.gdshader` — canvas-item shader: vignette + purple-blue tint; `intensity` uniform (0 = off, 1 = full)
 - `project/effects/time_slow_overlay.tscn` + `time_slow_overlay.gd` — `TimeSlowOverlay` (`CanvasLayer`, layer −1); owns a fullscreen `ColorRect` with the time-slow shader; `begin()` ramps `Engine.time_scale` 1.0 → 0.5 over 0.5 real seconds and drives shader intensity; `end()` snaps both back; instanced in `desert.tscn` HUD (before `StatusLabel`)
 

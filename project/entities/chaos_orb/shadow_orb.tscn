@@ -97,6 +97,7 @@ script = ExtResource("5_handler")
 unique_name_in_owner = true
 script = ExtResource("6_damage")
 damage = 10.0
+damage_kind = 2
 
 [node name="HitboxComponent" type="Area2D" parent="Components"]
 unique_name_in_owner = true

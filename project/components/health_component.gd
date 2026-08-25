@@ -3,6 +3,8 @@ class_name HealthComponent extends Node2D
 signal damage_taken
 signal health_changed(current: float, maximum: float)
 
+enum DamageKind { STANDARD, POISON, SHADOW }
+
 @export var max_health: float = 1.0
 @export var destroy_component: DestroyComponent
 ## Optional override; falls back to DestroyComponent.sprite when unset.
@@ -29,13 +31,15 @@ func is_invulnerable() -> bool:
 	return Time.get_ticks_msec() < _invulnerable_until_msec
 
 
-func take_damage(amount: float) -> bool:
+func take_damage(amount: float, kind: DamageKind = DamageKind.STANDARD) -> bool:
 	if is_invulnerable():
 		return false
 
 	health -= amount
 	damage_taken.emit()
 	health_changed.emit(health, max_health)
+	if owner is Node2D:
+		DamageLabelEffect.spawn_at(owner as Node2D, amount, kind)
 	_flash_damage()
 	if health <= 0.0:
 		_invulnerable_until_msec = 0

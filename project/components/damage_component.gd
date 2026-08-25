@@ -10,3 +10,6 @@ class_name DamageComponent extends Node2D
 ## Seconds between damage ticks while continuously overlapping a victim hitbox.
 ## 0 = deal damage once per overlap (orb / one-shot contacts).
 @export var contact_damage_interval: float = 0.0
+
+## Tint for floating damage labels (STANDARD white, POISON green, SHADOW black).
+@export var damage_kind: HealthComponent.DamageKind = HealthComponent.DamageKind.STANDARD

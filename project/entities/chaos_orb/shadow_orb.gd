@@ -86,7 +86,7 @@ func _update_possession(delta: float) -> void:
 
 	_possession_tick_remaining = POSSESSION_TICK_INTERVAL
 	if _host_health and is_instance_valid(_host_health):
-		_host_health.take_damage(POSSESSION_DPS)
+		_host_health.take_damage(POSSESSION_DPS, HealthComponent.DamageKind.SHADOW)
 
 
 func _on_host_destroyed(_node: Node) -> void:

@@ -50,7 +50,6 @@ static var bounce_off_entities: bool = false
 @onready var body_collision_shape: CollisionShape2D = %CollisionShape2D
 @onready var heading: Node2D = %Heading
 @onready var aim_arrow: Node2D = %AimArrow
-@onready var redirect_particles: GPUParticles2D = %RedirectParticles
 @onready var damage_component: DamageComponent = %DamageComponent
 @onready var hitbox_component: HitboxComponent = %HitboxComponent
 @onready var orb_sprite: Sprite2D = %OrbSprite
@@ -106,8 +105,6 @@ func _ready() -> void:
 	orb_in_focus.visible = false
 	orb_sprite.visible = false
 	aim_arrow.visible = false
-	redirect_particles.emitting = false
-	redirect_particles.self_modulate = base_modulate
 	hitbox_component.monitoring = false
 	freeze = true
 	trail_particles.emitting = false
@@ -328,22 +325,20 @@ func set_in_focus(value: bool) -> void:
 	orb_in_focus.visible = _in_focus
 
 
-## Show a particle stream along `direction` (player aim). Only while flying.
-## AimArrow stays dormant (kept for rollback); RedirectParticles owns the preview.
+## Show chevrons along `direction` (player aim). Only while flying.
 func set_redirect_preview(direction: Vector2) -> void:
 	if state != OrbState.FLYING:
 		clear_redirect_preview()
 		return
 	var dir: Vector2 = direction.normalized() if direction.length_squared() > 0.0001 else Vector2.RIGHT
-	aim_arrow.visible = false
-	redirect_particles.rotation = dir.angle()
-	redirect_particles.self_modulate = base_modulate
-	redirect_particles.emitting = true
+	aim_arrow.rotation = dir.angle()
+	aim_arrow.modulate = base_modulate
+	aim_arrow.visible = true
+	aim_arrow.queue_redraw()
 
 
 func clear_redirect_preview() -> void:
 	aim_arrow.visible = false
-	redirect_particles.emitting = false
 
 
 func is_flying() -> bool:
@@ -692,7 +687,7 @@ func _apply_tether_release_boost() -> void:
 func _apply_heading() -> void:
 	if rotate_heading:
 		heading.rotation = aim_direction.angle() + PI / 2.0
-	# Redirect preview rotation is owned by set_redirect_preview (player aim), not flight direction.
+	# AimArrow rotation is owned by set_redirect_preview (player aim), not flight direction.
 
 
 func _update_trail() -> void:

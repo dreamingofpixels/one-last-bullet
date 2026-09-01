@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://c26wf2fl3uwof"
-path="res://.godot/imported/begin_tether.wav-08ec04122a2ab88b65abda5ae602c3bb.sample"
+path="res://.godot/imported/begin_tether.wav-d609ce0bdd4302236c4cb706801b6946.sample"
 
 [deps]
 
-source_file="res://entities/chaos_orb/last_orb_sfx/begin_tether.wav"
-dest_files=["res://.godot/imported/begin_tether.wav-08ec04122a2ab88b65abda5ae602c3bb.sample"]
+source_file="res://entities/orbs/orb_sfx/begin_tether.wav"
+dest_files=["res://.godot/imported/begin_tether.wav-d609ce0bdd4302236c4cb706801b6946.sample"]
 
 [params]
 

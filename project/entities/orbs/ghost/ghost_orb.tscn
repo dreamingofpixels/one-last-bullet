@@ -1,0 +1,109 @@
+[gd_scene format=3 uid="uid://bshadoworb001"]
+
+[ext_resource type="Script" uid="uid://bt4gtj8gbkfgu" path="res://entities/orbs/ghost/ghost_orb.gd" id="1_s7rqi"]
+[ext_resource type="Resource" path="res://entities/orbs/orb_sfx/orb_bounce.tres" id="2_ots7a"]
+[ext_resource type="AudioStream" uid="uid://c26wf2fl3uwof" path="res://entities/orbs/orb_sfx/begin_tether.wav" id="3_7moa3"]
+[ext_resource type="AudioStream" uid="uid://deyfsy266xuhn" path="res://entities/orbs/orb_sfx/release_tether.wav" id="4_yumb5"]
+[ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/orbs/aim_arrow.gd" id="5_2lbar"]
+[ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="6_x1krp"]
+[ext_resource type="Texture2D" uid="uid://bo1vvlewgnv41" path="res://entities/orbs/blank/blank_orb.png" id="7_uqwtq"]
+[ext_resource type="Texture2D" uid="uid://d3k3j8jrv1xkj" path="res://entities/orbs/orb_in_focus.png" id="8_712oo"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="9_megfk"]
+[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="10_fng8m"]
+[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="11_6p1wu"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
+friction = 0.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 8.0
+
+[sub_resource type="Gradient" id="Gradient_trail"]
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(0.55, 0.25, 0.75, 1, 0.3, 0.1, 0.45, 0.75, 0.1, 0.05, 0.2, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_trail"]
+gradient = SubResource("Gradient_trail")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_trail"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_sphere_radius = 6.0
+spread = 18.0
+initial_velocity_min = 30.0
+initial_velocity_max = 70.0
+gravity = Vector3(0, 0, 0)
+scale_min = 2.0
+scale_max = 3.0
+color_ramp = SubResource("GradientTexture1D_trail")
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hit"]
+radius = 8.0
+
+[node name="ShadowOrb" type="RigidBody2D" unique_id=1592948499]
+collision_layer = 8
+mass = 0.1
+physics_material_override = SubResource("PhysicsMaterial_bounce")
+gravity_scale = 0.0
+lock_rotation = true
+continuous_cd = 2
+linear_damp_mode = 1
+script = ExtResource("1_s7rqi")
+speed = 100.0
+base_modulate = Color(0.55, 0.3, 0.85, 1)
+rotate_heading = false
+bounce_sound = ExtResource("2_ots7a")
+begin_tether_sound = ExtResource("3_7moa3")
+release_tether_sound = ExtResource("4_yumb5")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2130223000]
+unique_name_in_owner = true
+shape = SubResource("CircleShape2D_body")
+
+[node name="Heading" type="Node2D" parent="." unique_id=1244367186]
+unique_name_in_owner = true
+
+[node name="AimArrow" type="Node2D" parent="." unique_id=697267215]
+unique_name_in_owner = true
+visible = false
+z_index = 20
+script = ExtResource("5_2lbar")
+
+[node name="TrailParticles" type="GPUParticles2D" parent="." unique_id=1467520614]
+unique_name_in_owner = true
+texture_filter = 1
+amount = 48
+texture = ExtResource("6_x1krp")
+lifetime = 0.45
+visibility_rect = Rect2(-400, -400, 800, 800)
+process_material = SubResource("ParticleProcessMaterial_trail")
+
+[node name="OrbSprite" type="Sprite2D" parent="." unique_id=538763818]
+unique_name_in_owner = true
+modulate = Color(0.55, 0.3, 0.85, 1)
+texture_filter = 1
+texture = ExtResource("7_uqwtq")
+
+[node name="OrbInFocus" type="Sprite2D" parent="." unique_id=434055334]
+unique_name_in_owner = true
+visible = false
+texture_filter = 1
+texture = ExtResource("8_712oo")
+
+[node name="Components" type="Node2D" parent="." unique_id=1914531162]
+script = ExtResource("9_megfk")
+
+[node name="DamageComponent" type="Node2D" parent="Components" unique_id=1038717118]
+unique_name_in_owner = true
+script = ExtResource("10_fng8m")
+damage = 10.0
+damage_kind = 2
+
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1242745440]
+unique_name_in_owner = true
+collision_layer = 8
+collision_mask = 6
+script = ExtResource("11_6p1wu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=747689078]
+shape = SubResource("CircleShape2D_hit")

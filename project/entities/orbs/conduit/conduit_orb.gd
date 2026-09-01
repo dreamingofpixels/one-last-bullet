@@ -1,4 +1,4 @@
-class_name ElectricOrb extends ChaosOrb
+class_name ConduitOrb extends BlankOrb
 
 const CURRENT_RANGE := 130.0
 const CURRENT_DAMAGE := 5.0

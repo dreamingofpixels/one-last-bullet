@@ -1,8 +1,8 @@
 extends Node2D
 
-const SHADOW_ORB_SCENE := preload("res://entities/chaos_orb/shadow_orb.tscn")
-const POISON_ORB_SCENE := preload("res://entities/chaos_orb/poison_orb.tscn")
-const ELECTRIC_ORB_SCENE := preload("res://entities/chaos_orb/electric_orb.tscn")
+const GHOST_ORB_SCENE := preload("res://entities/orbs/ghost/ghost_orb.tscn")
+const ROT_ORB_SCENE := preload("res://entities/orbs/rot/rot_orb.tscn")
+const CONDUIT_ORB_SCENE := preload("res://entities/orbs/conduit/conduit_orb.tscn")
 const MANA_CRYSTAL_SCENE := preload("res://items/mana_crystal.tscn")
 const PLAYER_SCENE := preload("res://entities/player/player.tscn")
 const OPENING_ORB_SPEED := 100.0
@@ -47,7 +47,7 @@ func _ready() -> void:
 	Engine.time_scale = 1.0
 	randomize()
 	status_label.text = "Assemble..."
-	ChaosOrb.set_bounce_off_entities(bounce_orbs_off_entities)
+	BlankOrb.set_bounce_off_entities(bounce_orbs_off_entities)
 
 	if level_music:
 		AudioManager.play_music(level_music)
@@ -218,9 +218,9 @@ func _launch_opening_orbs() -> void:
 
 	var origin: Vector2 = summoning_circle.get_launch_origin()
 	var scenes: Array[PackedScene] = [
-		SHADOW_ORB_SCENE,
-		POISON_ORB_SCENE,
-		ELECTRIC_ORB_SCENE,
+		GHOST_ORB_SCENE,
+		ROT_ORB_SCENE,
+		CONDUIT_ORB_SCENE,
 	]
 	for scene in scenes:
 		var orb: RigidBody2D = scene.instantiate() as RigidBody2D

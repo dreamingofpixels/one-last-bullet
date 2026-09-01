@@ -1,4 +1,4 @@
-class_name ChaosOrb extends RigidBody2D
+class_name BlankOrb extends RigidBody2D
 
 signal launched
 signal deflected(by: Node)
@@ -123,8 +123,8 @@ static func set_bounce_off_entities(value: bool) -> void:
 	if tree == null:
 		return
 	for node in tree.get_nodes_in_group("orb"):
-		if node is ChaosOrb:
-			(node as ChaosOrb)._apply_collision_mask()
+		if node is BlankOrb:
+			(node as BlankOrb)._apply_collision_mask()
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:

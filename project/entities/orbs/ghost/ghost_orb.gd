@@ -1,4 +1,4 @@
-class_name ShadowOrb extends ChaosOrb
+class_name GhostOrb extends BlankOrb
 
 const POSSESSION_DPS := 3.0
 const POSSESSION_TICK_INTERVAL := 1.0

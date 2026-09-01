@@ -40,7 +40,7 @@ color_ramp = SubResource("GradientTexture1D_trail")
 [sub_resource type="CircleShape2D" id="CircleShape2D_hit"]
 radius = 8.0
 
-[node name="LastOrb" type="RigidBody2D" unique_id=97652282]
+[node name="BlankOrb" type="RigidBody2D" unique_id=97652282]
 collision_layer = 8
 mass = 0.1
 physics_material_override = SubResource("PhysicsMaterial_bounce")

@@ -1,4 +1,4 @@
-class_name PoisonOrb extends ChaosOrb
+class_name RotOrb extends BlankOrb
 
 
 func on_hitbox_hit(victim: Node) -> void:

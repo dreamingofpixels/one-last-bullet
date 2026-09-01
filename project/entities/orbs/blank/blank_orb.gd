@@ -41,14 +41,11 @@ static var bounce_off_entities: bool = false
 @export var poison: int = 0
 @export var glyph_slots: int = 3
 
-const GLYPH_FLOAT_ATTRIBUTES: Array[StringName] = [
-	&"damage", &"self_damage", &"splash", &"speed",
-	&"weight", &"crit_chance", &"crit_damage", &"glyph_drop",
-]
-const GLYPH_INT_ATTRIBUTES: Array[StringName] = [&"burn", &"chill", &"shock", &"poison"]
+const GLYPH_RARITY_COMMON := 0
+const GLYPH_RARITY_RARE := 1
+const GLYPH_RARITY_UNIQUE := 2
 const CIRCLE_CAPTURE_MIN_DURATION := 0.12
 
-var socketed_glyphs: Array[Dictionary] = []
 @export var max_speed: float = 1500.0
 @export var player_grace_seconds: float = 1.0
 ## Resting sprite modulate when not in post-launch grace (typed orbs tint here).
@@ -69,6 +66,8 @@ var socketed_glyphs: Array[Dictionary] = []
 @export var bounce_sound: SoundEvent
 @export var begin_tether_sound: SoundEvent
 @export var release_tether_sound: SoundEvent
+
+var socketed_glyphs: Array[Dictionary] = []
 
 @onready var body_collision_shape: CollisionShape2D = %CollisionShape2D
 @onready var heading: Node2D = %Heading
@@ -102,6 +101,8 @@ var _has_last_fly_position: bool = false
 var _stall_ticks: int = 0
 var _tether_damage_frame: int = -1
 var _tether_damaged_ids: Dictionary = {}
+var _resolved_hit_frame: int = -1
+var _resolved_hit_cache: Dictionary = {}
 var _grace_exception_body: CollisionObject2D = null
 var _circle_captured: bool = false
 var _capture_tween: Tween
@@ -470,9 +471,9 @@ func apply_glyph(id: StringName, rarity: int) -> bool:
 
 	var value: float = 0.0
 	match rarity:
-		1: # Glyph.Rarity.RARE
+		GLYPH_RARITY_RARE:
 			value = float(data.get("rarity_rare", 0.0))
-		2: # Glyph.Rarity.UNIQUE
+		GLYPH_RARITY_UNIQUE:
 			value = float(data.get("rarity_unique", 0.0))
 		_:
 			value = float(data.get("rarity_common", 0.0))
@@ -485,21 +486,41 @@ func apply_glyph(id: StringName, rarity: int) -> bool:
 
 
 func _apply_glyph_attribute(attr: StringName, value: float) -> bool:
-	if attr in GLYPH_FLOAT_ATTRIBUTES:
-		var current: float = float(get(String(attr)))
-		var next: float = current + value
-		if attr in [&"splash", &"crit_chance", &"glyph_drop"]:
-			next = clampf(next, 0.0, 1.0)
-		elif attr in [&"damage", &"self_damage", &"speed", &"weight"]:
-			next = maxf(next, 0.0)
-		set(String(attr), next)
+	var key: String = String(attr)
+	var sync_damage: bool = false
+
+	match key:
+		"damage":
+			damage = maxf(damage + value, 0.0)
+			sync_damage = true
+		"self_damage":
+			self_damage = maxf(self_damage + value, 0.0)
+		"splash":
+			splash = clampf(splash + value, 0.0, 1.0)
+		"speed":
+			speed = maxf(speed + value, 0.0)
+		"weight":
+			weight = maxf(weight + value, 0.0)
+		"crit_chance":
+			crit_chance = clampf(crit_chance + value, 0.0, 1.0)
+		"crit_damage":
+			crit_damage = crit_damage + value
+		"glyph_drop":
+			glyph_drop = clampf(glyph_drop + value, 0.0, 1.0)
+		"burn":
+			burn += int(value)
+		"chill":
+			chill += int(value)
+		"shock":
+			shock += int(value)
+		"poison":
+			poison += int(value)
+		_:
+			return false
+
+	if sync_damage:
 		_sync_damage_component()
-		return true
-	if attr in GLYPH_INT_ATTRIBUTES:
-		var current_int: int = int(get(String(attr)))
-		set(String(attr), current_int + int(value))
-		return true
-	return false
+	return true
 
 
 func begin_circle_capture(center: Vector2, suck_speed: float, on_finished: Callable) -> void:

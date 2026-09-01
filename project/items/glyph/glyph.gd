@@ -310,8 +310,8 @@ func _set_grounded_physics() -> void:
 	body_collision.set_deferred("disabled", false)
 	hitbox_component.set_invulnerable(false)
 	presence_area.collision_layer = PHYSICS_LAYER_ITEM
-	presence_area.monitoring = false
-	presence_area.monitorable = true
+	presence_area.set_deferred("monitoring", false)
+	presence_area.set_deferred("monitorable", true)
 
 
 func _play_bounce_visual() -> void:

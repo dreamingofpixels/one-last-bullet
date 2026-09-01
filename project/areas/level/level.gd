@@ -278,9 +278,16 @@ func _try_drop_glyph_at(pos: Vector2, source: Node = null) -> void:
 		return
 
 	var glyph: Glyph = GLYPH_SCENE.instantiate() as Glyph
+	glyph.setup(glyph_id, _roll_glyph_rarity())
+	# Death can fire during physics query flush; defer so add_child is safe.
+	call_deferred("_spawn_glyph", glyph, pos)
+
+
+func _spawn_glyph(glyph: Glyph, pos: Vector2) -> void:
+	if glyph == null or not is_instance_valid(glyph) or items == null:
+		return
 	items.add_child(glyph)
 	glyph.global_position = pos
-	glyph.setup(glyph_id, _roll_glyph_rarity())
 
 
 func _roll_glyph_rarity() -> Glyph.Rarity:

@@ -84,7 +84,8 @@ func try_activate() -> bool:
 	if _active or _ritual_running:
 		return false
 	var cost: float = get_activation_cost()
-	if not spend(cost):
+	# First activation is free (cost 0); spend() rejects amount <= 0.
+	if cost > 0.0 and not spend(cost):
 		return false
 	_activation_count += 1
 	_active = true

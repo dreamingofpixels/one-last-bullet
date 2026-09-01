@@ -19,7 +19,7 @@ const STAT_KEYS: Array[String] = [
 @onready var new_orb_button: Button = %NewOrbButton
 @onready var done_button: Button = %DoneButton
 
-var _orb: BlankOrb = null
+var _orb: RigidBody2D = null
 var _circle: SummoningCircle = null
 var _new_orb_cost: float = 20.0
 
@@ -31,7 +31,7 @@ func _ready() -> void:
 	new_orb_button.pressed.connect(_on_new_orb_pressed)
 
 
-func open(orb: BlankOrb, circle: SummoningCircle, new_orb_cost: float = 20.0) -> void:
+func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0) -> void:
 	_orb = orb
 	_circle = circle
 	_new_orb_cost = new_orb_cost

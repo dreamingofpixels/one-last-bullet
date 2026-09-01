@@ -29,6 +29,7 @@ func on_hitbox_hit(victim: Node) -> void:
 	if not (victim is Node2D):
 		return
 	_begin_possession(victim as Node2D)
+	super.on_hitbox_hit(victim)
 
 
 func _physics_process(delta: float) -> void:

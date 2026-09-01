@@ -6,6 +6,8 @@ const LABEL_SCENE: PackedScene = preload("res://effects/damage_label.tscn")
 const COLOR_STANDARD := Color(1.0, 1.0, 1.0, 1.0)
 const COLOR_POISON := Color(0.35, 0.9, 0.35, 1.0)
 const COLOR_SHADOW := Color(0.0, 0.0, 0.0, 1.0)
+const COLOR_CRIT := Color(1.0, 0.85, 0.2, 1.0)
+const COLOR_BURN := Color(1.0, 0.45, 0.1, 1.0)
 
 
 static func color_for_kind(kind: HealthComponent.DamageKind) -> Color:
@@ -14,6 +16,10 @@ static func color_for_kind(kind: HealthComponent.DamageKind) -> Color:
 			return COLOR_POISON
 		HealthComponent.DamageKind.SHADOW:
 			return COLOR_SHADOW
+		HealthComponent.DamageKind.CRIT:
+			return COLOR_CRIT
+		HealthComponent.DamageKind.BURN:
+			return COLOR_BURN
 		_:
 			return COLOR_STANDARD
 

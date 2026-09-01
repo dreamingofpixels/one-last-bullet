@@ -10,6 +10,7 @@ enum OrbState { FLYING, TETHERED, POSSESSED }
 const PHYSICS_LAYER_WORLD := 1
 const PHYSICS_LAYER_PLAYER := 2
 const PHYSICS_LAYER_ENEMY := 4
+const SPLASH_RADIUS := 50.0
 ## Body / tether probe / depenetrate default to world solids (walls, rocks, breakables).
 ## When bounce_off_entities is true, flying orbs also bounce off player/enemy bodies.
 ## Entity damage still comes from HitboxComponent overlap.
@@ -25,7 +26,19 @@ var COMPONENTS: Dictionary = {}
 ## Playtest toggle: when true, flying orbs bounce off player/enemy bodies instead of punching through.
 static var bounce_off_entities: bool = false
 
+@export var orb_id: StringName = &"blank"
+@export var damage: float = 10.0
+@export var self_damage: float = 8.0
+@export var splash: float = 0.0
 @export var speed: float = 180.0
+@export var weight: float = 10.0
+@export var crit_chance: float = 0.01
+@export var crit_damage: float = 2.0
+@export var crystal_drop: float = 0.1
+@export var burn: int = 0
+@export var chill: int = 0
+@export var shock: int = 0
+@export var poison: int = 0
 @export var max_speed: float = 1500.0
 @export var player_grace_seconds: float = 1.0
 ## Resting sprite modulate when not in post-launch grace (typed orbs tint here).
@@ -80,9 +93,12 @@ var _stall_ticks: int = 0
 var _tether_damage_frame: int = -1
 var _tether_damaged_ids: Dictionary = {}
 var _grace_exception_body: CollisionObject2D = null
+var _resolved_hit_cache: Dictionary = {}
+var _resolved_hit_frame: int = -1
 
 
 func _ready() -> void:
+	_load_stats_from_gamedata()
 	add_to_group("orb")
 	gravity_scale = 0.0
 	lock_rotation = true
@@ -113,6 +129,7 @@ func _ready() -> void:
 	freeze = true
 	trail_particles.emitting = false
 	set_process(false)
+	_sync_damage_component()
 	_apply_heading()
 
 
@@ -418,8 +435,40 @@ func should_apply_hitbox_damage(_victim: Node) -> bool:
 
 
 ## Optional hook for typed orbs: called after a successful hitbox hit (HP applied or skipped).
-func on_hitbox_hit(_victim: Node) -> void:
-	pass
+func on_hitbox_hit(victim: Node) -> void:
+	if victim == null or not is_instance_valid(victim):
+		return
+
+	var resolved: Dictionary = resolve_hitbox_damage(victim)
+	if victim.is_in_group("enemies"):
+		_apply_weight_knockback(victim)
+		_apply_status_stacks(victim)
+	_apply_splash(victim, resolved)
+
+
+func resolve_hitbox_damage(victim: Node) -> Dictionary:
+	var frame: int = Engine.get_physics_frames()
+	if frame != _resolved_hit_frame:
+		_resolved_hit_cache.clear()
+		_resolved_hit_frame = frame
+
+	var victim_id: int = victim.get_instance_id()
+	if _resolved_hit_cache.has(victim_id):
+		return _resolved_hit_cache[victim_id]
+
+	var base_amount: float = damage
+	if victim.is_in_group("player"):
+		base_amount = self_damage
+
+	var kind: HealthComponent.DamageKind = HealthComponent.DamageKind.STANDARD
+	var amount: float = base_amount
+	if crit_chance > 0.0 and randf() < crit_chance:
+		amount *= crit_damage
+		kind = HealthComponent.DamageKind.CRIT
+
+	var result: Dictionary = {"amount": amount, "kind": kind}
+	_resolved_hit_cache[victim_id] = result
+	return result
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────
@@ -702,8 +751,11 @@ func _try_apply_orb_damage(victim_root: Node) -> bool:
 	if _tether_damaged_ids.has(victim_id):
 		return false
 
+	var amount: float = damage_component.damage * (1.0 + 0.05 * weight)
 	var applied: bool = comp[HealthComponent].take_damage(
-		damage_component.damage, damage_component.damage_kind
+		amount,
+		damage_component.damage_kind,
+		self
 	)
 	if applied:
 		_tether_damaged_ids[victim_id] = true
@@ -736,7 +788,9 @@ func _clear_tether_vars() -> void:
 
 func _apply_tether_release_boost() -> void:
 	speed = minf(speed * tether_release_boost, max_speed)
-	damage_component.damage *= tether_release_boost
+	damage *= tether_release_boost
+	self_damage *= tether_release_boost
+	_sync_damage_component()
 
 
 func _apply_heading() -> void:
@@ -938,3 +992,129 @@ func _on_body_entered(body: Node) -> void:
 		if victim_root.is_in_group("player") or victim_root.is_in_group("enemies"):
 			return
 		_try_apply_orb_damage(victim_root)
+
+
+func _load_stats_from_gamedata() -> void:
+	var row: Variant = GameData.get_row(&"orbs", orb_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return
+
+	var data: Dictionary = row
+	if data.has("damage"):
+		damage = float(data["damage"])
+	if data.has("self_damage"):
+		self_damage = float(data["self_damage"])
+	if data.has("splash"):
+		splash = float(data["splash"])
+	if data.has("speed"):
+		speed = float(data["speed"])
+	if data.has("weight"):
+		weight = float(data["weight"])
+	if data.has("crit_chance"):
+		crit_chance = float(data["crit_chance"])
+	if data.has("crit_damage"):
+		crit_damage = float(data["crit_damage"])
+	if data.has("crystal_drop"):
+		crystal_drop = float(data["crystal_drop"])
+	if data.has("burn"):
+		burn = int(data["burn"])
+	if data.has("chill"):
+		chill = int(data["chill"])
+	if data.has("shock"):
+		shock = int(data["shock"])
+	if data.has("poison"):
+		poison = int(data["poison"])
+
+
+func _sync_damage_component() -> void:
+	if damage_component:
+		damage_component.damage = damage
+
+
+func _apply_splash(direct_victim: Node, resolved: Dictionary) -> void:
+	if splash <= 0.0:
+		return
+
+	var splash_amount: float = splash * float(resolved.get("amount", 0.0))
+	if splash_amount <= 0.0:
+		return
+	if not is_inside_tree():
+		return
+
+	var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	var params := PhysicsShapeQueryParameters2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = SPLASH_RADIUS
+	params.shape = circle
+	params.transform = Transform2D(0.0, global_position)
+	params.collision_mask = PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_ENEMY
+	params.collide_with_areas = true
+	params.collide_with_bodies = true
+
+	var damaged_ids: Dictionary = {}
+	var direct_id: int = direct_victim.get_instance_id()
+	damaged_ids[direct_id] = true
+
+	for hit in space.intersect_shape(params, 32):
+		var collider: Object = hit.get("collider")
+		if collider == null:
+			continue
+		var victim_root: Node = _resolve_entity_root(collider as Node)
+		if victim_root == null or not is_instance_valid(victim_root):
+			continue
+		var victim_id: int = victim_root.get_instance_id()
+		if damaged_ids.has(victim_id):
+			continue
+		damaged_ids[victim_id] = true
+
+		var comp = victim_root.get("COMPONENTS")
+		if comp == null or not comp.has(HealthComponent):
+			continue
+
+		var amount: float = splash_amount
+		var kind: HealthComponent.DamageKind = HealthComponent.DamageKind.STANDARD
+		if victim_root.is_in_group("player"):
+			amount = splash * self_damage
+		(comp[HealthComponent] as HealthComponent).take_damage(amount, kind, self)
+
+
+func _apply_weight_knockback(victim: Node) -> void:
+	if weight <= 0.0:
+		return
+
+	var comp = victim.get("COMPONENTS")
+	if comp == null or not comp.has(KnockbackComponent):
+		return
+
+	var direction: Vector2 = Vector2.ZERO
+	if victim is Node2D:
+		direction = (victim as Node2D).global_position - global_position
+	if direction.length_squared() < 0.0001:
+		direction = aim_direction
+	if direction.length_squared() < 0.0001:
+		direction = Vector2.RIGHT
+	else:
+		direction = direction.normalized()
+
+	var collision_damage: float = weight
+	(comp[KnockbackComponent] as KnockbackComponent).push_distance(
+		direction,
+		weight,
+		collision_damage
+	)
+
+
+func _apply_status_stacks(victim: Node) -> void:
+	var comp = victim.get("COMPONENTS")
+	if comp == null or not comp.has(StatusComponent):
+		return
+
+	var status: StatusComponent = comp[StatusComponent] as StatusComponent
+	if poison > 0:
+		status.add_stacks(StatusComponent.StatusId.POISON, poison, self)
+	if burn > 0:
+		status.add_stacks(StatusComponent.StatusId.BURN, burn, self)
+	if chill > 0:
+		status.add_stacks(StatusComponent.StatusId.CHILL, chill, self)
+	if shock > 0:
+		status.add_stacks(StatusComponent.StatusId.SHOCK, shock, self)

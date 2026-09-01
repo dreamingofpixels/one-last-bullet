@@ -77,7 +77,7 @@ visible = false
 
 [node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("animated_sprite", "hitbox_component") instance=ExtResource("8_dash")]
 unique_name_in_owner = true
-dash_cooldown = 3.0
+dash_cooldown = 1.5
 animated_sprite = NodePath("../../PlayerSprite")
 hitbox_component = NodePath("../HitboxComponent")
 

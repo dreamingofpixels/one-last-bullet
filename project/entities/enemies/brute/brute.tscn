@@ -11,7 +11,7 @@
 [ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="9_knockback"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="10_hbar"]
 [ext_resource type="PackedScene" path="res://components/navigation_component.tscn" id="11_navigation"]
-[ext_resource type="PackedScene" path="res://components/status_component.tscn" id="12_status"]
+[ext_resource type="PackedScene" uid="uid://doae1sw0x8emo" path="res://components/status_component.tscn" id="12_status"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 15.0
@@ -38,7 +38,7 @@ script = ExtResource("3_handler")
 
 [node name="HealthComponent" type="Node2D" parent="Components" unique_id=648504730 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("4_health")
-max_health = 50.0
+max_health = 60.0
 destroy_component = NodePath("../DestroyComponent")
 
 [node name="HealthBarComponent" parent="Components" unique_id=1738291046 node_paths=PackedStringArray("health_component") instance=ExtResource("10_hbar")]
@@ -88,8 +88,10 @@ health_component = NodePath("../HealthComponent")
 position = Vector2(0, -1)
 shape = SubResource("CircleShape2D_hitbox")
 
-[node name="StatusComponent" parent="Components" unique_id=773451002 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component") instance=ExtResource("12_status")]
+[node name="StatusComponent" parent="Components" unique_id=773451002 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component", "damage_component", "destroy_component") instance=ExtResource("12_status")]
 unique_name_in_owner = true
 health_component = NodePath("../HealthComponent")
 navigation_component = NodePath("../NavigationComponent")
 movement_component = NodePath("../MovementComponent")
+damage_component = NodePath("../DamageComponent")
+destroy_component = NodePath("../DestroyComponent")

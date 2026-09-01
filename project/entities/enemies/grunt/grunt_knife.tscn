@@ -38,7 +38,7 @@ script = ExtResource("2_handler")
 
 [node name="HealthComponent" type="Node2D" parent="Components" unique_id=1216674096 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("3_health")
-max_health = 20.0
+max_health = 25.0
 destroy_component = NodePath("../DestroyComponent")
 
 [node name="HealthBarComponent" parent="Components" unique_id=1928374650 node_paths=PackedStringArray("health_component") instance=ExtResource("9_hbar")]
@@ -87,8 +87,10 @@ health_component = NodePath("../HealthComponent")
 position = Vector2(0, -1)
 shape = SubResource("CircleShape2D_hitbox")
 
-[node name="StatusComponent" parent="Components" unique_id=882341001 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component") instance=ExtResource("11_status")]
+[node name="StatusComponent" parent="Components" unique_id=882341001 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component", "damage_component", "destroy_component") instance=ExtResource("11_status")]
 unique_name_in_owner = true
 health_component = NodePath("../HealthComponent")
 navigation_component = NodePath("../NavigationComponent")
 movement_component = NodePath("../MovementComponent")
+damage_component = NodePath("../DamageComponent")
+destroy_component = NodePath("../DestroyComponent")

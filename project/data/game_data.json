@@ -1,281 +1,281 @@
 {
   "glyphs": [
-    {
-      "id": "coal",
-      "name": "Coal",
-      "desc": "Burn on enemy hit",
-      "element": "Fire",
-      "rarity_common": 1.0,
-      "rarity_rare": 2.0,
-      "rarity_unique": 3.0
-    },
-    {
-      "id": "fury",
-      "name": "Fury",
-      "desc": "Damage",
-      "element": "Fire",
-      "rarity_common": 0.1,
-      "rarity_rare": 0.2,
-      "rarity_unique": 0.3
-    },
-    {
-      "id": "blast",
-      "name": "Blast",
-      "desc": "On hit, that % of the damage also hits nearby enemies",
-      "element": "Fire",
-      "rarity_common": 0.05,
-      "rarity_rare": 0.1,
-      "rarity_unique": 0.15
-    },
-    {
-      "id": "rime",
-      "name": "Rime",
-      "desc": "Chill enemy on hit",
-      "element": "Water",
-      "rarity_common": 1.0,
-      "rarity_rare": 2.0,
-      "rarity_unique": 3.0
-    },
-    {
-      "id": "soft",
-      "name": "Soft",
-      "desc": "This orb deals less damage to players",
-      "element": "Water",
-      "rarity_common": 0.2,
-      "rarity_rare": 0.4,
-      "rarity_unique": 0.6
-    },
-    {
-      "id": "bounty",
-      "name": "Bounty",
-      "desc": "Mana drop chance from enemies",
-      "element": "Water",
-      "rarity_common": 1.0,
-      "rarity_rare": 2.0,
-      "rarity_unique": 3.0
-    },
-    {
-      "id": "static",
-      "name": "Static",
-      "desc": "Shock on enemy hit",
-      "element": "Air",
-      "rarity_common": 1.0,
-      "rarity_rare": 2.0,
-      "rarity_unique": 3.0
-    },
-    {
-      "id": "shear",
-      "name": "Shear",
-      "desc": "Critical chance",
-      "element": "Air",
-      "rarity_common": 0.01,
-      "rarity_rare": 0.02,
-      "rarity_unique": 0.03
-    },
-    {
-      "id": "drag",
-      "name": "Drag",
-      "desc": "Decreases speed",
-      "element": "Air",
-      "rarity_common": 0.1,
-      "rarity_rare": 0.2,
-      "rarity_unique": 0.3
-    },
-    {
-      "id": "blight",
-      "name": "Blight",
-      "desc": "Poison on enemy hit",
-      "element": "Earth",
-      "rarity_common": 1.0,
-      "rarity_rare": 2.0,
-      "rarity_unique": 3.0
-    },
-    {
-      "id": "dense",
-      "name": "Dense",
-      "desc": "Increases weight",
-      "element": "Earth",
-      "rarity_common": 0.2,
-      "rarity_rare": 0.3,
-      "rarity_unique": 0.4
-    },
-    {
-      "id": "crush",
-      "name": "Crush",
-      "desc": "Critical damage",
-      "element": "Earth",
-      "rarity_common": 0.01,
-      "rarity_rare": 0.02,
-      "rarity_unique": 0.03
-    }
+	{
+	  "id": "coal",
+	  "name": "Coal",
+	  "desc": "Burn on enemy hit",
+	  "element": "Fire",
+	  "rarity_common": 1.0,
+	  "rarity_rare": 2.0,
+	  "rarity_unique": 3.0
+	},
+	{
+	  "id": "fury",
+	  "name": "Fury",
+	  "desc": "Damage",
+	  "element": "Fire",
+	  "rarity_common": 0.1,
+	  "rarity_rare": 0.2,
+	  "rarity_unique": 0.3
+	},
+	{
+	  "id": "blast",
+	  "name": "Blast",
+	  "desc": "On hit, that % of the damage also hits nearby enemies",
+	  "element": "Fire",
+	  "rarity_common": 0.05,
+	  "rarity_rare": 0.1,
+	  "rarity_unique": 0.15
+	},
+	{
+	  "id": "rime",
+	  "name": "Rime",
+	  "desc": "Chill enemy on hit",
+	  "element": "Water",
+	  "rarity_common": 1.0,
+	  "rarity_rare": 2.0,
+	  "rarity_unique": 3.0
+	},
+	{
+	  "id": "soft",
+	  "name": "Soft",
+	  "desc": "This orb deals less damage to players",
+	  "element": "Water",
+	  "rarity_common": 0.2,
+	  "rarity_rare": 0.4,
+	  "rarity_unique": 0.6
+	},
+	{
+	  "id": "bounty",
+	  "name": "Bounty",
+	  "desc": "Mana drop chance from enemies",
+	  "element": "Water",
+	  "rarity_common": 1.0,
+	  "rarity_rare": 2.0,
+	  "rarity_unique": 3.0
+	},
+	{
+	  "id": "static",
+	  "name": "Static",
+	  "desc": "Shock on enemy hit",
+	  "element": "Air",
+	  "rarity_common": 1.0,
+	  "rarity_rare": 2.0,
+	  "rarity_unique": 3.0
+	},
+	{
+	  "id": "shear",
+	  "name": "Shear",
+	  "desc": "Critical chance",
+	  "element": "Air",
+	  "rarity_common": 0.01,
+	  "rarity_rare": 0.02,
+	  "rarity_unique": 0.03
+	},
+	{
+	  "id": "drag",
+	  "name": "Drag",
+	  "desc": "Decreases speed",
+	  "element": "Air",
+	  "rarity_common": 0.1,
+	  "rarity_rare": 0.2,
+	  "rarity_unique": 0.3
+	},
+	{
+	  "id": "blight",
+	  "name": "Blight",
+	  "desc": "Poison on enemy hit",
+	  "element": "Earth",
+	  "rarity_common": 1.0,
+	  "rarity_rare": 2.0,
+	  "rarity_unique": 3.0
+	},
+	{
+	  "id": "dense",
+	  "name": "Dense",
+	  "desc": "Increases weight",
+	  "element": "Earth",
+	  "rarity_common": 0.2,
+	  "rarity_rare": 0.3,
+	  "rarity_unique": 0.4
+	},
+	{
+	  "id": "crush",
+	  "name": "Crush",
+	  "desc": "Critical damage",
+	  "element": "Earth",
+	  "rarity_common": 0.01,
+	  "rarity_rare": 0.02,
+	  "rarity_unique": 0.03
+	}
   ],
   "motion": [
-    {
-      "id": "wayward",
-      "name": "Wayward",
-      "desc": "Straight flight, bounce off solids"
-    },
-    {
-      "id": "hungry",
-      "name": null,
-      "desc": "Steer toward nearest enemy"
-    },
-    {
-      "id": "spite",
-      "name": null,
-      "desc": "Steer toward the player"
-    },
-    {
-      "id": "rooted",
-      "name": null,
-      "desc": "Stops in place"
-    },
-    {
-      "id": "patrol",
-      "name": null,
-      "desc": "Travels in a circle"
-    },
-    {
-      "id": "familiar",
-      "name": null,
-      "desc": "Orbit the player"
-    },
-    {
-      "id": "rail",
-      "name": null,
-      "desc": "Slides along walls. Goes opposite way on impact."
-    },
-    {
-      "id": "tide",
-      "name": null,
-      "desc": "Ping-pong between last redirect and last bounce"
-    },
-    {
-      "id": "blink",
-      "name": null,
-      "desc": "Teleport a short hop on a timer or on wall hit"
-    },
-    {
-      "id": "loyal",
-      "name": null,
-      "desc": "Match the player’s move vector, offset"
-    },
-    {
-      "id": "hexed",
-      "name": null,
-      "desc": "Flee the player"
-    },
-    {
-      "id": "stalker",
-      "name": null,
-      "desc": "Idle until an enemy or player enters range, then lunge"
-    },
-    {
-      "id": "herd",
-      "name": null,
-      "desc": "Steer towards other orbs"
-    },
-    {
-      "id": "greedy",
-      "name": null,
-      "desc": "Steers towards mana crystals"
-    },
-    {
-      "id": "oathbound",
-      "name": null,
-      "desc": "Orbits the summoning circle"
-    },
-    {
-      "id": "echo",
-      "name": null,
-      "desc": "Replay a nearby players path on a 1 s delay"
-    },
-    {
-      "id": "phasing",
-      "name": null,
-      "desc": "Go through entities and obstacles"
-    }
+	{
+	  "id": "wayward",
+	  "name": "Wayward",
+	  "desc": "Straight flight, bounce off solids"
+	},
+	{
+	  "id": "hungry",
+	  "name": null,
+	  "desc": "Steer toward nearest enemy"
+	},
+	{
+	  "id": "spite",
+	  "name": null,
+	  "desc": "Steer toward the player"
+	},
+	{
+	  "id": "rooted",
+	  "name": null,
+	  "desc": "Stops in place"
+	},
+	{
+	  "id": "patrol",
+	  "name": null,
+	  "desc": "Travels in a circle"
+	},
+	{
+	  "id": "familiar",
+	  "name": null,
+	  "desc": "Orbit the player"
+	},
+	{
+	  "id": "rail",
+	  "name": null,
+	  "desc": "Slides along walls. Goes opposite way on impact."
+	},
+	{
+	  "id": "tide",
+	  "name": null,
+	  "desc": "Ping-pong between last redirect and last bounce"
+	},
+	{
+	  "id": "blink",
+	  "name": null,
+	  "desc": "Teleport a short hop on a timer or on wall hit"
+	},
+	{
+	  "id": "loyal",
+	  "name": null,
+	  "desc": "Match the player’s move vector, offset"
+	},
+	{
+	  "id": "hexed",
+	  "name": null,
+	  "desc": "Flee the player"
+	},
+	{
+	  "id": "stalker",
+	  "name": null,
+	  "desc": "Idle until an enemy or player enters range, then lunge"
+	},
+	{
+	  "id": "herd",
+	  "name": null,
+	  "desc": "Steer towards other orbs"
+	},
+	{
+	  "id": "greedy",
+	  "name": null,
+	  "desc": "Steers towards mana crystals"
+	},
+	{
+	  "id": "oathbound",
+	  "name": null,
+	  "desc": "Orbits the summoning circle"
+	},
+	{
+	  "id": "echo",
+	  "name": null,
+	  "desc": "Replay a nearby players path on a 1 s delay"
+	},
+	{
+	  "id": "phasing",
+	  "name": null,
+	  "desc": "Go through entities and obstacles"
+	}
   ],
   "orbs": [
-    {
-      "id": "blank",
-      "name": "Blank",
-      "desc": "Standard orb with no effect",
-      "motion": "wayward",
-      "damage": 10.0,
-      "self_damage": 8.0,
-      "splash": 0.0,
-      "speed": 100.0,
-      "weight": 10.0,
-      "crit_chance": 0.01,
-      "crit_damage": 2.0,
-      "crystal_drop": 0.1,
-      "burn": 0,
-      "chill": 0,
-      "shock": 0,
-      "poison": 0,
-      "scene_path": "res://entities/orbs/blank/blank_orb.tscn",
-      "active": true
-    },
-    {
-      "id": "conduit",
-      "name": "Conduit",
-      "desc": "When you are within 120 meters of the orb, create a tether between you dealing 3 DPS to enemies touching it",
-      "motion": "wayward",
-      "damage": 15.0,
-      "self_damage": 12.0,
-      "splash": 0.0,
-      "speed": 130.0,
-      "weight": 10.0,
-      "crit_chance": 0.01,
-      "crit_damage": 2.0,
-      "crystal_drop": 0.1,
-      "burn": 0,
-      "chill": 0,
-      "shock": 3,
-      "poison": 0,
-      "scene_path": "res://entities/orbs/conduit/conduit_orb.tscn",
-      "active": true
-    },
-    {
-      "id": "rot",
-      "name": "Rot",
-      "desc": "Inflict poison on hit",
-      "motion": "wayward",
-      "damage": 10.0,
-      "self_damage": 18.0,
-      "splash": 0.01,
-      "speed": 80.0,
-      "weight": 15.0,
-      "crit_chance": 0.01,
-      "crit_damage": 2.0,
-      "crystal_drop": 0.1,
-      "burn": 0,
-      "chill": 0,
-      "shock": 0,
-      "poison": 3,
-      "scene_path": "res://entities/orbs/rot/rot_orb.tscn",
-      "active": true
-    },
-    {
-      "id": "ghost",
-      "name": "Ghost",
-      "desc": "Enters enemies and deal its impact damage per second to them. Once dead, exits in a random direction",
-      "motion": "wayward",
-      "damage": 10.0,
-      "self_damage": 8.0,
-      "splash": 0.0,
-      "speed": 110.0,
-      "weight": 5.0,
-      "crit_chance": 0.01,
-      "crit_damage": 2.0,
-      "crystal_drop": 0.1,
-      "burn": 0,
-      "chill": 0,
-      "shock": 0,
-      "poison": 0,
-      "scene_path": "res://entities/orbs/ghost/ghost_orb.tscn",
-      "active": true
-    }
+	{
+	  "id": "blank",
+	  "name": "Blank",
+	  "desc": "Standard orb with no effect",
+	  "motion": "wayward",
+	  "damage": 10.0,
+	  "self_damage": 8.0,
+	  "splash": 0.0,
+	  "speed": 100.0,
+	  "weight": 5.0,
+	  "crit_chance": 0.01,
+	  "crit_damage": 2.0,
+	  "crystal_drop": 0.1,
+	  "burn": 0,
+	  "chill": 0,
+	  "shock": 0,
+	  "poison": 0,
+	  "scene_path": "res://entities/orbs/blank/blank_orb.tscn",
+	  "active": true
+	},
+	{
+	  "id": "conduit",
+	  "name": "Conduit",
+	  "desc": "When you are within 120 meters of the orb, create a tether between you dealing 3 DPS to enemies touching it",
+	  "motion": "wayward",
+	  "damage": 10.0,
+	  "self_damage": 12.0,
+	  "splash": 0.0,
+	  "speed": 130.0,
+	  "weight": 5.0,
+	  "crit_chance": 0.01,
+	  "crit_damage": 2.0,
+	  "crystal_drop": 0.1,
+	  "burn": 0,
+	  "chill": 0,
+	  "shock": 3,
+	  "poison": 0,
+	  "scene_path": "res://entities/orbs/conduit/conduit_orb.tscn",
+	  "active": true
+	},
+	{
+	  "id": "rot",
+	  "name": "Rot",
+	  "desc": "Inflict poison on hit",
+	  "motion": "wayward",
+	  "damage": 5.0,
+	  "self_damage": 18.0,
+	  "splash": 0.01,
+	  "speed": 80.0,
+	  "weight": 7.0,
+	  "crit_chance": 0.01,
+	  "crit_damage": 2.0,
+	  "crystal_drop": 0.1,
+	  "burn": 0,
+	  "chill": 0,
+	  "shock": 0,
+	  "poison": 3,
+	  "scene_path": "res://entities/orbs/rot/rot_orb.tscn",
+	  "active": true
+	},
+	{
+	  "id": "ghost",
+	  "name": "Ghost",
+	  "desc": "Enters enemies and deal its impact damage per second to them. Once dead, exits in a random direction",
+	  "motion": "wayward",
+	  "damage": 10.0,
+	  "self_damage": 8.0,
+	  "splash": 0.0,
+	  "speed": 110.0,
+	  "weight": 2.0,
+	  "crit_chance": 0.01,
+	  "crit_damage": 2.0,
+	  "crystal_drop": 0.1,
+	  "burn": 0,
+	  "chill": 0,
+	  "shock": 0,
+	  "poison": 0,
+	  "scene_path": "res://entities/orbs/ghost/ghost_orb.tscn",
+	  "active": true
+	}
   ]
 }

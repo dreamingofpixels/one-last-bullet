@@ -83,9 +83,18 @@ func _poll_attacker(attacker: Node, attacker_id: int, frame: int, now_msec: int)
 		if attacker.has_method("should_apply_hitbox_damage"):
 			apply_hp = bool(attacker.should_apply_hitbox_damage(owner))
 
+		var resolved_amount: float = dc.damage
+		var resolved_kind: HealthComponent.DamageKind = dc.damage_kind
+		if attacker.has_method("resolve_hitbox_damage"):
+			var resolved: Variant = attacker.resolve_hitbox_damage(owner)
+			if typeof(resolved) == TYPE_DICTIONARY:
+				var resolved_dict: Dictionary = resolved
+				resolved_amount = float(resolved_dict.get("amount", dc.damage))
+				resolved_kind = int(resolved_dict.get("kind", dc.damage_kind))
+
 		var applied := false
 		if apply_hp and health_component:
-			applied = health_component.take_damage(dc.damage, dc.damage_kind)
+			applied = health_component.take_damage(resolved_amount, resolved_kind, attacker)
 		elif not apply_hp:
 			# Typed orbs (e.g. Shadow) may skip HP but still count as a hit.
 			applied = true

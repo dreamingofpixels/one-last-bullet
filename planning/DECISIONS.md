@@ -25,7 +25,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — replaced by typed Shadow/Poison/Electric opening volley (see below)
 
 ### Opening typed orb volley (Ghost / Rot / Conduit)
-- **Decision**: Level start launches **one Ghost**, **one Rot**, and **one Conduit** orb from the summoning circle in independent random directions (`begin_flight`, player grace). No plain blank orb is spawned. `blank_orb.gd` / `.tscn` remain the shared `BlankOrb` base (`class_name`, `FLYING` / `TETHERED` / `POSSESSED`). Typed scenes tint `blank_orb.png` and override hit hooks. Enemies own a `StatusComponent` for Poison (persistent 3 s DoT stacks) and Shock (stun at 10 stacks / 2 s). Ghost follows its host in world space (not reparented) so enemy `queue_free` cannot free the orb. Conduit current is a `Line2D` + enemy-mask capsule `Area2D` while the closest player is within 130 px.
+- **Decision**: Level start launches **one Ghost**, **one Rot**, and **one Conduit** orb from the summoning circle in independent random directions (`begin_flight`, player grace). No plain blank orb is spawned. `blank_orb.gd` / `.tscn` remain the shared `BlankOrb` base (`class_name`, `FLYING` / `TETHERED` / `POSSESSED`). Typed scenes tint `blank_orb.png` and override hit hooks where needed (Ghost possession). Each orb loads **12 core stats** from GameData via `orb_id`. Enemies own a `StatusComponent` for Poison, Shock, Burn, and Chill. Ghost follows its host in world space (not reparented) so enemy `queue_free` cannot free the orb. Conduit current is a `Line2D` + enemy-mask capsule `Area2D` while the closest player is within 130 px.
 - **Why**: Same 3-orb room pressure with readable elemental fantasies; shared bounce/tether/redirect code stays on BlankOrb; status lives on victims so multiple sources can stack later.
 - **Alternatives**: Keep three identical chaos orbs — no type fantasy; add three typed orbs on top of chaos (6 total) — too dense for the arena; per-orb timers instead of StatusComponent — duplicates DoT/stun logic; parent Shadow into the enemy — orb dies with host teardown; raycast-only current without Area2D — harder to tick continuous overlap cleanly.
 - **Status**: decided (in-codebase)
@@ -37,7 +37,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Poison stacks persist (no decay)
-- **Decision**: Poison stacks stay on the enemy until death. Each tick still deals damage equal to current stacks; extra stacks do not reset the timer.
+- **Decision**: Poison stacks stay on the enemy until death. Each tick deals damage equal to current stacks every **1 s**; extra stacks do not reset the timer.
 - **Why**: Repeated Poison orb hits should snowball into a lasting curse, not a fading DoT that needs babysitting.
 - **Alternatives**: Remove 1 stack per tick (previous) — weaker investment and harder to read as committed poison; expire after a wall-clock duration — another clock besides the tick; reset the tick timer on add — delays damage already in progress.
 - **Status**: decided (in-codebase)
@@ -400,7 +400,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Game data: Excel → JSON via schema sheet + generic GameData autoload
-- **Decision**: Author balance/content in `project/data/game_data.xlsx`. A `schema` sheet maps each data sheet's columns to types (`string`, `int`, `float`, `boolean`). `export_game_data.py` / `export_game_data.bat` writes `project/data/game_data.json`. The `GameData` autoload (`res://globals/game_data.gd`) loads that JSON at startup and exposes generic lookup: `get_table(sheet)`, `get_row(sheet, id)`, `has_row(sheet, id)` — no hard-coded sheet list. Current exported sheets: `orbs`, `glyphs`, `motion`. Orb/glyph/motion rows are authored but **not** wired into combat or shop yet; scene HP/damage and typed orb scripts stay the runtime source until integrated.
-- **Why**: One spreadsheet source of truth for upcoming shop/orb/glyph tuning; same pipeline as TavernRPG without copying domain-specific parsers; generic lookup keeps new sheets free without autoload changes.
-- **Alternatives**: Per-stat `.tres` Resources — drifts from the workbook; generate `.tres` from Excel — extra tooling; hard-coded `get_orb()` / `get_glyph()` on the autoload — new sheet = code change; inline `Dictionary` in GDScript — no designer-facing Excel.
-- **Status**: decided (in-codebase); content integration planned
+- **Decision**: Author balance/content in `project/data/game_data.xlsx`. A `schema` sheet maps each data sheet's columns to types (`string`, `int`, `float`, `boolean`). `export_game_data.py` / `export_game_data.bat` writes `project/data/game_data.json`. The `GameData` autoload (`res://globals/game_data.gd`) loads that JSON at startup and exposes generic lookup: `get_table(sheet)`, `get_row(sheet, id)`, `has_row(sheet, id)` — no hard-coded sheet list. Current exported sheets: `orbs`, `glyphs`, `motion`. **`BlankOrb` loads its 12 core stats from the `orbs` row matching `orb_id` at `_ready`** (`damage`, `self_damage`, `splash`, `speed`, `weight`, `crit_chance`, `crit_damage`, `crystal_drop`, `burn`, `chill`, `shock`, `poison`). Scene exports are fallbacks if the row is missing. Glyphs/motion not wired yet.
+- **Why**: One spreadsheet source of truth for orb tuning and upcoming shop/glyph layer; same pipeline as TavernRPG without copying domain-specific parsers; generic lookup keeps new sheets free without autoload changes.
+- **Alternatives**: Per-stat `.tres` Resources — drifts from the workbook; generate `.tres` from Excel — extra tooling; hard-coded `get_orb()` / `get_glyph()` on the autoload — new sheet = code change; inline `Dictionary` in GDScript — no designer-facing Excel; scene-only HP/damage — no single balance sheet.
+- **Status**: decided (in-codebase); glyph/motion integration planned
+
+### Orb core stats and status effects
+- **Decision**: All orbs share 12 core stats on `BlankOrb`, loaded from GameData. Per-hit resolution uses `damage` vs `self_damage`, optional crit roll (`crit_chance` × `crit_damage`), splash AOE (50 px), weight knockback + bowling (`weight` collision damage), weight bonus to breakables (`+5% per weight`), and status stacks on enemy hit (`burn` / `chill` / `shock` / `poison`). `HealthComponent.take_damage` accepts an optional `source` node; `last_damage_source` drives per-orb `crystal_drop` on enemy/breakable death. Statuses: Poison 1 dmg/stack/s; Chill 5% move+attack slow/stack (max 90%); Burn explodes on death; Shock stuns at 10 stacks for 2 s after 50 burst damage. All stacks persist until death.
+- **Why**: Centralizes orb tuning in data; one combat path for typed orbs via `BlankOrb` hooks; statuses live on victims for multi-source stacking later.
+- **Alternatives**: Keep hard-coded typed orb behavior only — drifts from spreadsheet; scene-authored stats without GameData — no designer sheet; timed status decay — deferred (persist chosen for readability).
+- **Status**: decided (in-codebase)

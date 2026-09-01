@@ -5,7 +5,6 @@ const ROT_ORB_SCENE := preload("res://entities/orbs/rot/rot_orb.tscn")
 const CONDUIT_ORB_SCENE := preload("res://entities/orbs/conduit/conduit_orb.tscn")
 const MANA_CRYSTAL_SCENE := preload("res://items/mana_crystal.tscn")
 const PLAYER_SCENE := preload("res://entities/player/player.tscn")
-const OPENING_ORB_SPEED := 100.0
 const MAX_PLAYERS := 2
 ## Shared i-frames for all living players when the opening volley launches (P2 has no orb instigator grace).
 const OPENING_PLAYER_INVULN_SECONDS := 1.0
@@ -226,7 +225,6 @@ func _launch_opening_orbs() -> void:
 		var orb: RigidBody2D = scene.instantiate() as RigidBody2D
 		add_child(orb)
 		orb.global_position = origin
-		orb.speed = OPENING_ORB_SPEED
 		_connect_orb_signals(orb)
 		orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
 
@@ -248,14 +246,28 @@ func _on_enemy_died(enemy: Node = null) -> void:
 		return
 	if enemy == null or not is_instance_valid(enemy) or not (enemy is Node2D):
 		return
-	# Capture before any further teardown; drop roll after so position is never wasted work on a miss.
 	var drop_pos: Vector2 = (enemy as Node2D).global_position
-	if randf() > mana_crystal_drop_chance:
+	var source: Node = _get_damage_source(enemy)
+	_try_drop_crystal_at(drop_pos, source)
+
+
+func _try_drop_crystal_at(pos: Vector2, source: Node = null) -> void:
+	var chance: float = mana_crystal_drop_chance
+	if source is BlankOrb:
+		chance = (source as BlankOrb).crystal_drop
+	if randf() > chance:
 		return
 
 	var crystal: ManaCrystal = MANA_CRYSTAL_SCENE.instantiate() as ManaCrystal
 	items.add_child(crystal)
-	crystal.global_position = drop_pos
+	crystal.global_position = pos
+
+
+func _get_damage_source(entity: Node) -> Node:
+	var comp = entity.get("COMPONENTS")
+	if comp == null or not comp.has(HealthComponent):
+		return null
+	return (comp[HealthComponent] as HealthComponent).last_damage_source
 
 
 func _on_orb_deflected(_by: Node = null) -> void:
@@ -292,8 +304,13 @@ func _on_all_cleared() -> void:
 	status_label.text = "Cleared! Press R to restart"
 
 
-func _on_breakable_destroyed(_node: Node = null) -> void:
+func _on_breakable_destroyed(node: Node = null) -> void:
 	rebake_timer.start()
+	if node == null or not is_instance_valid(node):
+		return
+	var drop_pos: Vector2 = (node as Node2D).global_position if node is Node2D else Vector2.ZERO
+	var source: Node = _get_damage_source(node)
+	_try_drop_crystal_at(drop_pos, source)
 
 
 func _on_rebake_timer_timeout() -> void:

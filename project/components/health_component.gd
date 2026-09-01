@@ -3,7 +3,7 @@ class_name HealthComponent extends Node2D
 signal damage_taken
 signal health_changed(current: float, maximum: float)
 
-enum DamageKind { STANDARD, POISON, SHADOW }
+enum DamageKind { STANDARD, POISON, SHADOW, CRIT, BURN }
 
 @export var max_health: float = 1.0
 @export var destroy_component: DestroyComponent
@@ -18,6 +18,8 @@ enum DamageKind { STANDARD, POISON, SHADOW }
 @export var invulnerable_blink_hz: float = 12.0
 
 var health: float = 1.0
+## Last attacker node passed to take_damage (e.g. orb for crystal_drop rolls).
+var last_damage_source: Node = null
 var _flash_tween: Tween
 var _invulnerable_until_msec: int = 0
 
@@ -41,9 +43,16 @@ func start_invulnerability(seconds: float) -> void:
 	)
 
 
-func take_damage(amount: float, kind: DamageKind = DamageKind.STANDARD) -> bool:
+func take_damage(
+	amount: float,
+	kind: DamageKind = DamageKind.STANDARD,
+	source: Node = null
+) -> bool:
 	if is_invulnerable():
 		return false
+
+	if source != null and is_instance_valid(source):
+		last_damage_source = source
 
 	health -= amount
 	damage_taken.emit()

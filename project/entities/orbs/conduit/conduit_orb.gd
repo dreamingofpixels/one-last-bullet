@@ -1,6 +1,6 @@
 class_name ConduitOrb extends BlankOrb
 
-const CURRENT_RANGE := 130.0
+const CURRENT_RANGE := 160.0
 const CURRENT_DAMAGE := 5.0
 const CURRENT_SHOCK_STACKS := 3
 const CURRENT_TICK_INTERVAL := 1.0
@@ -111,11 +111,11 @@ func _apply_current_tick(victim_root: Node) -> void:
 		return
 
 	if comp.has(HealthComponent):
-		(comp[HealthComponent] as HealthComponent).take_damage(CURRENT_DAMAGE)
+		(comp[HealthComponent] as HealthComponent).take_damage(CURRENT_DAMAGE, HealthComponent.DamageKind.STANDARD, self)
 
 	if not comp.has(StatusComponent):
 		return
 	var status: StatusComponent = comp[StatusComponent] as StatusComponent
 	if status.is_stunned():
 		return
-	status.add_stacks(StatusComponent.StatusId.SHOCK, CURRENT_SHOCK_STACKS)
+	status.add_stacks(StatusComponent.StatusId.SHOCK, CURRENT_SHOCK_STACKS, self)

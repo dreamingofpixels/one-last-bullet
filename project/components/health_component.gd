@@ -18,7 +18,7 @@ enum DamageKind { STANDARD, POISON, SHADOW, CRIT, BURN }
 @export var invulnerable_blink_hz: float = 12.0
 
 var health: float = 1.0
-## Last attacker node passed to take_damage (e.g. orb for crystal_drop rolls).
+## Last attacker node passed to take_damage (e.g. orb for glyph_drop rolls).
 var last_damage_source: Node = null
 var _flash_tween: Tween
 var _invulnerable_until_msec: int = 0

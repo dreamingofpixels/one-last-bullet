@@ -43,7 +43,7 @@ texture = ExtResource("2_tex")
 [node name="DepositArea" type="Area2D" parent="." unique_id=2040364074]
 unique_name_in_owner = true
 collision_layer = 0
-collision_mask = 34
+collision_mask = 42
 monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DepositArea" unique_id=1830142467]

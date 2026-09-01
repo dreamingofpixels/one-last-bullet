@@ -17,7 +17,7 @@ var COMPONENTS: Dictionary = {}
 @onready var state_machine: StateMachine = %StateMachine
 
 var _assembling: bool = true
-var _carried_crystal: ManaCrystal = null
+var _carried_item: Glyph = null
 
 
 func _ready() -> void:
@@ -40,33 +40,33 @@ func is_assembling() -> bool:
 	return _assembling
 
 
-func is_carrying_crystal() -> bool:
-	return is_instance_valid(_carried_crystal) and _carried_crystal.is_carried()
+func is_carrying_item() -> bool:
+	return is_instance_valid(_carried_item) and _carried_item.is_carried()
 
 
-func get_carried_crystal() -> ManaCrystal:
-	if is_carrying_crystal():
-		return _carried_crystal
+func get_carried_item() -> Glyph:
+	if is_carrying_item():
+		return _carried_item
 	return null
 
 
-func pick_up_crystal(crystal: ManaCrystal) -> bool:
-	if is_carrying_crystal() or crystal == null or not is_instance_valid(crystal):
+func pick_up_item(item: Glyph) -> bool:
+	if is_carrying_item() or item == null or not is_instance_valid(item):
 		return false
-	if not crystal.pickup(self):
+	if not item.pickup(self):
 		return false
-	_carried_crystal = crystal
+	_carried_item = item
 	return true
 
 
-func clear_carried_crystal(crystal: ManaCrystal = null) -> void:
-	if crystal != null and _carried_crystal != crystal:
+func clear_carried_item(item: Glyph = null) -> void:
+	if item != null and _carried_item != item:
 		return
-	_carried_crystal = null
+	_carried_item = null
 
 
-func try_throw_crystal() -> bool:
-	if not is_carrying_crystal():
+func try_throw_item() -> bool:
+	if not is_carrying_item():
 		return false
 	if not attack_component.can_attack():
 		return false
@@ -80,10 +80,10 @@ func try_throw_crystal() -> bool:
 	# Players live under %Players, so Items is on the level (current scene), not our parent.
 	var items_parent: Node = get_tree().current_scene.get_node("%Items")
 
-	var crystal: ManaCrystal = _carried_crystal
-	_carried_crystal = null
-	if not crystal.throw_toward(aim, items_parent, velocity):
-		_carried_crystal = crystal
+	var item: Glyph = _carried_item
+	_carried_item = null
+	if not item.throw_toward(aim, items_parent, velocity):
+		_carried_item = item
 		return false
 
 	attack_component.consume_cooldown()

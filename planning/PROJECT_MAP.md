@@ -91,10 +91,12 @@ A Final Spell/
     │       └── brute/
     │           └── brute.tscn / .gd / .png
 │   ├── items/
-│   │   ├── mana_crystal.tscn / .gd / mana_crystal_blue.png   Carry/throw/deposit mana drop
-│   │   ├── item_picked_up.ogg / .tres                       Shared item pickup SoundEvent
-│   │   └── mana_crystal_deposited.ogg / .tres               Crystal deposit SoundEvent
+│   │   ├── glyph/glyph.tscn / .gd          Carry/throw/deposit glyph drop (12 ids, 4 element textures)
+│   │   ├── glyphs/                         fire/water/air/earth_glyph.png
+│   │   ├── item_picked_up.ogg / .tres      Shared item pickup SoundEvent
+│   │   └── mana_crystal_deposited.ogg / .tres  Glyph deposit SoundEvent (legacy name)
 │   ├── ui/
+│   │   ├── ritual_menu/ritual_menu.tscn / .gd  Paused summoning ritual UI
 │   │   └── fonts/
 │   │       └── pixel_medium.fnt / .png   BMFont (atlas PNG is skip-imported; assign the .fnt)
 │   └── objects/
@@ -150,8 +152,8 @@ A Final Spell/
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, `%Players` / `%Player1`, `%SummoningCircle` under Objects, `%Items` for mana crystal drops, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); inspector export `bounce_orbs_off_entities` (default false); no pre-placed orb — typed orbs spawn at launch; `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking; tilemap navigation is disabled; bake `agent_radius` is tuned to the brute-sized body to trim narrow pockets
-- `project/areas/level/level.gd` — director: bakes navigation after props initialize, waits until the nav map answers path queries, starts `EnemySpawner`, then awaits `begin_level()` on **all** living players in parallel (P1 reverse-assembles with P2 if a second pad is already connected); launches **Ghost + Rot + Conduit** from `%SummoningCircle` in random directions via `begin_flight()` at each orb's GameData `speed`; grants all living players `HealthComponent.start_invulnerability(1s)` after the volley; auto-adds P2 under `%Players` when **two or more** gamepads are connected (no join button; `Input.joy_connection_changed` still hot-joins mid-level), instances `player.tscn` with `player_index = 2` near P1; `@export bounce_orbs_off_entities` → `BlankOrb.set_bounce_off_entities()` in `_ready`; on `EnemySpawner.enemy_died` and breakable destroy, rolls mana crystal spawn using the killing orb's `crystal_drop` when `last_damage_source` is a `BlankOrb`, else `mana_crystal_drop_chance`; win/lose/restart — lose only when **all** players are dead; connects `DestroyComponent.destroyed` for each player and debounced breakable re-bakes, plus orb `deflected` / `tethered` / `tether_released` and spawner `wave_started` / `all_cleared` / `enemy_died`; `tethered` → `TimeSlowOverlay.begin()`; `tether_released` → `TimeSlowOverlay.end()`; optional `@export level_music` → `AudioManager.play_music()`
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, `%Players` / `%Player1`, `%SummoningCircle` under Objects, `%Items` for glyph drops, `%RitualMenu`, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); inspector export `bounce_orbs_off_entities` (default false); no pre-placed orb — typed orbs spawn at launch; `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking
+- `project/areas/level/level.gd` — director: bakes navigation, starts `EnemySpawner`, awaits parallel `begin_level()`; launches **Ghost + Rot + Conduit** from `%SummoningCircle`; on kills rolls **glyph** spawn via orb `glyph_drop` or `glyph_drop_chance` export; weighted glyph rarity **70 / 25 / 5**; `SummoningCircle.ritual_started` → pause + `%RitualMenu.open`; menu `closed` → `release_orb` + unpause; `new_blank_orb_requested` → spawn blank orb at circle; co-op P2 hot-join; win/lose when all players dead; orb tether/time-slow hooks
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -165,8 +167,8 @@ A Final Spell/
 - `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the **nearest** player by group (retarget every ~0.5 s with ~32 px hysteresis so co-op packs do not dither), repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls; `set_chasing(bool)` pauses avoidance + physics so assembling enemies do not slide
 - `project/components/status_component.gd` — enemy statuses: **Poison** (every 1 s deal `stacks` HP; stacks persist until death; ticks call `take_damage(..., POISON)` for green labels) and **Shock** (at 10 stacks deal 50 HP + stun 2 s via `NavigationComponent.set_chasing(false)` + `MovementComponent.stop()`, then clear Shock; no Shock while stunned) and **Burn** (on `DestroyComponent.destroyed`, explode for `5 * stacks` in `50 * (1 + 5% * stacks)` px; enemies only; BURN labels) and **Chill** (`5% * stacks` move + attack-speed slow, max 90%); `add_stacks(id, amount, source)` tracks per-status source for drops/explosions; instanced on grunt/brute with health/nav/movement/destroy/damage wired
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent` when `melee_enabled` (default false on player — parked); orb deflect behind `deflect_orb_enabled` (default false); `consume_cooldown()` for proximity redirect without a swing; hides `%AttackSpriteHint` while a redirect target exists or melee is off; optional `swing_sound` (unassigned)
-- `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), `min_tether_radius` (24 px); mid-combat queries the `orb` group — **focus** every flying orb in range via per-player `set_focus_requested_by` (co-op-safe), **redirect chevron chain** on closest in range (`set_redirect_preview(dir, owner)`); **`capture_enabled`** (false on player) gates tap capture + remote channel (orbit code kept); tether press order: release owned tether → **summoning circle `try_activate()`** if in `DepositArea` → mana crystal pickup → orb capture (if capture on); `try_redirect_attack()` / `has_redirect_target()` (suppressed while carrying a crystal); `is_channeling()` / `get_channel_progress()`; draws progress ring + line to channel target; clears this player's focus/preview on owner exit; input centralized in `_process()` (player states only gate movement/dash/attack)
-- `project/components/dash_component.gd` — fixed-distance dash (50 px @ 400 px/s); i-frames via hitbox; clears body layer and masks only `wall` so the dash phases through props/enemies but stops at outer arena walls; applies ghost alpha while dashing; spawns distance-based afterimages; plays `dash_sound`; 4 s cooldown with a radial recharge ring drawn above the player (`_draw`); `start(dir)` / `is_dashing()` / `can_dash()` (false while carrying a mana crystal) / `reset_cooldown()` (cleared by proximity Attack redirect)
+- `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), … **`capture_enabled`** (false on player) gates tap capture + remote channel; tether press order: release owned tether → **summoning circle `try_activate()`** if in `DepositArea` → **glyph** pickup → orb capture (if capture on); …
+- `project/components/dash_component.gd` — … **`can_dash()`** (false while carrying a **glyph**) …
 - `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
 ### State machine base
@@ -174,7 +176,7 @@ A Final Spell/
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — `COMPONENTS` dict; `player_index` export; start flow: `_ready` hides `%PlayerSprite` and sets player inert, `begin_level()` awaits reverse assemble (`DestructionEffect.play_assemble_from_sprite`) then reenables collision/hitbox (orbs launch from the level, not an opening tether); carry API for mana crystals (`pick_up_crystal` / `try_throw_crystal` / `is_carrying_crystal`); `is_assembling()` gates movement/attack/dash in `idle.gd` and `walk.gd`; tree: Components (Health max 30 + 0.5s i-frames / HealthBar / Damage / Destroy / Movement / Attack / Dash / OrbTether / DirectionalSprite / Hitbox), Controls (PlayerAction children), StateMachine (Idle/Walk/Attack/Dash); `%PlayerSprite` is `AnimatedSprite2D` using `player_frames.tres`
+- `project/entities/player/player.tscn` + `player.gd` — … carry API for **glyphs** (`pick_up_item` / `try_throw_item` / `is_carrying_item`); …
 - `project/entities/player/players.gd` — `class_name Players`; static roster helpers over the `player` group (`all` / `closest_to` / `count`); used by level lose, electric current, and any co-op nearest-player query
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `uses_mouse()` (P1 only); `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
@@ -182,7 +184,7 @@ A Final Spell/
 - `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays walk on success); out-of-range Attack does nothing while melee parked; mouse GUI gate only when `controls.uses_mouse()`; attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends (reachable only if `melee_enabled`)
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
-- `project/entities/orbs/blank/blank_orb.tscn` + `blank_orb.gd` (`class_name BlankOrb`) — shared circular projectile base; `@export orb_id` + 12 core stats loaded from GameData `orbs` row; `%CollisionShape2D` + `%OrbSprite` + overlay `%OrbInFocus` + `%AimArrow` chevron preview + `%TrailParticles`; `COMPONENTS` dict; `DamageComponent` + `HitboxComponent`; states `FLYING` / `TETHERED` / `POSSESSED`; `_ready` keeps orb hidden until `begin_flight()` / tether; API: `begin_opening_tether()` (unused at level start; kept) / `begin_flight(direction, instigator)` / `deflect()` (+10% speed/damage/self_damage via `tether_release_boost`) / `begin_tether()` / `release_tether()` / `break_tether(exit_velocity)` / `set_focus_requested_by(requester, value)` (co-op focus) / `set_in_focus()` / `set_redirect_preview(dir, by)` / `clear_redirect_preview(by)` (preview ownership) / `resolve_hitbox_damage(victim)` / `should_apply_hitbox_damage` / `on_hitbox_hit` (splash, weight, status stacks); static `bounce_off_entities` + `set_bounce_off_entities()` for desert export; **orbit is always `min_tether_radius` (24 px)**; flying default **punches through** player and enemies (optional entity bounce); entity + mana-crystal damage via victim hitbox poll; breakable damage + bounce SFX on `body_entered` / tether world probe; `base_modulate` preserves typed tints through grace; signals `launched`, `deflected`, `tethered`, `tether_released` — **not launched at level start** (typed scenes are)
+- `project/entities/orbs/blank/blank_orb.tscn` + `blank_orb.gd` (`class_name BlankOrb`) — … **`glyph_drop`** + **3 glyph slots** (`apply_glyph`, `get_stat_snapshot`); **`begin_circle_capture`** / **`release_from_circle`** for summoning ritual; …
 - `project/entities/orbs/ghost/ghost_orb.tscn` + `ghost_orb.gd` (`class_name GhostOrb`) — dark-purple tint; skips enemy impact HP; on hit enters `POSSESSED` (hide, follow host in world space, 3 DPS via `take_damage(..., SHADOW)`, dark `damage_flash_color`); calls `super.on_hitbox_hit` for weight/splash/status; `DamageComponent.damage_kind = SHADOW` for player/breakable contact labels; emerges on `DestroyComponent.destroyed` with random `begin_flight` (no grace)
 - `project/entities/orbs/rot/rot_orb.tscn` + `rot_orb.gd` (`class_name RotOrb`) — green tint; poison stacks from GameData `poison` stat via base `on_hitbox_hit`
 - `project/entities/orbs/conduit/conduit_orb.tscn` + `conduit_orb.gd` (`class_name ConduitOrb`) — yellow-cyan tint; `%CurrentLine` + `%CurrentArea` / `%CurrentShape` (enemy-mask capsule); while closest player within 130 px, beam ticks 5 HP + 3 Shock per second (skip Shock while stunned); impact shock stacks from GameData
@@ -199,8 +201,9 @@ A Final Spell/
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 - `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
 - `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
-- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool`; `deposit` / `spend` / `try_activate()` / `contains_player()` / `get_launch_origin()`; crystal deposit on overlap; tether-in-circle spends 5 once to activate (sprite blink + rising particles); group `summoning_circle`; unique-named in desert arenas (level root, not under Navigation)
-- `project/items/mana_crystal.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `mana = 5`, Health 20 + HealthBar + Destroy + Hitbox (orb mask); tether pickup (`item_picked_up`), carry offset, Attack throw with slide + sprite bounce; deposit sucks to circle center then credits pool + `mana_crystal_deposited` + pixel-fall (`self_destroy(false)`); orb destroy does not credit pool
+- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`**; `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`capture_orb`** / **`release_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
+- `project/items/glyph/glyph.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `glyph_id` + **Rarity**; element texture + rarity tint; tether pickup, carry, Attack throw, deposit → circle inventory or overflow mana; group **`glyphs`**
+- `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); orb stats, socket/discard glyphs, new blank orb, Done
 - `project/items/item_picked_up.ogg` + `.tres` — shared SoundEvent for picking up items
 - `project/items/mana_crystal_deposited.ogg` + `.tres` — SoundEvent played when a crystal finishes depositing
 
@@ -229,7 +232,7 @@ A Final Spell/
 - `project/data/game_data.xlsx` — source workbook; `schema` sheet lists column types per data sheet; current sheets: `orbs`, `glyphs`, `motion` (plus unused `objects_OLD` / `input` not in schema)
 - `project/data/export_game_data.py` + `export_game_data.bat` + `requirements.txt` — Excel → JSON export (`openpyxl`); schema types: `string`, `int`, `float`, `boolean`
 - `project/data/game_data.json` — runtime dump; regenerate after editing the xlsx (double-click `.bat` or `python export_game_data.py`)
-- `project/globals/game_data.gd` — `GameData` autoload: `tables` / `tables_by_id` keyed by sheet name; `reload()` re-reads JSON. `BlankOrb` loads 12 core stats from `orbs` rows via `orb_id`; glyphs/motion not wired yet
+- `project/globals/game_data.gd` — `GameData` autoload: `tables` / `tables_by_id`; `BlankOrb` loads `orbs` stats (**`glyph_drop`**); **`Glyph`** / ritual socketing read **`glyphs`** rows (`attribute`, rarity tiers); motion not wired yet
 
 ---
 
@@ -241,7 +244,7 @@ A Final Spell/
 | `enemies` | Enemy roots |
 | `orb` | BlankOrb roots (`blank_orb.gd`); opening launch places multiple in this group |
 | `breakables` | Breakable props (cactus, etc.) |
-| `mana_crystals` | ManaCrystal roots (`mana_crystal.gd`) |
+| `glyphs` | Glyph roots (`glyph.gd`) |
 | `summoning_circle` | SummoningCircle roots (`summoning_circle.gd`) |
 | `navigation_source` | Desert navmesh contributors (`LowerGround`, `Cliffs`, `Objects`, `Walls`) |
 

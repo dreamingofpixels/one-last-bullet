@@ -1,7 +1,8 @@
-class_name ManaCrystal
+class_name Glyph
 extends RigidBody2D
 
-enum CrystalState { GROUNDED, CARRIED, THROWN, DEPOSITING }
+enum Rarity { COMMON, RARE, UNIQUE }
+enum GlyphState { GROUNDED, CARRIED, THROWN, DEPOSITING }
 
 const PHYSICS_LAYER_WORLD := 1
 const PHYSICS_LAYER_ITEM := 32
@@ -9,9 +10,27 @@ const STOP_SPEED := 12.0
 const CARRY_OFFSET := Vector2(10.0, -12.0)
 const DEPOSIT_SUCK_MIN_DURATION := 0.12
 
+const MANA_BY_RARITY: Dictionary = {
+	Rarity.COMMON: 5.0,
+	Rarity.RARE: 10.0,
+	Rarity.UNIQUE: 20.0,
+}
+const ELEMENT_TEXTURES: Dictionary = {
+	"Fire": preload("res://items/glyphs/fire_glyph.png"),
+	"Water": preload("res://items/glyphs/water_glyph.png"),
+	"Air": preload("res://items/glyphs/air_glyph.png"),
+	"Earth": preload("res://items/glyphs/earth_glyph.png"),
+}
+const RARITY_MODULATE: Dictionary = {
+	Rarity.COMMON: Color.WHITE,
+	Rarity.RARE: Color(0.65, 0.85, 1.0, 1.0),
+	Rarity.UNIQUE: Color(1.0, 0.85, 0.35, 1.0),
+}
+
 var COMPONENTS: Dictionary = {}
 
-@export var mana: float = 5.0
+@export var glyph_id: StringName = &"coal"
+@export var rarity: Rarity = Rarity.COMMON
 @export var throw_speed: float = 200.0
 @export var throw_damp: float = 5.0
 @export var bounce_height: float = 5.0
@@ -25,7 +44,7 @@ var COMPONENTS: Dictionary = {}
 @onready var presence_area: Area2D = %PresenceArea
 @onready var hitbox_component: HitboxComponent = %HitboxComponent
 
-var _state: CrystalState = CrystalState.GROUNDED
+var _state: GlyphState = GlyphState.GROUNDED
 var _carrier: Node2D = null
 var _deposited: bool = false
 var _bounce_tween: Tween
@@ -34,7 +53,7 @@ var _sprite_rest_y: float = 0.0
 
 
 func _ready() -> void:
-	add_to_group("mana_crystals")
+	add_to_group("glyphs")
 	gravity_scale = 0.0
 	lock_rotation = true
 	can_sleep = false
@@ -43,6 +62,7 @@ func _ready() -> void:
 	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	angular_damp = 100.0
 	_sprite_rest_y = sprite.position.y
+	_apply_visuals()
 	_set_grounded_physics()
 	set_physics_process(false)
 
@@ -51,18 +71,83 @@ func _ready() -> void:
 		destroy_comp.destroyed.connect(_on_destroyed)
 
 
+func setup(id: StringName, r: Rarity) -> void:
+	glyph_id = id
+	rarity = r
+	_apply_visuals()
+
+
+func get_mana_value() -> float:
+	return float(MANA_BY_RARITY.get(rarity, 5.0))
+
+
+func get_attribute() -> StringName:
+	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return &""
+	return StringName(String((row as Dictionary).get("attribute", "")))
+
+
+func get_attribute_value() -> float:
+	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return 0.0
+	var data: Dictionary = row
+	match rarity:
+		Rarity.RARE:
+			return float(data.get("rarity_rare", 0.0))
+		Rarity.UNIQUE:
+			return float(data.get("rarity_unique", 0.0))
+		_:
+			return float(data.get("rarity_common", 0.0))
+
+
+func get_element() -> String:
+	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return ""
+	return String((row as Dictionary).get("element", ""))
+
+
+func get_display_name() -> String:
+	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return String(glyph_id)
+	return String((row as Dictionary).get("name", glyph_id))
+
+
+static func rarity_to_string(r: Rarity) -> String:
+	match r:
+		Rarity.RARE:
+			return "Rare"
+		Rarity.UNIQUE:
+			return "Unique"
+		_:
+			return "Common"
+
+
+func _apply_visuals() -> void:
+	if not is_instance_valid(sprite):
+		return
+	var element: String = get_element()
+	var tex: Texture2D = ELEMENT_TEXTURES.get(element, ELEMENT_TEXTURES["Fire"]) as Texture2D
+	if tex:
+		sprite.texture = tex
+	sprite.modulate = RARITY_MODULATE.get(rarity, Color.WHITE) as Color
+
+
 func _on_destroyed(_node: Node = null) -> void:
-	if is_instance_valid(_carrier) and _carrier.has_method("clear_carried_crystal"):
-		_carrier.clear_carried_crystal(self)
+	if is_instance_valid(_carrier) and _carrier.has_method("clear_carried_item"):
+		_carrier.clear_carried_item(self)
 	_carrier = null
 
 
 func can_be_picked_up() -> bool:
-	return not _deposited and (_state == CrystalState.GROUNDED or _state == CrystalState.THROWN)
+	return not _deposited and (_state == GlyphState.GROUNDED or _state == GlyphState.THROWN)
 
 
 func is_carried() -> bool:
-	return _state == CrystalState.CARRIED
+	return _state == GlyphState.CARRIED
 
 
 func get_carrier() -> Node2D:
@@ -72,11 +157,11 @@ func get_carrier() -> Node2D:
 func pickup(carrier: Node2D) -> bool:
 	if not can_be_picked_up() or carrier == null or not is_instance_valid(carrier):
 		return false
-	if carrier.has_method("is_carrying_crystal") and carrier.is_carrying_crystal():
+	if carrier.has_method("is_carrying_item") and carrier.is_carrying_item():
 		return false
 
 	_stop_bounce()
-	_state = CrystalState.CARRIED
+	_state = GlyphState.CARRIED
 	_carrier = carrier
 	freeze = true
 	linear_velocity = Vector2.ZERO
@@ -86,7 +171,6 @@ func pickup(carrier: Node2D) -> bool:
 	hitbox_component.set_invulnerable(true)
 	set_physics_process(false)
 
-	# Keep PresenceArea on the item layer so the summoning circle can detect a carried crystal.
 	presence_area.collision_layer = PHYSICS_LAYER_ITEM
 	presence_area.monitoring = false
 	presence_area.monitorable = true
@@ -103,13 +187,13 @@ func pickup(carrier: Node2D) -> bool:
 
 
 func throw_toward(direction: Vector2, level_root: Node, inherit_velocity: Vector2 = Vector2.ZERO) -> bool:
-	if _state != CrystalState.CARRIED or level_root == null or not is_instance_valid(level_root):
+	if _state != GlyphState.CARRIED or level_root == null or not is_instance_valid(level_root):
 		return false
 
 	var aim: Vector2 = direction.normalized() if direction.length_squared() > 0.0001 else Vector2.RIGHT
 	var throw_pos: Vector2 = global_position
 	_carrier = null
-	_state = CrystalState.THROWN
+	_state = GlyphState.THROWN
 
 	reparent(level_root, true)
 	global_position = throw_pos
@@ -129,23 +213,24 @@ func throw_toward(direction: Vector2, level_root: Node, inherit_velocity: Vector
 	return true
 
 
-func deposit_into(circle: SummoningCircle) -> void:
-	if _deposited or not is_instance_valid(circle):
+func deposit_into(circle: Node) -> void:
+	if _deposited or circle == null or not is_instance_valid(circle):
+		return
+	if not circle.has_method("receive_glyph"):
 		return
 	_deposited = true
 	_stop_bounce()
 	set_physics_process(false)
 
-	if _state == CrystalState.CARRIED and is_instance_valid(_carrier) and _carrier.has_method("clear_carried_crystal"):
-		_carrier.clear_carried_crystal(self)
+	if _state == GlyphState.CARRIED and is_instance_valid(_carrier) and _carrier.has_method("clear_carried_item"):
+		_carrier.clear_carried_item(self)
 	_carrier = null
-	_state = CrystalState.DEPOSITING
+	_state = GlyphState.DEPOSITING
 
-	# Called from Area2D body/area signals — defer tree and physics mutations.
 	call_deferred("_begin_deposit_suck", circle)
 
 
-func _begin_deposit_suck(circle: SummoningCircle) -> void:
+func _begin_deposit_suck(circle: Node) -> void:
 	if not is_instance_valid(circle):
 		queue_free()
 		return
@@ -164,7 +249,7 @@ func _begin_deposit_suck(circle: SummoningCircle) -> void:
 	presence_area.monitorable = false
 	presence_area.collision_layer = 0
 
-	var target: Vector2 = circle.get_launch_origin()
+	var target: Vector2 = circle.call("get_launch_origin") if circle.has_method("get_launch_origin") else circle.global_position
 	var distance: float = global_position.distance_to(target)
 	var duration: float = maxf(DEPOSIT_SUCK_MIN_DURATION, distance / maxf(deposit_suck_speed, 1.0))
 
@@ -177,13 +262,13 @@ func _begin_deposit_suck(circle: SummoningCircle) -> void:
 	_deposit_tween.tween_callback(_finish_deposit.bind(circle))
 
 
-func _finish_deposit(circle: SummoningCircle) -> void:
+func _finish_deposit(circle: Node) -> void:
 	_deposit_tween = null
 	if not is_instance_valid(circle):
 		queue_free()
 		return
 
-	circle.deposit(mana)
+	circle.call("receive_glyph", self)
 	if deposit_sound:
 		AudioManager.play_at(deposit_sound, global_position)
 
@@ -195,7 +280,7 @@ func _finish_deposit(circle: SummoningCircle) -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if _state != CrystalState.THROWN:
+	if _state != GlyphState.THROWN:
 		set_physics_process(false)
 		return
 	if linear_velocity.length() <= STOP_SPEED:
@@ -207,7 +292,7 @@ func settle_on_ground() -> void:
 
 
 func _settle_grounded() -> void:
-	_state = CrystalState.GROUNDED
+	_state = GlyphState.GROUNDED
 	linear_velocity = Vector2.ZERO
 	freeze = true
 	linear_damp = 0.0

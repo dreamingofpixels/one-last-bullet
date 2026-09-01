@@ -8,7 +8,7 @@ class_name OrbTetherComponent extends Node2D
 @export var min_tether_radius: float = 24.0
 @export var tether_cooldown: float = 0.25
 @export var tether_enabled: bool = true
-## When false, skip orb capture and remote channel; keep crystal pickup, focus, and Attack redirect.
+## When false, skip orb capture and remote channel; keep glyph pickup, focus, and Attack redirect.
 @export var capture_enabled: bool = true
 @export var remote_tether_hold_duration: float = 2.0
 
@@ -138,7 +138,7 @@ func get_channel_progress() -> float:
 func has_redirect_target() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
 		return false
-	if owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal():
+	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
 		return false
 	return _find_closest_flying_orb(true) != null
 
@@ -155,7 +155,7 @@ func try_tether_press() -> bool:
 func try_redirect_attack() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
 		return false
-	if owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal():
+	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
 		return false
 
 	var target := _find_closest_flying_orb(true)
@@ -209,12 +209,12 @@ func _try_immediate_tether() -> bool:
 	if Time.get_ticks_msec() < _cooldown_until_msec:
 		return false
 
-	# Activate summoning circle while standing in its DepositArea (before crystal pickup).
+	# Activate summoning circle while standing in its DepositArea (before glyph pickup).
 	if _try_activate_summoning_circle():
 		return true
 
-	# Prefer nearby mana crystals over orb capture.
-	if _try_pickup_crystal():
+	# Prefer nearby glyphs over orb capture.
+	if _try_pickup_glyph():
 		return true
 
 	if not capture_enabled:
@@ -242,33 +242,33 @@ func _try_activate_summoning_circle() -> bool:
 	return false
 
 
-func _try_pickup_crystal() -> bool:
-	if owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal():
+func _try_pickup_glyph() -> bool:
+	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
 		return false
-	var crystal := _find_closest_pickable_crystal(true)
-	if crystal == null:
+	var glyph := _find_closest_pickable_glyph(true)
+	if glyph == null:
 		return false
-	if owner.has_method("pick_up_crystal"):
-		return owner.pick_up_crystal(crystal)
-	return crystal.pickup(owner)
+	if owner.has_method("pick_up_item"):
+		return owner.pick_up_item(glyph)
+	return glyph.pickup(owner)
 
 
-func _find_closest_pickable_crystal(require_in_focus: bool) -> ManaCrystal:
+func _find_closest_pickable_glyph(require_in_focus: bool) -> Glyph:
 	var origin: Vector2 = owner.global_position
-	var best: ManaCrystal = null
+	var best: Glyph = null
 	var best_dist_sq: float = INF
-	for node in get_tree().get_nodes_in_group("mana_crystals"):
-		var crystal := node as ManaCrystal
-		if crystal == null or not is_instance_valid(crystal):
+	for node in get_tree().get_nodes_in_group("glyphs"):
+		var glyph := node as Glyph
+		if glyph == null or not is_instance_valid(glyph):
 			continue
-		if not crystal.can_be_picked_up():
+		if not glyph.can_be_picked_up():
 			continue
-		var dist_sq: float = origin.distance_squared_to(crystal.global_position)
+		var dist_sq: float = origin.distance_squared_to(glyph.global_position)
 		if require_in_focus and dist_sq > focus_radius * focus_radius:
 			continue
 		if dist_sq < best_dist_sq:
 			best_dist_sq = dist_sq
-			best = crystal
+			best = glyph
 	return best
 
 
@@ -299,7 +299,7 @@ func _update_redirect_preview() -> void:
 		not tether_enabled
 		or is_tethering()
 		or _channeling
-		or (owner.has_method("is_carrying_crystal") and owner.is_carrying_crystal())
+		or (owner.has_method("is_carrying_item") and owner.is_carrying_item())
 	):
 		_clear_redirect_preview()
 		return

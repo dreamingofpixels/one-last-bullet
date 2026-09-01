@@ -48,11 +48,29 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Three independent opening tethers — heavier UX; start with three already flying — skips the sling teach; only one tetherable "main" orb — simpler but weaker multi-orb play; extras despawn after a timer — less room pressure.
 - **Status**: superseded — replaced by circle random launch (see above)
 
+### Glyphs replace mana crystals; carry, throw, circle inventory
+- **Decision**: Enemies roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity tint (white / blue / gold). `ManaCrystal` retired.
+- **Why**: Glyphs are the upgrade vector for the ritual menu; mana comes from discard/overflow rather than every pickup.
+- **Alternatives**: Keep crystals as mana and add separate glyph drops — two loot types to juggle; auto-socket on deposit — removes ritual menu choice.
+- **Status**: decided (in-codebase)
+
+### Summoning circle ritual: escalating activation, orb capture, paused menu
+- **Decision**: `try_activate()` is repeatable: cost **`activation_step × activation_count`** (default step **5** → first activation **free**, then 5, 10, 15…). While active, first flying **`BlankOrb`** entering `DepositArea` is sucked to center → **`ritual_started`** → **`RitualMenu`** opens with **`get_tree().paused = true`**. Menu shows orb **12 stats**, **3 glyph slots**, stored glyphs (socket / discard), **New Blank Orb (20 mana)**, **Done**. Socketing flat-adds the glyph's `attribute` value from GameData by rarity. **Done** → `release_orb` (random launch) + `deactivate`. `AudioManager` uses `PROCESS_MODE_ALWAYS` so SFX still play while paused.
+- **Why**: Separates mana delivery (inventory) from orb customization (ritual); pause keeps menu readable in co-op chaos.
+- **Alternatives**: Real-time menu — orb and enemies keep moving; one-shot 5-mana activate — no escalating cost.
+- **Status**: decided (in-codebase); supersedes "Summoning circle activation ritual"
+
+### Glyph stat upgrades: flat-add from GameData `attribute`
+- **Decision**: Each `glyphs` row names an **`attribute`** (`damage`, `burn`, `glyph_drop`, etc.). Socketing adds **`rarity_common` / `rarity_rare` / `rarity_unique`** flat to that stat. `splash`, `crit_chance`, `glyph_drop` clamp to **0–1**; `damage`, `self_damage`, `speed`, `weight` floor at **0**. Negative values in data (e.g. `soft`, `drag`) reduce stats as authored.
+- **Why**: Matches spreadsheet authoring; one code path for all 12 glyphs.
+- **Alternatives**: Percent-of-base multiplier — rejected after data moved to absolute adds for core stats.
+- **Status**: decided (in-codebase)
+
 ### Mana crystals: carry, throw, deposit into summoning circle
 - **Decision**: Enemies have a **25%** chance to drop a `ManaCrystal` (default **5** mana, **20** HP). Tether within `focus_radius` picks up a crystal **before** capturing an orb. While carried: shown beside the player, dash disabled, Attack throws along aim (slide + sprite bounce, then settle). Pickup plays shared `item_picked_up` SFX. If a crystal enters the summoning circle `DepositArea` (including while carried), it detaches, freezes, and **sucks to the circle center** (cubic ease-in); on arrival it credits `SummoningCircle.mana_pool`, plays `mana_crystal_deposited`, then `DestroyComponent.self_destroy(false)` (pixel-fall, no generic destroy SFX). Orb hitbox damage can destroy crystals; that path does **not** credit the pool and still uses the default destroy SFX. Crystals use physics layer `item` (world mask only) so orbs punch through via hitbox rather than bouncing.
 - **Why**: Makes mana a spatial risk (orb can smash loot; must deliver to the circle) and reuses tether/attack verbs without a new input. Suck-in makes the deposit readable; splitting pickup vs deposit SFX keeps item pickup generic for future loot.
 - **Alternatives**: Auto-collect vanishing mana orbs — less skill; walking into crystals — weaker than tether priority; crystals on `world` layer (orb bounce) — turns loot into pinball obstacles; instant deposit `queue_free` — previous, no suck/VFX; reuse pickup clip for deposit — less feedback that mana reached the pool; vanish timer — deferred (open question).
-- **Status**: decided (in-codebase); pool UI + spend/activate ritual added on the circle (see "Summoning circle activation ritual")
+- **Status**: superseded — replaced by glyph drops + circle inventory (see "Glyphs replace mana crystals")
 
 ### Orb damages enemies; hurts player on contact
 - **Decision**: The same projectile is a weapon against enemies and a hazard for the player. HP and orb damage are authored in scene `HealthComponent` / `DamageComponent` values (currently player **30 HP**, grunt **20 HP**, orb damage **10**). Player gets brief i-frames after a non-fatal hit.
@@ -96,11 +114,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Delete Attack state / KnockbackComponent — harder to restore; keep out-of-range swing — mixed fantasy while redirect is the only useful Attack verb.
 - **Status**: decided (in-codebase); revisit after playtest
 
+- **Status**: superseded — replaced by glyph drops + circle inventory (see "Glyphs replace mana crystals")
+
 ### Summoning circle activation ritual
 - **Decision**: `SummoningCircle` shows `mana_pool` on `%ManaPoolLabel` (updates on `deposit` / `spend`). `DepositArea` masks player + item. Standing in the circle and pressing tether calls `try_activate()`: spends **5** mana once, then blinks the sprite and emits rising `%ArcaneParticles`. Already-activated or unaffordable presses fall through to crystal pickup. Group `summoning_circle`; further ritual effects TBD.
 - **Why**: Makes the pool readable and gives tether a circle verb while orb capture is parked; 5 mana matches one crystal deposit so activation is one-crystal commit.
 - **Alternatives**: Auto-activate when pool ≥ 5 — less intentional; spend on Attack instead — competes with redirect; deactivate / toggle — deferred until ritual content exists.
-- **Status**: decided (in-codebase)
+- **Status**: superseded — replaced by escalating activation + ritual menu (see "Summoning circle ritual")
 
 ### Proximity Attack redirect (chevron chain + dash reset)
 - **Decision**: While a flying orb is within `focus_radius` (48 px), the **closest** in-range orb shows `%AimArrow` as **three pulsing chevrons** outside the orb body along the player's aim (`aim_arrow.gd`, start ~12 px). Pressing **Attack** then calls `BlankOrb.deflect()` along that aim — **no melee swing**, no enemy knockback. Each redirect multiplies that orb's `speed` and `DamageComponent.damage` by `tether_release_boost` (default **1.1 / +10%**), stacking for the rest of the level; `speed` is clamped to `max_speed` (**1500**). The same Attack also calls `DashComponent.reset_cooldown()` so the player can dash immediately. Shares the normal **0.35 s** attack cooldown (`AttackComponent.consume_cooldown()`). Redirect works even during the short tether recapture cooldown. Multiple in-range orbs still all get `OrbInFocus`; only the closest gets the chevrons and is redirected. Out of range (or while tethered/channeling), Attack does nothing while melee is parked. Arc-contact `deflect_orb_enabled` stays false.
@@ -400,13 +420,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Game data: Excel → JSON via schema sheet + generic GameData autoload
-- **Decision**: Author balance/content in `project/data/game_data.xlsx`. A `schema` sheet maps each data sheet's columns to types (`string`, `int`, `float`, `boolean`). `export_game_data.py` / `export_game_data.bat` writes `project/data/game_data.json`. The `GameData` autoload (`res://globals/game_data.gd`) loads that JSON at startup and exposes generic lookup: `get_table(sheet)`, `get_row(sheet, id)`, `has_row(sheet, id)` — no hard-coded sheet list. Current exported sheets: `orbs`, `glyphs`, `motion`. **`BlankOrb` loads its 12 core stats from the `orbs` row matching `orb_id` at `_ready`** (`damage`, `self_damage`, `splash`, `speed`, `weight`, `crit_chance`, `crit_damage`, `crystal_drop`, `burn`, `chill`, `shock`, `poison`). Scene exports are fallbacks if the row is missing. Glyphs/motion not wired yet.
+- **Decision**: `GameData` autoload loads JSON at startup. **`BlankOrb`** loads 12 core stats from `orbs` via `orb_id`; **`Glyph`** reads `glyphs` rows for `attribute` + rarity values; **`apply_glyph`** on orbs uses the same sheet. Glyphs/motion UI partially wired (motion not yet).
 - **Why**: One spreadsheet source of truth for orb tuning and upcoming shop/glyph layer; same pipeline as TavernRPG without copying domain-specific parsers; generic lookup keeps new sheets free without autoload changes.
 - **Alternatives**: Per-stat `.tres` Resources — drifts from the workbook; generate `.tres` from Excel — extra tooling; hard-coded `get_orb()` / `get_glyph()` on the autoload — new sheet = code change; inline `Dictionary` in GDScript — no designer-facing Excel; scene-only HP/damage — no single balance sheet.
-- **Status**: decided (in-codebase); glyph/motion integration planned
+- **Status**: decided (in-codebase); motion integration planned
 
 ### Orb core stats and status effects
-- **Decision**: All orbs share 12 core stats on `BlankOrb`, loaded from GameData. Per-hit resolution uses `damage` vs `self_damage`, optional crit roll (`crit_chance` × `crit_damage`), splash AOE (50 px), weight knockback + bowling (`weight` collision damage), weight bonus to breakables (`+5% per weight`), and status stacks on enemy hit (`burn` / `chill` / `shock` / `poison`). `HealthComponent.take_damage` accepts an optional `source` node; `last_damage_source` drives per-orb `crystal_drop` on enemy/breakable death. Statuses: Poison 1 dmg/stack/s; Chill 5% move+attack slow/stack (max 90%); Burn explodes on death; Shock stuns at 10 stacks for 2 s after 50 burst damage. All stacks persist until death.
+- **Decision**: All orbs share 12 core stats on `BlankOrb`, loaded from GameData (`glyph_drop` replaces `crystal_drop`). Per-hit resolution uses `damage` vs `self_damage`, optional crit roll (`crit_chance` × `crit_damage`), splash AOE (50 px), weight knockback + bowling (`weight` collision damage), weight bonus to breakables (`+5% per weight`), and status stacks on enemy hit (`burn` / `chill` / `shock` / `poison`). `HealthComponent.take_damage` accepts an optional `source` node; `last_damage_source` drives per-orb `glyph_drop` on enemy/breakable death. **Glyph slots**: 3 per orb; socketing flat-adds from GameData `glyphs.attribute` by rarity.
 - **Why**: Centralizes orb tuning in data; one combat path for typed orbs via `BlankOrb` hooks; statuses live on victims for multi-source stacking later.
-- **Alternatives**: Keep hard-coded typed orb behavior only — drifts from spreadsheet; scene-authored stats without GameData — no designer sheet; timed status decay — deferred (persist chosen for readability).
-- **Status**: decided (in-codebase)
+- **Status**: decided (in-codebase); statuses: Poison 1 dmg/stack/s; Chill 5% move+attack slow/stack (max 90%); Burn explodes on death; Shock stuns at 10 stacks for 2 s after 50 burst damage. All stacks persist until death.

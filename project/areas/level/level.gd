@@ -3,7 +3,8 @@ extends Node2D
 const GHOST_ORB_SCENE := preload("res://entities/orbs/ghost/ghost_orb.tscn")
 const ROT_ORB_SCENE := preload("res://entities/orbs/rot/rot_orb.tscn")
 const CONDUIT_ORB_SCENE := preload("res://entities/orbs/conduit/conduit_orb.tscn")
-const MANA_CRYSTAL_SCENE := preload("res://items/mana_crystal.tscn")
+const GLYPH_SCENE := preload("res://items/glyph/glyph.tscn")
+const BLANK_ORB_SCENE := preload("res://entities/orbs/blank/blank_orb.tscn")
 const PLAYER_SCENE := preload("res://entities/player/player.tscn")
 const MAX_PLAYERS := 2
 ## Shared i-frames for all living players when the opening volley launches (P2 has no orb instigator grace).
@@ -20,8 +21,12 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 ]
 
 @export var level_music: AudioStream
-## Chance (0–1) that a mana crystal spawns when an enemy dies.
-@export var mana_crystal_drop_chance: float = 0.25
+## Chance (0–1) that a glyph spawns when an enemy dies (fallback when killer has no glyph_drop).
+@export var glyph_drop_chance: float = 0.25
+@export var glyph_rarity_weight_common: float = 70.0
+@export var glyph_rarity_weight_rare: float = 25.0
+@export var glyph_rarity_weight_unique: float = 5.0
+@export var new_orb_cost: float = 20.0
 ## When true, flying orbs bounce off players/enemies; when false, they punch through.
 @export var bounce_orbs_off_entities: bool = false
 
@@ -34,6 +39,7 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 @onready var status_label: Label = %StatusLabel
 @onready var enemy_spawner: EnemySpawner = %EnemySpawner
 @onready var time_slow_overlay: TimeSlowOverlay = %TimeSlowOverlay
+@onready var ritual_menu: RitualMenu = %RitualMenu
 
 var _game_over: bool = false
 var _cleared: bool = false
@@ -59,6 +65,9 @@ func _ready() -> void:
 	_connect_player_destroy(player)
 	_connect_breakable_destroy_signals()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	summoning_circle.ritual_started.connect(_on_ritual_started)
+	ritual_menu.closed.connect(_on_ritual_menu_closed)
+	ritual_menu.new_blank_orb_requested.connect(_on_new_blank_orb_requested)
 
 	await get_tree().physics_frame
 	# P2 is instanced as soon as a second pad is already connected — no join button.
@@ -248,19 +257,47 @@ func _on_enemy_died(enemy: Node = null) -> void:
 		return
 	var drop_pos: Vector2 = (enemy as Node2D).global_position
 	var source: Node = _get_damage_source(enemy)
-	_try_drop_crystal_at(drop_pos, source)
+	_try_drop_glyph_at(drop_pos, source)
 
 
-func _try_drop_crystal_at(pos: Vector2, source: Node = null) -> void:
-	var chance: float = mana_crystal_drop_chance
+func _try_drop_glyph_at(pos: Vector2, source: Node = null) -> void:
+	var chance: float = glyph_drop_chance
 	if source is BlankOrb:
-		chance = (source as BlankOrb).crystal_drop
+		chance = (source as BlankOrb).glyph_drop
+	chance = clampf(chance, 0.0, 1.0)
 	if randf() > chance:
 		return
 
-	var crystal: ManaCrystal = MANA_CRYSTAL_SCENE.instantiate() as ManaCrystal
-	items.add_child(crystal)
-	crystal.global_position = pos
+	var glyph_table: Array = GameData.get_table(&"glyphs")
+	if glyph_table.is_empty():
+		return
+
+	var row: Dictionary = glyph_table[randi() % glyph_table.size()]
+	var glyph_id: StringName = StringName(String(row.get("id", "")))
+	if glyph_id.is_empty():
+		return
+
+	var glyph: Glyph = GLYPH_SCENE.instantiate() as Glyph
+	items.add_child(glyph)
+	glyph.global_position = pos
+	glyph.setup(glyph_id, _roll_glyph_rarity())
+
+
+func _roll_glyph_rarity() -> Glyph.Rarity:
+	var total: float = (
+		glyph_rarity_weight_common
+		+ glyph_rarity_weight_rare
+		+ glyph_rarity_weight_unique
+	)
+	if total <= 0.0:
+		return Glyph.Rarity.COMMON
+	var roll: float = randf() * total
+	if roll < glyph_rarity_weight_common:
+		return Glyph.Rarity.COMMON
+	roll -= glyph_rarity_weight_common
+	if roll < glyph_rarity_weight_rare:
+		return Glyph.Rarity.RARE
+	return Glyph.Rarity.UNIQUE
 
 
 func _get_damage_source(entity: Node) -> Node:
@@ -310,7 +347,7 @@ func _on_breakable_destroyed(node: Node = null) -> void:
 		return
 	var drop_pos: Vector2 = (node as Node2D).global_position if node is Node2D else Vector2.ZERO
 	var source: Node = _get_damage_source(node)
-	_try_drop_crystal_at(drop_pos, source)
+	_try_drop_glyph_at(drop_pos, source)
 
 
 func _on_rebake_timer_timeout() -> void:
@@ -328,7 +365,7 @@ func _on_player_died(node: Node = null) -> void:
 	if node != null and is_instance_valid(node):
 		downed_index = int(node.get("player_index"))
 
-	_drop_carried_crystal_on_death(node)
+	_drop_carried_item_on_death(node)
 
 	# DestroyComponent emits before queue_free; count remaining after this frame.
 	await get_tree().process_frame
@@ -349,20 +386,48 @@ func _on_player_died(node: Node = null) -> void:
 	status_label.text = "You died. Press R to restart"
 
 
-func _drop_carried_crystal_on_death(dying_player: Node = null) -> void:
+func _drop_carried_item_on_death(dying_player: Node = null) -> void:
 	var p: Node = dying_player if dying_player != null and is_instance_valid(dying_player) else player
 	if p == null or not is_instance_valid(p):
 		return
-	if not p.has_method("get_carried_crystal"):
+	if not p.has_method("get_carried_item"):
 		return
-	var crystal: ManaCrystal = p.get_carried_crystal()
-	if crystal == null or not is_instance_valid(crystal):
+	var item: Glyph = p.get_carried_item()
+	if item == null or not is_instance_valid(item):
 		return
 	var drop_pos: Vector2 = (p as Node2D).global_position if p is Node2D else player.global_position
-	if not crystal.throw_toward(Vector2.DOWN, items):
+	if not item.throw_toward(Vector2.DOWN, items):
 		return
-	if p.has_method("clear_carried_crystal"):
-		p.clear_carried_crystal(crystal)
-	crystal.global_position = drop_pos
-	crystal.linear_velocity = Vector2.ZERO
-	crystal.settle_on_ground()
+	if p.has_method("clear_carried_item"):
+		p.clear_carried_item(item)
+	item.global_position = drop_pos
+	item.linear_velocity = Vector2.ZERO
+	item.settle_on_ground()
+
+
+func _on_ritual_started(orb: BlankOrb) -> void:
+	if _game_over or _cleared:
+		return
+	time_slow_overlay.end()
+	get_tree().paused = true
+	ritual_menu.open(orb, summoning_circle, new_orb_cost)
+
+
+func _on_ritual_menu_closed() -> void:
+	get_tree().paused = false
+	if summoning_circle != null and is_instance_valid(summoning_circle):
+		summoning_circle.release_orb()
+
+
+func _on_new_blank_orb_requested() -> void:
+	if _game_over or _cleared:
+		return
+	_spawn_blank_orb_at_circle()
+
+
+func _spawn_blank_orb_at_circle() -> void:
+	var orb: BlankOrb = BLANK_ORB_SCENE.instantiate() as BlankOrb
+	add_child(orb)
+	orb.global_position = summoning_circle.get_launch_origin()
+	_connect_orb_signals(orb)
+	orb.begin_flight(Vector2.from_angle(randf() * TAU), player)

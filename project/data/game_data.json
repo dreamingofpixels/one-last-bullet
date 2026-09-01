@@ -5,6 +5,7 @@
 	  "name": "Coal",
 	  "desc": "Burn on enemy hit",
 	  "element": "Fire",
+	  "attribute": "burn",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
 	  "rarity_unique": 3.0
@@ -14,15 +15,17 @@
 	  "name": "Fury",
 	  "desc": "Damage",
 	  "element": "Fire",
-	  "rarity_common": 0.1,
-	  "rarity_rare": 0.2,
-	  "rarity_unique": 0.3
+	  "attribute": "damage",
+	  "rarity_common": 5.0,
+	  "rarity_rare": 10.0,
+	  "rarity_unique": 15.0
 	},
 	{
 	  "id": "blast",
 	  "name": "Blast",
 	  "desc": "On hit, that % of the damage also hits nearby enemies",
 	  "element": "Fire",
+	  "attribute": "splash",
 	  "rarity_common": 0.05,
 	  "rarity_rare": 0.1,
 	  "rarity_unique": 0.15
@@ -32,6 +35,7 @@
 	  "name": "Rime",
 	  "desc": "Chill enemy on hit",
 	  "element": "Water",
+	  "attribute": "chill",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
 	  "rarity_unique": 3.0
@@ -41,24 +45,27 @@
 	  "name": "Soft",
 	  "desc": "This orb deals less damage to players",
 	  "element": "Water",
-	  "rarity_common": 0.2,
-	  "rarity_rare": 0.4,
-	  "rarity_unique": 0.6
+	  "attribute": "self_damage",
+	  "rarity_common": -10.0,
+	  "rarity_rare": -20.0,
+	  "rarity_unique": -30.0
 	},
 	{
 	  "id": "bounty",
 	  "name": "Bounty",
-	  "desc": "Mana drop chance from enemies",
+	  "desc": "Glyph drop chance from enemies",
 	  "element": "Water",
-	  "rarity_common": 1.0,
-	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0
+	  "attribute": "glyph_drop",
+	  "rarity_common": 0.01,
+	  "rarity_rare": 0.02,
+	  "rarity_unique": 0.03
 	},
 	{
 	  "id": "static",
 	  "name": "Static",
 	  "desc": "Shock on enemy hit",
 	  "element": "Air",
+	  "attribute": "shock",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
 	  "rarity_unique": 3.0
@@ -68,6 +75,7 @@
 	  "name": "Shear",
 	  "desc": "Critical chance",
 	  "element": "Air",
+	  "attribute": "crit_chance",
 	  "rarity_common": 0.01,
 	  "rarity_rare": 0.02,
 	  "rarity_unique": 0.03
@@ -77,15 +85,17 @@
 	  "name": "Drag",
 	  "desc": "Decreases speed",
 	  "element": "Air",
-	  "rarity_common": 0.1,
-	  "rarity_rare": 0.2,
-	  "rarity_unique": 0.3
+	  "attribute": "speed",
+	  "rarity_common": -10.0,
+	  "rarity_rare": -20.0,
+	  "rarity_unique": -30.0
 	},
 	{
 	  "id": "blight",
 	  "name": "Blight",
 	  "desc": "Poison on enemy hit",
 	  "element": "Earth",
+	  "attribute": "poison",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
 	  "rarity_unique": 3.0
@@ -95,15 +105,17 @@
 	  "name": "Dense",
 	  "desc": "Increases weight",
 	  "element": "Earth",
-	  "rarity_common": 0.2,
-	  "rarity_rare": 0.3,
-	  "rarity_unique": 0.4
+	  "attribute": "weight",
+	  "rarity_common": 1.0,
+	  "rarity_rare": 2.0,
+	  "rarity_unique": 3.0
 	},
 	{
 	  "id": "crush",
 	  "name": "Crush",
 	  "desc": "Critical damage",
 	  "element": "Earth",
+	  "attribute": "crit_damage",
 	  "rarity_common": 0.01,
 	  "rarity_rare": 0.02,
 	  "rarity_unique": 0.03
@@ -209,7 +221,7 @@
 	  "weight": 5.0,
 	  "crit_chance": 0.01,
 	  "crit_damage": 2.0,
-	  "crystal_drop": 0.1,
+	  "glyph_drop": 0.1,
 	  "burn": 0,
 	  "chill": 0,
 	  "shock": 0,
@@ -229,7 +241,7 @@
 	  "weight": 5.0,
 	  "crit_chance": 0.01,
 	  "crit_damage": 2.0,
-	  "crystal_drop": 0.1,
+	  "glyph_drop": 0.1,
 	  "burn": 0,
 	  "chill": 0,
 	  "shock": 3,
@@ -249,7 +261,7 @@
 	  "weight": 7.0,
 	  "crit_chance": 0.01,
 	  "crit_damage": 2.0,
-	  "crystal_drop": 0.1,
+	  "glyph_drop": 0.1,
 	  "burn": 0,
 	  "chill": 0,
 	  "shock": 0,
@@ -269,7 +281,7 @@
 	  "weight": 2.0,
 	  "crit_chance": 0.01,
 	  "crit_damage": 2.0,
-	  "crystal_drop": 0.1,
+	  "glyph_drop": 0.1,
 	  "burn": 0,
 	  "chill": 0,
 	  "shock": 0,

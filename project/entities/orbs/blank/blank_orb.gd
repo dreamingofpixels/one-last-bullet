@@ -34,11 +34,21 @@ static var bounce_off_entities: bool = false
 @export var weight: float = 10.0
 @export var crit_chance: float = 0.01
 @export var crit_damage: float = 2.0
-@export var crystal_drop: float = 0.1
+@export var glyph_drop: float = 0.1
 @export var burn: int = 0
 @export var chill: int = 0
 @export var shock: int = 0
 @export var poison: int = 0
+@export var glyph_slots: int = 3
+
+const GLYPH_FLOAT_ATTRIBUTES: Array[StringName] = [
+	&"damage", &"self_damage", &"splash", &"speed",
+	&"weight", &"crit_chance", &"crit_damage", &"glyph_drop",
+]
+const GLYPH_INT_ATTRIBUTES: Array[StringName] = [&"burn", &"chill", &"shock", &"poison"]
+const CIRCLE_CAPTURE_MIN_DURATION := 0.12
+
+var socketed_glyphs: Array[Dictionary] = []
 @export var max_speed: float = 1500.0
 @export var player_grace_seconds: float = 1.0
 ## Resting sprite modulate when not in post-launch grace (typed orbs tint here).
@@ -93,8 +103,8 @@ var _stall_ticks: int = 0
 var _tether_damage_frame: int = -1
 var _tether_damaged_ids: Dictionary = {}
 var _grace_exception_body: CollisionObject2D = null
-var _resolved_hit_cache: Dictionary = {}
-var _resolved_hit_frame: int = -1
+var _circle_captured: bool = false
+var _capture_tween: Tween
 
 
 func _ready() -> void:
@@ -414,7 +424,124 @@ func clear_redirect_preview(by: Node = null) -> void:
 
 
 func is_flying() -> bool:
-	return state == OrbState.FLYING
+	return state == OrbState.FLYING and not _circle_captured
+
+
+func get_display_name() -> String:
+	var row: Variant = GameData.get_row(&"orbs", orb_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return String(orb_id)
+	return String((row as Dictionary).get("name", orb_id))
+
+
+func get_stat_snapshot() -> Dictionary:
+	return {
+		"damage": damage,
+		"self_damage": self_damage,
+		"splash": splash,
+		"speed": speed,
+		"weight": weight,
+		"crit_chance": crit_chance,
+		"crit_damage": crit_damage,
+		"glyph_drop": glyph_drop,
+		"burn": burn,
+		"chill": chill,
+		"shock": shock,
+		"poison": poison,
+	}
+
+
+func get_open_glyph_slots() -> int:
+	return maxi(glyph_slots - socketed_glyphs.size(), 0)
+
+
+func apply_glyph(id: StringName, rarity: int) -> bool:
+	if socketed_glyphs.size() >= glyph_slots:
+		return false
+
+	var row: Variant = GameData.get_row(&"glyphs", id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return false
+
+	var data: Dictionary = row
+	var attr: StringName = StringName(String(data.get("attribute", "")))
+	if attr.is_empty():
+		return false
+
+	var value: float = 0.0
+	match rarity:
+		1: # Glyph.Rarity.RARE
+			value = float(data.get("rarity_rare", 0.0))
+		2: # Glyph.Rarity.UNIQUE
+			value = float(data.get("rarity_unique", 0.0))
+		_:
+			value = float(data.get("rarity_common", 0.0))
+
+	if not _apply_glyph_attribute(attr, value):
+		return false
+
+	socketed_glyphs.append({"id": String(id), "rarity": rarity})
+	return true
+
+
+func _apply_glyph_attribute(attr: StringName, value: float) -> bool:
+	if attr in GLYPH_FLOAT_ATTRIBUTES:
+		var current: float = float(get(String(attr)))
+		var next: float = current + value
+		if attr in [&"splash", &"crit_chance", &"glyph_drop"]:
+			next = clampf(next, 0.0, 1.0)
+		elif attr in [&"damage", &"self_damage", &"speed", &"weight"]:
+			next = maxf(next, 0.0)
+		set(String(attr), next)
+		_sync_damage_component()
+		return true
+	if attr in GLYPH_INT_ATTRIBUTES:
+		var current_int: int = int(get(String(attr)))
+		set(String(attr), current_int + int(value))
+		return true
+	return false
+
+
+func begin_circle_capture(center: Vector2, suck_speed: float, on_finished: Callable) -> void:
+	if state != OrbState.FLYING or _circle_captured:
+		return
+
+	_circle_captured = true
+	freeze = true
+	linear_velocity = Vector2.ZERO
+	hitbox_component.monitoring = false
+	trail_particles.emitting = false
+	clear_redirect_preview()
+	set_in_focus(false)
+	_focus_requests.clear()
+	orb_in_focus.visible = false
+
+	if _capture_tween != null and _capture_tween.is_valid():
+		_capture_tween.kill()
+
+	var distance: float = global_position.distance_to(center)
+	var duration: float = maxf(CIRCLE_CAPTURE_MIN_DURATION, distance / maxf(suck_speed, 1.0))
+	_capture_tween = create_tween()
+	_capture_tween.set_trans(Tween.TRANS_CUBIC)
+	_capture_tween.set_ease(Tween.EASE_IN)
+	_capture_tween.tween_property(self, "global_position", center, duration)
+	_capture_tween.tween_callback(func() -> void:
+		_capture_tween = null
+		if on_finished.is_valid():
+			on_finished.call()
+	)
+
+
+func release_from_circle(direction: Vector2) -> void:
+	_circle_captured = false
+	if _capture_tween != null and _capture_tween.is_valid():
+		_capture_tween.kill()
+		_capture_tween = null
+
+	var exit_dir: Vector2 = direction
+	if exit_dir.length_squared() < 0.0001:
+		exit_dir = Vector2.RIGHT
+	begin_flight(exit_dir, null)
 
 
 func is_tethered() -> bool:
@@ -1014,8 +1141,8 @@ func _load_stats_from_gamedata() -> void:
 		crit_chance = float(data["crit_chance"])
 	if data.has("crit_damage"):
 		crit_damage = float(data["crit_damage"])
-	if data.has("crystal_drop"):
-		crystal_drop = float(data["crystal_drop"])
+	if data.has("glyph_drop"):
+		glyph_drop = float(data["glyph_drop"])
 	if data.has("burn"):
 		burn = int(data["burn"])
 	if data.has("chill"):

@@ -44,7 +44,7 @@ func handle_input(event: InputEvent) -> void:
 			return
 		if owner.orb_tether_component.is_tethering():
 			return
-		if owner.has_method("try_throw_crystal") and owner.try_throw_crystal():
+		if owner.has_method("try_throw_item") and owner.try_throw_item():
 			return
 		if not owner.attack_component.can_attack():
 			return

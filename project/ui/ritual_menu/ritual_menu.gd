@@ -10,7 +10,6 @@ const STAT_KEYS: Array[String] = [
 	"burn", "chill", "shock", "poison",
 ]
 
-@onready var backdrop: ColorRect = %Backdrop
 @onready var orb_name_label: Label = %OrbNameLabel
 @onready var stats_container: VBoxContainer = %StatsContainer
 @onready var slots_container: HBoxContainer = %SlotsContainer
@@ -73,7 +72,7 @@ func _refresh_stats() -> void:
 	for key in STAT_KEYS:
 		var row := HBoxContainer.new()
 		var name_label := Label.new()
-		name_label.text = key
+		name_label.text = _stat_display_name(key)
 		name_label.custom_minimum_size = Vector2(90, 0)
 		var value_label := Label.new()
 		var val: Variant = stats.get(key, 0)
@@ -151,11 +150,11 @@ func _refresh_inventory() -> void:
 		row.add_child(icon)
 
 		var info := Label.new()
-		info.text = "%s (%s) %s %+.2g" % [
+		info.text = "%s (%s) %s %s" % [
 			display_name,
 			Glyph.rarity_to_string(rarity),
-			attr,
-			value,
+			_stat_display_name(attr),
+			_format_stat_bonus(attr, value),
 		]
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(info)
@@ -174,6 +173,18 @@ func _refresh_inventory() -> void:
 		row.add_child(discard_btn)
 
 		inventory_container.add_child(row)
+
+
+func _stat_display_name(key: String) -> String:
+	return key.capitalize()
+
+
+func _format_stat_bonus(attr: String, value: float) -> String:
+	if attr in ["crit_chance", "splash", "glyph_drop"]:
+		var pct: int = int(round(value * 100.0))
+		return "%s%d%%" % ["+" if pct >= 0 else "", pct]
+	var snapped: float = snappedf(value, 0.01)
+	return "%s%s" % ["+" if snapped >= 0.0 else "", str(snapped)]
 
 
 func _texture_for_glyph_id(glyph_id: StringName) -> Texture2D:

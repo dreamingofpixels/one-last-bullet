@@ -35,11 +35,11 @@ var _redirect_preview_orb: RigidBody2D = null
 
 func _ready() -> void:
 	z_index = 10
-	if owner != null and not owner.tree_exiting.is_connected(_on_owner_exiting):
-		owner.tree_exiting.connect(_on_owner_exiting)
+	if not tree_exiting.is_connected(_on_tree_exiting):
+		tree_exiting.connect(_on_tree_exiting)
 
 
-func _on_owner_exiting() -> void:
+func _on_tree_exiting() -> void:
 	_clear_redirect_preview()
 	_clear_this_player_focus()
 
@@ -47,7 +47,7 @@ func _on_owner_exiting() -> void:
 func _clear_this_player_focus() -> void:
 	if owner == null:
 		return
-	var tree := get_tree()
+	var tree: SceneTree = get_tree() if is_inside_tree() else Engine.get_main_loop() as SceneTree
 	if tree == null:
 		return
 	for node in tree.get_nodes_in_group("orb"):

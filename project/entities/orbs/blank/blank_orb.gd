@@ -156,7 +156,7 @@ static func set_bounce_off_entities(value: bool) -> void:
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
-	if state != OrbState.FLYING:
+	if state != OrbState.FLYING or _circle_captured:
 		return
 	if aim_direction.length_squared() < 0.0001:
 		aim_direction = Vector2.RIGHT
@@ -189,6 +189,9 @@ func _physics_process(delta: float) -> void:
 
 	match state:
 		OrbState.FLYING:
+			if _circle_captured:
+				linear_velocity = Vector2.ZERO
+				return
 			# Keep constant speed; direction is owned by aim_direction / _integrate_forces.
 			if aim_direction.length_squared() < 0.0001:
 				aim_direction = Vector2.RIGHT
@@ -528,14 +531,23 @@ func begin_circle_capture(center: Vector2, suck_speed: float, on_finished: Calla
 		return
 
 	_circle_captured = true
-	freeze = true
 	linear_velocity = Vector2.ZERO
-	hitbox_component.monitoring = false
 	trail_particles.emitting = false
 	clear_redirect_preview()
 	set_in_focus(false)
 	_focus_requests.clear()
 	orb_in_focus.visible = false
+	# DepositArea body/area_entered runs while physics queries flush; freeze and
+	# Area2D monitoring cannot change until that flush finishes.
+	call_deferred("_begin_circle_capture_deferred", center, suck_speed, on_finished)
+
+
+func _begin_circle_capture_deferred(center: Vector2, suck_speed: float, on_finished: Callable) -> void:
+	if not is_inside_tree() or not _circle_captured:
+		return
+
+	freeze = true
+	hitbox_component.monitoring = false
 
 	if _capture_tween != null and _capture_tween.is_valid():
 		_capture_tween.kill()
@@ -950,7 +962,7 @@ func _apply_heading() -> void:
 func _update_trail() -> void:
 	var moving := (
 		state == OrbState.TETHERED
-		or (state == OrbState.FLYING and not freeze)
+		or (state == OrbState.FLYING and not freeze and not _circle_captured)
 	)
 	trail_particles.emitting = moving
 	if not moving:

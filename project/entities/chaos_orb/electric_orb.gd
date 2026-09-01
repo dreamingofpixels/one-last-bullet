@@ -31,7 +31,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_current() -> void:
-	var player_node: Node2D = _find_closest_player()
+	var player_node: Node2D = Players.closest_to(get_tree(), global_position)
 	if player_node == null:
 		_disable_current()
 		return
@@ -44,20 +44,6 @@ func _update_current() -> void:
 
 	_enable_current(player_node.global_position)
 	_poll_current_victims()
-
-
-func _find_closest_player() -> Node2D:
-	var closest: Node2D = null
-	var best_dist_sq: float = INF
-	for node in get_tree().get_nodes_in_group("player"):
-		if not (node is Node2D) or not is_instance_valid(node):
-			continue
-		var candidate: Node2D = node as Node2D
-		var dist_sq: float = global_position.distance_squared_to(candidate.global_position)
-		if dist_sq < best_dist_sq:
-			best_dist_sq = dist_sq
-			closest = candidate
-	return closest
 
 
 func _enable_current(player_pos: Vector2) -> void:

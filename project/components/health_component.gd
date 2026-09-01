@@ -31,6 +31,16 @@ func is_invulnerable() -> bool:
 	return Time.get_ticks_msec() < _invulnerable_until_msec
 
 
+## Grant gameplay i-frames for `seconds` without dealing damage (e.g. co-op opening volley).
+func start_invulnerability(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	_invulnerable_until_msec = maxi(
+		_invulnerable_until_msec,
+		Time.get_ticks_msec() + int(seconds * 1000.0)
+	)
+
+
 func take_damage(amount: float, kind: DamageKind = DamageKind.STANDARD) -> bool:
 	if is_invulnerable():
 		return false

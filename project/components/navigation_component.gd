@@ -4,12 +4,17 @@ class_name NavigationComponent extends NavigationAgent2D
 @export var knockback_component: KnockbackComponent
 @export var target_group: String = "player"
 @export var repath_interval: float = 0.1
+## How often to re-pick the nearest player (co-op). Separate from path refresh.
+@export var retarget_interval: float = 0.5
+## Prefer keeping the current target unless another player is this many px closer.
+@export var retarget_hysteresis: float = 32.0
 @export var stuck_speed_threshold: float = 8.0
 @export var stuck_distance_threshold: float = 3.0
 @export var stuck_timeout: float = 0.25
 
 var _target: Node2D = null
 var _repath_cooldown: float = 0.0
+var _retarget_cooldown: float = 0.0
 var _stuck_anchor_position: Vector2 = Vector2.ZERO
 var _stuck_time: float = 0.0
 var _chasing: bool = true
@@ -21,6 +26,7 @@ func set_chasing(enabled: bool) -> void:
 	set_physics_process(enabled)
 	if enabled:
 		avoidance_enabled = _saved_avoidance
+		_retarget_cooldown = 0.0
 		_acquire_target()
 	else:
 		_saved_avoidance = avoidance_enabled
@@ -55,8 +61,12 @@ func _physics_process(delta: float) -> void:
 		_reset_stuck_state(body.global_position)
 		return
 
-	if not is_instance_valid(_target):
+	_retarget_cooldown -= delta
+	if not is_instance_valid(_target) or _retarget_cooldown <= 0.0:
+		_retarget_cooldown = retarget_interval
 		_acquire_target()
+
+	if not is_instance_valid(_target):
 		movement_component.stop()
 		_reset_stuck_state(body.global_position)
 		return
@@ -114,12 +124,32 @@ func _on_velocity_computed(safe_velocity: Vector2) -> void:
 
 
 func _acquire_target() -> void:
-	var targets := get_tree().get_nodes_in_group(target_group)
-	if targets.is_empty():
+	var body := owner as CharacterBody2D
+	var origin: Vector2 = body.global_position
+	var closest: Node2D = null
+	var best_dist: float = INF
+
+	for node in get_tree().get_nodes_in_group(target_group):
+		if not (node is Node2D) or not is_instance_valid(node):
+			continue
+		var candidate: Node2D = node as Node2D
+		var dist: float = origin.distance_to(candidate.global_position)
+		if dist < best_dist:
+			best_dist = dist
+			closest = candidate
+
+	if closest == null:
 		_target = null
 		return
 
-	_target = targets[0] as Node2D
+	# Hysteresis: keep current target unless another is meaningfully closer.
+	if is_instance_valid(_target) and _target != closest:
+		var current_dist: float = origin.distance_to(_target.global_position)
+		if best_dist + retarget_hysteresis >= current_dist:
+			_repath_cooldown = 0.0
+			return
+
+	_target = closest
 	_repath_cooldown = 0.0
 
 

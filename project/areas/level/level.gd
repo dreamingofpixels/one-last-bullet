@@ -4,7 +4,21 @@ const SHADOW_ORB_SCENE := preload("res://entities/chaos_orb/shadow_orb.tscn")
 const POISON_ORB_SCENE := preload("res://entities/chaos_orb/poison_orb.tscn")
 const ELECTRIC_ORB_SCENE := preload("res://entities/chaos_orb/electric_orb.tscn")
 const MANA_CRYSTAL_SCENE := preload("res://items/mana_crystal.tscn")
+const PLAYER_SCENE := preload("res://entities/player/player.tscn")
 const OPENING_ORB_SPEED := 100.0
+const MAX_PLAYERS := 2
+## Shared i-frames for all living players when the opening volley launches (P2 has no orb instigator grace).
+const OPENING_PLAYER_INVULN_SECONDS := 1.0
+const PHYSICS_LAYER_WORLD := 1
+const P2_SPAWN_OFFSETS: Array[Vector2] = [
+	Vector2(40.0, 0.0),
+	Vector2(-40.0, 0.0),
+	Vector2(0.0, -40.0),
+	Vector2(40.0, -40.0),
+	Vector2(-40.0, -40.0),
+	Vector2(56.0, 0.0),
+	Vector2(-56.0, 0.0),
+]
 
 @export var level_music: AudioStream
 ## Chance (0–1) that a mana crystal spawns when an enemy dies.
@@ -13,7 +27,8 @@ const OPENING_ORB_SPEED := 100.0
 @export var bounce_orbs_off_entities: bool = false
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
-@onready var player: CharacterBody2D = %Player
+@onready var players_root: Node2D = %Players
+@onready var player: CharacterBody2D = %Player1
 @onready var summoning_circle: SummoningCircle = %SummoningCircle
 @onready var items: Node2D = %Items
 @onready var rebake_timer: Timer = %RebakeTimer
@@ -24,6 +39,8 @@ const OPENING_ORB_SPEED := 100.0
 var _game_over: bool = false
 var _cleared: bool = false
 var _opening_orbs_spawned: bool = false
+var _level_intro_done: bool = false
+var _p2_spawn_shape: CircleShape2D
 
 
 func _ready() -> void:
@@ -40,17 +57,19 @@ func _ready() -> void:
 	enemy_spawner.all_cleared.connect(_on_all_cleared)
 	enemy_spawner.enemy_died.connect(_on_enemy_died)
 
-	var player_destroy: DestroyComponent = player.COMPONENTS.get(DestroyComponent)
-	if player_destroy:
-		player_destroy.destroyed.connect(_on_player_died)
-
+	_connect_player_destroy(player)
 	_connect_breakable_destroy_signals()
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+
 	await get_tree().physics_frame
+	# P2 is instanced as soon as a second pad is already connected — no join button.
+	_try_add_player_2()
 	navigation_region.bake_navigation_polygon(true)
 	await navigation_region.bake_finished
 	await _await_navigation_ready()
 	enemy_spawner.start()
-	await player.begin_level()
+	await _assemble_all_players()
+	_level_intro_done = true
 	_launch_opening_orbs()
 	status_label.text = "Clear the room"
 
@@ -94,6 +113,104 @@ func _connect_breakable_destroy_signals() -> void:
 			destroy_component.destroyed.connect(_on_breakable_destroyed)
 
 
+func _connect_player_destroy(p: Node) -> void:
+	if p == null or not is_instance_valid(p):
+		return
+	var components = p.get("COMPONENTS")
+	if components == null:
+		return
+	var player_destroy: DestroyComponent = components.get(DestroyComponent)
+	if player_destroy and not player_destroy.destroyed.is_connected(_on_player_died):
+		player_destroy.destroyed.connect(_on_player_died)
+
+
+func _has_second_controller() -> bool:
+	return Input.get_connected_joypads().size() >= 2
+
+
+func _on_joy_connection_changed(_device: int, connected: bool) -> void:
+	if not connected or not _has_second_controller():
+		return
+	var p2: CharacterBody2D = _try_add_player_2()
+	if p2 == null:
+		return
+	# Hot-join after intro: assemble the new player. During intro they are already in the roster.
+	if _level_intro_done:
+		await p2.begin_level()
+		if not _game_over and not _cleared:
+			status_label.text = "Clear the room"
+
+
+func _try_add_player_2() -> CharacterBody2D:
+	if _game_over or _cleared:
+		return null
+	if not _has_second_controller():
+		return null
+	if Players.count(get_tree()) >= MAX_PLAYERS:
+		return null
+	if _has_player_index(2):
+		return null
+
+	var p: CharacterBody2D = PLAYER_SCENE.instantiate() as CharacterBody2D
+	p.player_index = 2
+	players_root.add_child(p)
+	p.global_position = _pick_join_spawn_position()
+	_connect_player_destroy(p)
+	return p
+
+
+func _assemble_all_players() -> void:
+	var to_assemble: Array[Node2D] = []
+	for p in Players.all(get_tree()):
+		if p.has_method("begin_level"):
+			to_assemble.append(p)
+	if to_assemble.is_empty():
+		return
+
+	# Godot forbids calling async funcs without await; kick each begin_level off via a
+	# one-shot process_frame so both players assemble in the same intro beat.
+	var remaining: Array = [to_assemble.size()]
+	for p in to_assemble:
+		var player_ref: Node2D = p
+		var start_assemble := func() -> void:
+			await player_ref.begin_level()
+			remaining[0] -= 1
+		get_tree().process_frame.connect(start_assemble, CONNECT_ONE_SHOT)
+
+	while remaining[0] > 0:
+		await get_tree().process_frame
+
+
+func _has_player_index(index: int) -> bool:
+	for p in Players.all(get_tree()):
+		if p.get("player_index") == index:
+			return true
+	return false
+
+
+func _pick_join_spawn_position() -> Vector2:
+	var anchor: Vector2 = player.global_position
+	for offset in P2_SPAWN_OFFSETS:
+		var candidate: Vector2 = anchor + offset
+		if _is_spawn_physics_clear(candidate):
+			return candidate
+	return anchor + P2_SPAWN_OFFSETS[0]
+
+
+func _is_spawn_physics_clear(pos: Vector2) -> bool:
+	if _p2_spawn_shape == null:
+		_p2_spawn_shape = CircleShape2D.new()
+		_p2_spawn_shape.radius = 8.0
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = _p2_spawn_shape
+	params.transform = Transform2D(0.0, pos)
+	params.collision_mask = PHYSICS_LAYER_WORLD
+	params.collide_with_bodies = true
+	params.collide_with_areas = false
+	var hits: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(params, 1)
+	return hits.is_empty()
+
+
 func _launch_opening_orbs() -> void:
 	if _opening_orbs_spawned:
 		return
@@ -112,6 +229,18 @@ func _launch_opening_orbs() -> void:
 		orb.speed = OPENING_ORB_SPEED
 		_connect_orb_signals(orb)
 		orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
+
+	_grant_opening_invulnerability()
+
+
+func _grant_opening_invulnerability() -> void:
+	for p in Players.all(get_tree()):
+		var components = p.get("COMPONENTS")
+		if components == null:
+			continue
+		var health: HealthComponent = components.get(HealthComponent)
+		if health:
+			health.start_invulnerability(OPENING_PLAYER_INVULN_SECONDS)
 
 
 func _on_enemy_died(enemy: Node = null) -> void:
@@ -174,26 +303,49 @@ func _on_rebake_timer_timeout() -> void:
 	navigation_region.bake_navigation_polygon(true)
 
 
-func _on_player_died(_node: Node = null) -> void:
+func _on_player_died(node: Node = null) -> void:
 	if _cleared:
 		return
+
+	var downed_index: int = 0
+	if node != null and is_instance_valid(node):
+		downed_index = int(node.get("player_index"))
+
+	_drop_carried_crystal_on_death(node)
+
+	# DestroyComponent emits before queue_free; count remaining after this frame.
+	await get_tree().process_frame
+	if _cleared or _game_over:
+		return
+
+	var remaining: int = Players.count(get_tree())
+	if remaining > 0:
+		if downed_index > 0:
+			status_label.text = "P%d down — %d left" % [downed_index, remaining]
+		else:
+			status_label.text = "Player down — %d left" % remaining
+		return
+
 	_game_over = true
 	enemy_spawner.stop()
 	time_slow_overlay.end()
 	status_label.text = "You died. Press R to restart"
-	_drop_carried_crystal_on_death()
 
 
-func _drop_carried_crystal_on_death() -> void:
-	if not player.has_method("get_carried_crystal"):
+func _drop_carried_crystal_on_death(dying_player: Node = null) -> void:
+	var p: Node = dying_player if dying_player != null and is_instance_valid(dying_player) else player
+	if p == null or not is_instance_valid(p):
 		return
-	var crystal: ManaCrystal = player.get_carried_crystal()
+	if not p.has_method("get_carried_crystal"):
+		return
+	var crystal: ManaCrystal = p.get_carried_crystal()
 	if crystal == null or not is_instance_valid(crystal):
 		return
-	var drop_pos: Vector2 = player.global_position
+	var drop_pos: Vector2 = (p as Node2D).global_position if p is Node2D else player.global_position
 	if not crystal.throw_toward(Vector2.DOWN, items):
 		return
-	player.clear_carried_crystal(crystal)
+	if p.has_method("clear_carried_crystal"):
+		p.clear_carried_crystal(crystal)
 	crystal.global_position = drop_pos
 	crystal.linear_velocity = Vector2.ZERO
 	crystal.settle_on_ground()

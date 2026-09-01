@@ -89,3 +89,8 @@ func is_dash_just_pressed() -> bool:
 	if dash_action.action.is_empty():
 		return false
 	return Input.is_action_just_pressed(dash_action.action)
+
+
+## True when this player aims with the mouse (P1). Gamepad-only players must not use mouse GUI gates.
+func uses_mouse() -> bool:
+	return player_index == 1

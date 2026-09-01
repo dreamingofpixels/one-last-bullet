@@ -77,7 +77,8 @@ func try_throw_crystal() -> bool:
 	if aim.length_squared() < 0.0001:
 		aim = Vector2.RIGHT
 
-	var items_parent: Node = get_parent().get_node("%Items")
+	# Players live under %Players, so Items is on the level (current scene), not our parent.
+	var items_parent: Node = get_tree().current_scene.get_node("%Items")
 
 	var crystal: ManaCrystal = _carried_crystal
 	_carried_crystal = null

@@ -40,7 +40,7 @@ func handle_input(event: InputEvent) -> void:
 			return
 
 	if event.is_action_pressed(controls.attack_action.action):
-		if _is_pointer_over_blocking_gui():
+		if controls.uses_mouse() and _is_pointer_over_blocking_gui():
 			return
 		if owner.orb_tether_component.is_tethering():
 			return

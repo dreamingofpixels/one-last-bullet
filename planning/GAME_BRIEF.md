@@ -23,7 +23,7 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 ## Win / lose
 - **Level win**: all enemies dead.
 - **Run win**: clear 10 levels.
-- **Lose**: player HP reaches 0 from enemy contact or the orb.
+- **Lose**: all players' HP reach 0 from enemy contact or the orb (co-op: one player dying leaves the others playing).
 
 ## The orb of chaos
 - **Design**: enters play at level start from the summoning circle; then travels and bounces freely forever. Speed slow enough to tether but fast enough that avoiding it is a challenge. Speed and damage increase each time you redirect it.
@@ -42,7 +42,7 @@ Dodge your own chaos orb while slinging it at enemies. Risk the floor for vanish
 - **Dash**: Space (keyboard); B button (gamepad)
 - **Aim**: mouse for the keyboard player; right stick for gamepad players
 - **Restart**: R
-- **Co-op**: up to 4 local players supported by the input system; P1 uses keyboard + mouse + gamepad device 0; P2 uses gamepad device 1; P3/P4 action bindings not yet authored in project.godot
+- **Co-op**: up to 4 local players supported by the input system; P1 uses keyboard + mouse + gamepad device 0; **P2 is added automatically** when a second gamepad is connected (no join button) — instances `player.tscn` with `player_index = 2` and assembles in at the same time as P1; mid-level plug-in still hot-joins. P3/P4 action bindings not yet authored in project.godot. Run ends only when **all** players are dead.
 
 ## Stage
 - **Different stages and environments**, with randomized enemies and obstacles (tavern is one possible setting, not the only one).

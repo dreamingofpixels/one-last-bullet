@@ -289,6 +289,20 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Runtime duplication autoload (clone base actions to `_2/_3/_4` at startup) — adds an autoload and makes bindings invisible in Project Settings; plain `InputEvent.device` filtering in every script — more per-script boilerplate.
 - **Status**: decided (in-codebase); P1 + P2 authored; P3/P4 not yet authored
 
+### Hot-join local co-op via joypad connection
+
+- **Decision**: When **two or more** gamepads are connected (`Input.get_connected_joypads().size() >= 2`), `level.gd` instances `player.tscn` with `player_index = 2` immediately (no join button), places it near P1 on a physics-clear offset, and runs `begin_level()` **in parallel** with P1 so both reverse-assemble together. Mid-level plug-in still hot-joins via `Input.joy_connection_changed`. Cap is `MAX_PLAYERS = 2` until `_3`/`_4` actions exist. Scene reload (`R`) rescans pads so P2 returns without a PlayerManager autoload. Opening orb volley still uses P1 as instigator; all living players get `HealthComponent.start_invulnerability(1s)` so P2 is not instantly killed by the circle launch.
+- **Why**: Matches "plug in a second pad and play" arcade co-op; existing `_2` input map and `player_index` export already support it; assembling together keeps the intro beat shared instead of making P2 a late arrival.
+- **Alternatives**: Level-start-only scan — misses mid-session join; press-to-join on Attack/Start — extra UX step; wait until after P1 assembles before spawning P2 — previous, felt like a join prompt; PlayerManager autoload for restart persistence — unnecessary while reload rescans; spawn P2 instantly without assemble — pop-in and free hitbox risk.
+- **Status**: decided (in-codebase); P3/P4 deferred
+
+### Run ends when all players are dead
+
+- **Decision**: `_on_player_died` drops that player's carried crystal and only sets game-over when `Players.count()` reaches 0. A downed player stays out for the rest of the level (no revive). Status label shows "P# down — N left" while survivors remain.
+- **Why**: Co-op should not end the run on the first death; matches local arcade "last player standing" feel without adding a revive system yet.
+- **Alternatives**: Any player dying ends the run (previous single-player behavior) — too harsh for two players; downed/revive by partner — deferred until co-op is proven.
+- **Status**: decided (in-codebase)
+
 ### Main scene is desert level; AudioManager is the first autoload
 - **Decision**: `run/main_scene` is `areas/level/desert.tscn`. Level logic lives on the scene root (`level.gd`). First autoload is `AudioManager` for Music/SFX.
 - **Why**: Prototype is still a single scene; audio needs a global owner before shop/run flow does.

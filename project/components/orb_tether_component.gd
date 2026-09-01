@@ -35,6 +35,27 @@ var _redirect_preview_orb: RigidBody2D = null
 
 func _ready() -> void:
 	z_index = 10
+	if owner != null and not owner.tree_exiting.is_connected(_on_owner_exiting):
+		owner.tree_exiting.connect(_on_owner_exiting)
+
+
+func _on_owner_exiting() -> void:
+	_clear_redirect_preview()
+	_clear_this_player_focus()
+
+
+func _clear_this_player_focus() -> void:
+	if owner == null:
+		return
+	var tree := get_tree()
+	if tree == null:
+		return
+	for node in tree.get_nodes_in_group("orb"):
+		var orb := node as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			continue
+		if orb.has_method("set_focus_requested_by"):
+			orb.set_focus_requested_by(owner, false)
 
 
 func bind_orb(orb: RigidBody2D) -> void:
@@ -66,7 +87,10 @@ func _process(delta: float) -> void:
 			_cancel_channel()
 		else:
 			_channel_elapsed += delta
-			channel_orb.set_in_focus(true)
+			if channel_orb.has_method("set_focus_requested_by"):
+				channel_orb.set_focus_requested_by(owner, true)
+			else:
+				channel_orb.set_in_focus(true)
 			if _channel_elapsed >= remote_tether_hold_duration:
 				_complete_remote_tether(channel_orb)
 			else:
@@ -250,19 +274,23 @@ func _find_closest_pickable_crystal(require_in_focus: bool) -> ManaCrystal:
 
 func _update_focus_overlays() -> void:
 	if not tether_enabled or Time.get_ticks_msec() < _cooldown_until_msec:
-		_clear_all_focus()
+		_clear_this_player_focus()
 		return
 
 	var origin: Vector2 = owner.global_position
 	for node in get_tree().get_nodes_in_group("orb"):
 		var orb := node as RigidBody2D
-		if orb == null or not is_instance_valid(orb) or not orb.has_method("set_in_focus"):
+		if orb == null or not is_instance_valid(orb):
 			continue
 		if not orb.has_method("is_flying") or not orb.is_flying():
-			# Tethered orbs keep focus via their own set_in_focus guard.
+			# Tethered orbs keep focus via their own set_in_focus / tether guard.
 			continue
 		var distance: float = origin.distance_to(orb.global_position)
-		orb.set_in_focus(distance <= focus_radius)
+		var in_range: bool = distance <= focus_radius
+		if orb.has_method("set_focus_requested_by"):
+			orb.set_focus_requested_by(owner, in_range)
+		elif orb.has_method("set_in_focus"):
+			orb.set_in_focus(in_range)
 
 
 func _update_redirect_preview() -> void:
@@ -288,10 +316,10 @@ func _update_redirect_preview() -> void:
 		and _redirect_preview_orb != closest
 		and _redirect_preview_orb.has_method("clear_redirect_preview")
 	):
-		_redirect_preview_orb.clear_redirect_preview()
+		_redirect_preview_orb.clear_redirect_preview(owner)
 
 	_redirect_preview_orb = closest
-	closest.set_redirect_preview(_get_redirect_aim())
+	closest.set_redirect_preview(_get_redirect_aim(), owner)
 
 
 func _clear_redirect_preview() -> void:
@@ -300,15 +328,8 @@ func _clear_redirect_preview() -> void:
 		and is_instance_valid(_redirect_preview_orb)
 		and _redirect_preview_orb.has_method("clear_redirect_preview")
 	):
-		_redirect_preview_orb.clear_redirect_preview()
+		_redirect_preview_orb.clear_redirect_preview(owner)
 	_redirect_preview_orb = null
-
-	# Also clear any stray arrows (e.g. after cooldown cleared all focus earlier).
-	for node in get_tree().get_nodes_in_group("orb"):
-		var orb := node as RigidBody2D
-		if orb == null or not is_instance_valid(orb) or not orb.has_method("clear_redirect_preview"):
-			continue
-		orb.clear_redirect_preview()
 
 
 func _get_redirect_aim() -> Vector2:
@@ -320,13 +341,7 @@ func _get_redirect_aim() -> Vector2:
 
 
 func _clear_all_focus() -> void:
-	for node in get_tree().get_nodes_in_group("orb"):
-		var orb := node as RigidBody2D
-		if orb == null or not is_instance_valid(orb) or not orb.has_method("set_in_focus"):
-			continue
-		if orb.has_method("is_tethered") and orb.is_tethered():
-			continue
-		orb.set_in_focus(false)
+	_clear_this_player_focus()
 
 
 ## Closest flying orb. If require_in_focus, only consider those within focus_radius.

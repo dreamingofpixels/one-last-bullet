@@ -61,6 +61,10 @@ var aim_direction: Vector2 = Vector2.RIGHT
 var _player: Node2D = null
 var _grace_clear_msec: int = 0
 var _in_focus: bool = false
+## Per-player focus requests (instance_id → requester). Co-op: one player leaving range must not clear another's focus.
+var _focus_requests: Dictionary = {}
+## Player currently owning the redirect chevron preview (null = free).
+var _redirect_preview_owner: Node = null
 var _tether_player: Node2D = null
 var _tether_radius: float = 32.0
 var _tether_target_radius: float = 32.0
@@ -317,7 +321,21 @@ func break_tether(exit_velocity: Vector2) -> void:
 	_finish_tether_release(exit_dir, was_opening, _safe_tether_player(), false)
 
 
+## Co-op focus: each player requests independently. Visible while tethered or any valid requester remains.
+func set_focus_requested_by(requester: Node, value: bool) -> void:
+	if requester == null:
+		return
+	var requester_id: int = requester.get_instance_id()
+	if value:
+		_focus_requests[requester_id] = requester
+	else:
+		_focus_requests.erase(requester_id)
+	_refresh_focus_visual()
+
+
+## Clears all requests, then optionally forces focus on (tethered) or off.
 func set_in_focus(value: bool) -> void:
+	_focus_requests.clear()
 	# While tethered the focus indicator stays on regardless of caller requests.
 	if state == OrbState.TETHERED:
 		value = true
@@ -325,11 +343,39 @@ func set_in_focus(value: bool) -> void:
 	orb_in_focus.visible = _in_focus
 
 
+func _refresh_focus_visual() -> void:
+	_prune_focus_requests()
+	if state == OrbState.TETHERED:
+		_in_focus = true
+	else:
+		_in_focus = not _focus_requests.is_empty()
+	orb_in_focus.visible = _in_focus
+
+
+func _prune_focus_requests() -> void:
+	var stale: Array = []
+	for requester_id in _focus_requests:
+		var requester: Node = _focus_requests[requester_id]
+		if requester == null or not is_instance_valid(requester):
+			stale.append(requester_id)
+	for requester_id in stale:
+		_focus_requests.erase(requester_id)
+
+
 ## Show chevrons along `direction` (player aim). Only while flying.
-func set_redirect_preview(direction: Vector2) -> void:
+## `by` claims ownership so co-op players do not fight over rotation; null accepts any (legacy).
+func set_redirect_preview(direction: Vector2, by: Node = null) -> void:
 	if state != OrbState.FLYING:
 		clear_redirect_preview()
 		return
+	if by != null:
+		if (
+			_redirect_preview_owner != null
+			and is_instance_valid(_redirect_preview_owner)
+			and _redirect_preview_owner != by
+		):
+			return
+		_redirect_preview_owner = by
 	var dir: Vector2 = direction.normalized() if direction.length_squared() > 0.0001 else Vector2.RIGHT
 	aim_arrow.rotation = dir.angle()
 	aim_arrow.modulate = base_modulate
@@ -337,7 +383,16 @@ func set_redirect_preview(direction: Vector2) -> void:
 	aim_arrow.queue_redraw()
 
 
-func clear_redirect_preview() -> void:
+## Clear chevrons. With `by`, only clears if that player owns the preview; null always clears (state changes).
+func clear_redirect_preview(by: Node = null) -> void:
+	if by != null:
+		if (
+			_redirect_preview_owner != null
+			and is_instance_valid(_redirect_preview_owner)
+			and _redirect_preview_owner != by
+		):
+			return
+	_redirect_preview_owner = null
 	aim_arrow.visible = false
 
 

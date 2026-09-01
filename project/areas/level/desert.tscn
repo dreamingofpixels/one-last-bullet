@@ -372,7 +372,10 @@ unique_name_in_owner = true
 [node name="ManaCrystal" parent="Items" unique_id=574868470 instance=ExtResource("4_obfif")]
 position = Vector2(488, 200)
 
-[node name="Player" parent="." unique_id=735883009 instance=ExtResource("3_player")]
+[node name="Players" type="Node2D" parent="." unique_id=845202120]
+unique_name_in_owner = true
+
+[node name="Player1" parent="Players" unique_id=735883009 instance=ExtResource("3_player")]
 unique_name_in_owner = true
 position = Vector2(320, 288)
 

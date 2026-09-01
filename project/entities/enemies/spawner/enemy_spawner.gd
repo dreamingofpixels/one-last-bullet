@@ -20,7 +20,7 @@ const SEPARATE_MAX_ITERS := 8
 @export var min_spawn_separation: float = 48.0
 @export var play_rect: Rect2 = Rect2(24.0, 24.0, 592.0, 312.0)
 
-@onready var player: CharacterBody2D = owner.get_node("%Player")
+@onready var player: CharacterBody2D = owner.get_node("%Player1")
 @onready var navigation_region: NavigationRegion2D = owner.get_node("%Navigation")
 @onready var enemies: Node2D = owner.get_node("%Enemies")
 
@@ -148,7 +148,13 @@ func _set_spawn_inert(enemy: CharacterBody2D, inert: bool) -> void:
 
 
 func _pick_spawn_position(collision_shape: CollisionShape2D) -> Vector2:
-	var player_nav_position := _closest_nav_point(player.global_position)
+	var players := Players.all(get_tree())
+	var player_nav_positions: Array[Vector2] = []
+	for p in players:
+		player_nav_positions.append(_closest_nav_point(p.global_position))
+	if player_nav_positions.is_empty():
+		player_nav_positions.append(_closest_nav_point(player.global_position))
+
 	var occupied := _occupied_positions()
 
 	for _attempt in 80:
@@ -156,26 +162,34 @@ func _pick_spawn_position(collision_shape: CollisionShape2D) -> Vector2:
 			randf_range(play_rect.position.x, play_rect.end.x),
 			randf_range(play_rect.position.y, play_rect.end.y)
 		)
-		if pos.distance_to(player.global_position) < min_spawn_distance:
+		if _is_too_close_to_any_player(pos, players):
 			continue
 
-		var nav_pos: Variant = _validated_spawn_position(pos, player_nav_position, collision_shape)
+		var nav_pos: Variant = _validated_spawn_position(pos, player_nav_positions, collision_shape)
 		if nav_pos != null and _is_separated(nav_pos, occupied):
 			return nav_pos
 
 	for candidate in _fallback_candidates():
-		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position, collision_shape)
+		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_positions, collision_shape)
 		if nav_pos != null and _is_separated(nav_pos, occupied):
 			return nav_pos
 
 	for candidate in _fallback_candidates():
-		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_position, collision_shape)
+		var nav_pos: Variant = _validated_spawn_position(candidate, player_nav_positions, collision_shape)
 		if nav_pos != null:
 			return nav_pos
 
-	if _is_physics_clear(player_nav_position, collision_shape):
-		return player_nav_position
-	return player_nav_position
+	var fallback: Vector2 = player_nav_positions[0]
+	if _is_physics_clear(fallback, collision_shape):
+		return fallback
+	return fallback
+
+
+func _is_too_close_to_any_player(pos: Vector2, players: Array[Node2D]) -> bool:
+	for p in players:
+		if pos.distance_to(p.global_position) < min_spawn_distance:
+			return true
+	return false
 
 
 func _fallback_candidates() -> Array[Vector2]:
@@ -191,22 +205,26 @@ func _fallback_candidates() -> Array[Vector2]:
 
 func _validated_spawn_position(
 	candidate: Vector2,
-	player_nav_position: Vector2,
+	player_nav_positions: Array[Vector2],
 	collision_shape: CollisionShape2D
 ) -> Variant:
 	var nav_position := _closest_nav_point(candidate)
 	if nav_position.distance_to(candidate) > SPAWN_NAV_TOLERANCE:
 		return null
-	if nav_position.distance_to(player_nav_position) < min_spawn_distance:
-		return null
 
-	var path := NavigationServer2D.map_get_path(
-		navigation_region.get_navigation_map(),
-		nav_position,
-		player_nav_position,
-		true
-	)
-	if path.size() < 2:
+	for player_nav in player_nav_positions:
+		if nav_position.distance_to(player_nav) < min_spawn_distance:
+			return null
+
+	# Must be able to path to at least one living player.
+	var has_path := false
+	var nav_map := navigation_region.get_navigation_map()
+	for player_nav in player_nav_positions:
+		var path := NavigationServer2D.map_get_path(nav_map, nav_position, player_nav, true)
+		if path.size() >= 2:
+			has_path = true
+			break
+	if not has_path:
 		return null
 	if not _is_physics_clear(nav_position, collision_shape):
 		return null

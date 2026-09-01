@@ -42,7 +42,12 @@ A Final Spell/
     │   ├── audio_manager.gd / .tscn   Autoload: Music/SFX pools + bus helpers
     │   ├── sound_event.gd             SoundEvent Resource (streams, pitch, cooldown)
     │   └── music/                     Level/menu tracks (empty for now)
-    ├── data/                   (empty; upgrades later)
+    ├── data/                   Excel → JSON game data (orbs, glyphs, motion)
+    │   ├── game_data.xlsx      Source workbook (schema sheet + data sheets)
+    │   ├── export_game_data.py / .bat / requirements.txt
+    │   └── game_data.json      Exported runtime data (regenerate via .bat)
+    ├── globals/
+    │   └── game_data.gd        GameData autoload: loads JSON, generic sheet lookup
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
     │   ├── destruction_effect.gd     Spawns detached sprite FX on destroy/die; reverse assemble on spawn
@@ -127,6 +132,7 @@ A Final Spell/
 | Name | Path | Purpose |
 |------|------|---------|
 | `AudioManager` | `res://audio/audio_manager.tscn` | Music A/B crossfade + pooled global/positional SFX on Music/SFX buses |
+| `GameData` | `res://globals/game_data.gd` | `@tool` autoload: loads `res://data/game_data.json`; `get_table(sheet)` / `get_row(sheet, id)` / `has_row(sheet, id)` over exported sheets (`orbs`, `glyphs`, `motion`, …) |
 
 ## Physics layers (from `project/project.godot`)
 
@@ -220,7 +226,10 @@ A Final Spell/
 - Wired events: entity destroyed/damaged, dash, orb bounce (`impact_soft`), begin/release tether, item pickup, mana crystal deposit; attack swing export exists but unassigned
 
 ### Data
-- `project/data/` — reserved for game data (upgrades, enemies, etc.); empty
+- `project/data/game_data.xlsx` — source workbook; `schema` sheet lists column types per data sheet; current sheets: `orbs`, `glyphs`, `motion` (plus unused `objects_OLD` / `input` not in schema)
+- `project/data/export_game_data.py` + `export_game_data.bat` + `requirements.txt` — Excel → JSON export (`openpyxl`); schema types: `string`, `int`, `float`, `boolean`
+- `project/data/game_data.json` — runtime dump; regenerate after editing the xlsx (double-click `.bat` or `python export_game_data.py`)
+- `project/globals/game_data.gd` — `GameData` autoload: `tables` / `tables_by_id` keyed by sheet name; `reload()` re-reads JSON. Combat/shop not wired to rows yet — scene HP/damage unchanged
 
 ---
 

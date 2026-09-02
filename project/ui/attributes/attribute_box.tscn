@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://dyxsux8amgcwk"]
+
+[ext_resource type="Texture2D" uid="uid://85httn27xtw1" path="res://ui/attributes/damage_icon.png" id="1_bxm1u"]
+[ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_2tpu1"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_3ekyw"]
+font = ExtResource("2_2tpu1")
+
+[node name="AttributeBox" type="HBoxContainer" unique_id=558950410]
+anchors_preset = -1
+anchor_right = 0.025
+anchor_bottom = 0.022000002
+offset_bottom = 0.23999786
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DamageIcon" type="TextureRect" parent="." unique_id=184426436]
+custom_minimum_size = Vector2(16, 16)
+custom_maximum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("1_bxm1u")
+
+[node name="DamageLabel" type="Label" parent="." unique_id=1215391375]
+layout_mode = 2
+text = "10.4"
+label_settings = SubResource("LabelSettings_3ekyw")

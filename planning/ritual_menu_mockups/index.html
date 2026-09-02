@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ritual Menu — 20 Layout Mockups</title>
+  <style>
+    :root {
+      --bg: #e8e8e8;
+      --grid: rgba(0,0,0,0.06);
+      --ink: #111;
+      --muted: #666;
+      --panel: #f5f5f5;
+      --border: 2px solid #111;
+      --slot: 36px;
+      --font: "Segoe UI", system-ui, sans-serif;
+      --pixel-font: "Courier New", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #1a1a1a;
+      color: #eee;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    h1 { font-size: 18px; margin-bottom: 8px; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-bottom: 12px; max-width: 1200px;
+    }
+    .toolbar label, .toolbar button, .toolbar select {
+      font-size: 13px; padding: 4px 8px; cursor: pointer;
+    }
+    .toolbar button.active { background: #4a9; color: #fff; border-color: #4a9; }
+    .discovered-checks { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+    .layout-strip {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; max-width: 1200px;
+    }
+    .layout-thumb {
+      width: 96px; height: 54px; border: 2px solid #444; background: #222;
+      cursor: pointer; font-size: 10px; display: flex; align-items: center;
+      justify-content: center; text-align: center; padding: 2px;
+    }
+    .layout-thumb:hover { border-color: #888; }
+    .layout-thumb.active { border-color: #4a9; box-shadow: 0 0 0 1px #4a9; }
+    .preview-wrap { margin-bottom: 24px; }
+    .preview-label { font-size: 13px; color: #aaa; margin-bottom: 6px; }
+    .scale-wrap {
+      transform-origin: top left;
+      transform: scale(1.5);
+      margin-bottom: 200px;
+    }
+    @media (min-width: 1100px) {
+      .scale-wrap { transform: scale(1.75); margin-bottom: 280px; }
+    }
+
+    /* Stage base */
+    .stage {
+      width: 640px; height: 360px; position: relative;
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 16px 16px;
+      color: var(--ink); overflow: hidden;
+      font-size: 11px;
+    }
+    .stage.pixel {
+      --bg: #1a1428;
+      --grid: rgba(120,90,200,0.08);
+      --ink: #e8e0ff;
+      --muted: #9a8ab8;
+      --panel: #2a2240;
+      --border: 2px solid #6a5a9a;
+      font-family: var(--pixel-font);
+      image-rendering: pixelated;
+    }
+    .stage.pixel .panel { background: var(--panel); }
+    .panel {
+      border: var(--border); background: var(--panel); padding: 6px;
+    }
+    .region { position: absolute; }
+    .hidden { display: none !important; }
+
+    /* Shared widgets */
+    .orb-title { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+    .section-label { font-weight: 700; font-size: 10px; margin-bottom: 2px; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 10px; }
+    .stat-row { display: flex; justify-content: space-between; gap: 4px; }
+    .stat-row .bonus { color: #080; font-size: 9px; }
+    .stage.pixel .stat-row .bonus { color: #8f8; }
+    .effects-text { font-size: 10px; color: var(--muted); min-height: 14px; }
+    .motion-text { font-size: 10px; margin-top: 4px; }
+
+    .slots-triangle {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .slots-row { display: flex; gap: 12px; }
+    .glyph-slot, .inv-slot, .recycle-slot {
+      width: var(--slot); height: var(--slot); border: var(--border);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 9px; font-weight: 700; background: #fff;
+      user-select: none;
+    }
+    .stage.pixel .glyph-slot, .stage.pixel .inv-slot, .stage.pixel .recycle-slot {
+      background: #3a3050;
+    }
+    .glyph-slot.empty::after { content: "+"; color: var(--muted); font-size: 16px; }
+    .glyph-slot.filled, .inv-slot.filled { font-size: 8px; text-align: center; line-height: 1.1; }
+    .el-Fire { background: #fdd !important; color: #800; }
+    .el-Water { background: #ddf !important; color: #008; }
+    .el-Air { background: #efe !important; color: #060; }
+    .el-Earth { background: #edc !important; color: #630; }
+    .stage.pixel .el-Fire { background: #522 !important; color: #faa; }
+    .stage.pixel .el-Water { background: #225 !important; color: #aaf; }
+    .stage.pixel .el-Air { background: #252 !important; color: #afa; }
+    .stage.pixel .el-Earth { background: #432 !important; color: #da8; }
+
+    .btn {
+      border: var(--border); background: #fff; padding: 4px 10px;
+      font-size: 10px; cursor: pointer; font-family: inherit;
+    }
+    .stage.pixel .btn { background: #3a3050; color: var(--ink); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { font-weight: 700; }
+    .btn-danger { border-color: #a00; }
+    .mana-badge { font-size: 10px; font-weight: 700; }
+    .close-btn { font-size: 10px; padding: 2px 8px; }
+
+    .outcomes { list-style: none; font-size: 10px; }
+    .outcomes li { padding: 2px 0; display: flex; gap: 6px; align-items: center; }
+    .outcomes .third-el { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #111; font-size: 7px;
+      display: flex; align-items: center; justify-content: center; }
+    .outcome-orb {
+      width: 22px; height: 22px; border-radius: 50%; border: var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 700;
+    }
+    .constellation-node {
+      position: absolute; width: 20px; height: 20px; border-radius: 50%;
+      border: 1px dashed #888; font-size: 7px; display: flex; align-items: center;
+      justify-content: center; color: var(--muted); pointer-events: none;
+    }
+
+    .tooltip {
+      position: absolute; z-index: 20; background: #fff; border: var(--border);
+      padding: 6px; font-size: 9px; max-width: 180px; pointer-events: none;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+    }
+    .stage.pixel .tooltip { background: #2a2240; }
+    .tooltip.mystery { color: var(--muted); font-style: italic; }
+
+    .orb-preview-circle {
+      width: 48px; height: 48px; border-radius: 50%; border: var(--border);
+      margin: 0 auto 4px; display: flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 700; text-align: center;
+    }
+    .tab-bar { display: flex; gap: 2px; margin-bottom: 4px; }
+    .tab { padding: 2px 8px; border: var(--border); font-size: 9px; cursor: pointer; }
+    .tab.active { background: #ccc; font-weight: 700; }
+    .stage.pixel .tab.active { background: #4a3a6a; }
+    .arena-dim {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.45); pointer-events: none;
+    }
+    .recycle-pit {
+      border: 3px dashed #a00; border-radius: 50%; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center; font-size: 8px;
+      color: #a00;
+    }
+
+    /* Layout 01 — Sketch-faithful */
+    .layout-01 .r-stats { left: 8px; top: 8px; width: 168px; height: 248px; }
+    .layout-01 .r-ritual { left: 184px; top: 8px; width: 272px; height: 248px; }
+    .layout-01 .r-shop { right: 8px; top: 8px; width: 88px; height: 248px; }
+    .layout-01 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 88px; }
+
+    /* Layout 02 — Sketch + chrome */
+    .layout-02 .r-header { left: 8px; right: 8px; top: 4px; height: 24px; display: flex;
+      align-items: center; justify-content: space-between; padding: 0 8px; border: var(--border); background: var(--panel); }
+    .layout-02 .r-stats { left: 8px; top: 32px; width: 160px; height: 220px; }
+    .layout-02 .r-ritual { left: 176px; top: 32px; width: 280px; height: 220px; }
+    .layout-02 .r-shop { right: 8px; top: 32px; width: 88px; height: 220px; }
+    .layout-02 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 88px; }
+
+    /* Layout 03 — Game viewport HUD */
+    .layout-03 .r-stats { left: 8px; top: 8px; width: 140px; height: 200px; opacity: 0.95; }
+    .layout-03 .r-ritual { left: 50%; top: 50%; transform: translate(-50%, -55%); width: 240px; }
+    .layout-03 .r-shop { right: 8px; top: 8px; width: 80px; }
+    .layout-03 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 72px; }
+    .layout-03 .r-header { display: none; }
+
+    /* Layout 04 — Radial altar */
+    .layout-04 .r-stats { left: 8px; top: 8px; width: 150px; height: 340px; }
+    .layout-04 .r-ritual { left: 170px; top: 20px; width: 300px; height: 260px; }
+    .layout-04 .r-shop { right: 8px; top: 8px; width: 90px; height: 200px; }
+    .layout-04 .r-inventory { left: 170px; right: 110px; bottom: 8px; height: 72px; }
+    .layout-04 .slots-triangle { position: relative; min-height: 120px; }
+    .layout-04 .orb-preview-circle { width: 56px; height: 56px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+    /* Layout 05 — Two-page codex */
+    .layout-05 .r-stats { left: 8px; top: 8px; width: 300px; height: 344px; }
+    .layout-05 .r-ritual { right: 8px; top: 8px; width: 316px; height: 260px; }
+    .layout-05 .r-shop { right: 8px; bottom: 8px; width: 316px; height: 72px; display: flex; gap: 8px; align-items: center; }
+    .layout-05 .r-inventory { display: none; }
+    .layout-05 .r-shop .inv-inline { flex: 1; }
+
+    /* Layout 06 — Top toolbar */
+    .layout-06 .r-header { left: 0; right: 0; top: 0; height: 28px; display: flex; align-items: center;
+      gap: 8px; padding: 0 8px; border-bottom: var(--border); background: var(--panel); }
+    .layout-06 .r-stats { left: 8px; top: 36px; width: 150px; height: 240px; }
+    .layout-06 .r-ritual { left: 166px; top: 36px; width: 300px; height: 240px; }
+    .layout-06 .r-shop { display: none; }
+    .layout-06 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 72px; }
+    .layout-06 .r-header .shop-inline { margin-left: auto; display: flex; gap: 6px; }
+
+    /* Layout 07 — Bottom-heavy */
+    .layout-07 .r-stats { left: 8px; top: 8px; width: 200px; height: 200px; }
+    .layout-07 .r-ritual { left: 216px; top: 8px; right: 8px; height: 200px; }
+    .layout-07 .r-shop { right: 8px; top: 8px; width: 90px; height: 120px; position: absolute; }
+    .layout-07 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 120px; }
+    .layout-07 .bottom-bar { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 120px;
+      display: flex; flex-direction: column; gap: 4px; }
+    .layout-07 .r-inventory { position: static; height: auto; flex: 1; }
+    .layout-07 .r-shop { position: static; width: auto; height: auto; display: flex; gap: 8px; }
+
+    /* Layout 08 — Inspector drawer */
+    .layout-08 .r-stats { left: 8px; top: 8px; width: 180px; height: 344px; }
+    .layout-08 .r-ritual { left: 196px; top: 8px; right: 8px; height: 280px; }
+    .layout-08 .r-inventory { left: 196px; right: 8px; bottom: 8px; height: 56px; }
+    .layout-08 .r-shop { position: absolute; right: 8px; top: 8px; width: 80px; }
+    .layout-08 .orb-preview-circle { width: 64px; height: 64px; }
+
+    /* Layout 09 — Outcome orbs */
+    .layout-09 .r-stats { left: 8px; top: 8px; width: 150px; height: 240px; }
+    .layout-09 .r-ritual { left: 166px; top: 8px; width: 300px; height: 240px; }
+    .layout-09 .r-shop { right: 8px; top: 8px; width: 88px; height: 240px; }
+    .layout-09 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 88px; }
+    .layout-09 .outcomes-orbs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .layout-09 .outcomes-list-wrap { display: none; }
+
+    /* Layout 10 — Tooltip-first */
+    .layout-10 .r-stats { display: none; }
+    .layout-10 .r-ritual { left: 50%; top: 40%; transform: translate(-50%, -50%); width: 220px; }
+    .layout-10 .r-shop { right: 8px; top: 8px; width: 80px; }
+    .layout-10 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 72px; }
+    .layout-10 .stats-mini { font-size: 9px; color: var(--muted); text-align: center; margin-top: 4px; }
+
+    /* Layout 11 — Corner chrome */
+    .layout-11 .r-stats { left: 8px; top: 8px; width: 160px; height: 180px; }
+    .layout-11 .r-shop { right: 8px; top: 8px; width: 100px; height: 180px; }
+    .layout-11 .r-ritual { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 260px; }
+    .layout-11 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 80px; }
+    .layout-11 .r-header { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); }
+
+    /* Layout 12 — Split vault */
+    .layout-12 .r-ritual { left: 8px; top: 8px; width: 420px; height: 344px; }
+    .layout-12 .r-stats { position: absolute; left: 16px; top: 16px; width: 140px; height: 200px; z-index: 2; }
+    .layout-12 .r-shop { right: 8px; top: 8px; width: 196px; height: 344px; display: flex; flex-direction: column; gap: 8px; }
+    .layout-12 .r-inventory { flex: 1; }
+    .layout-12 .r-shop .panel-block { flex: 0 0 auto; }
+
+    /* Layout 13 — Dense dashboard */
+    .layout-13 .r-header { left: 8px; right: 8px; top: 4px; height: 22px; display: flex; justify-content: space-between; align-items: center; }
+    .layout-13 .r-stats { left: 8px; top: 30px; width: 200px; height: 180px; }
+    .layout-13 .r-ritual { left: 216px; top: 30px; width: 240px; height: 180px; }
+    .layout-13 .r-shop { right: 8px; top: 30px; width: 168px; height: 180px; }
+    .layout-13 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 132px; }
+    .layout-13 .stat-grid { font-size: 9px; }
+
+    /* Layout 14 — Inventory-as-tray */
+    .layout-14 .r-stats { left: 8px; top: 8px; width: 150px; height: 220px; }
+    .layout-14 .r-ritual { left: 166px; top: 8px; width: 300px; height: 180px; }
+    .layout-14 .r-shop { right: 8px; top: 8px; width: 88px; height: 180px; }
+    .layout-14 .r-inventory { left: 140px; right: 100px; bottom: 24px; height: 56px; z-index: 5;
+      border: 2px dashed #666; background: rgba(255,255,255,0.85); }
+    .layout-14 .stage.pixel .r-inventory { background: rgba(42,34,64,0.9); }
+
+    /* Layout 15 — Vertical stack */
+    .layout-15 .r-header { left: 8px; right: 8px; top: 4px; height: 20px; display: flex; justify-content: space-between; }
+    .layout-15 .r-stats { left: 8px; right: 8px; top: 28px; height: 80px; }
+    .layout-15 .r-ritual { left: 8px; right: 8px; top: 112px; height: 120px; }
+    .layout-15 .r-shop { left: 8px; right: 8px; top: 236px; height: 48px; display: flex; gap: 8px; align-items: center; }
+    .layout-15 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 56px; }
+    .layout-15 .stat-grid { grid-template-columns: repeat(4, 1fr); }
+
+    /* Layout 16 — Tabbed */
+    .layout-16 .r-tabs { left: 8px; right: 8px; top: 8px; height: 24px; }
+    .layout-16 .r-stats, .layout-16 .r-ritual, .layout-16 .r-shop-tab {
+      left: 8px; right: 8px; top: 36px; bottom: 80px; }
+    .layout-16 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 68px; }
+    .layout-16 .r-shop { display: none; }
+
+    /* Layout 17 — Wide header + 3 columns */
+    .layout-17 .r-header { left: 0; right: 0; top: 0; height: 26px; display: flex; align-items: center;
+      padding: 0 12px; gap: 12px; border-bottom: var(--border); background: var(--panel); }
+    .layout-17 .r-stats { left: 8px; top: 34px; width: 200px; bottom: 80px; }
+    .layout-17 .r-ritual { left: 216px; top: 34px; width: 208px; bottom: 80px; }
+    .layout-17 .r-shop { right: 8px; top: 34px; width: 200px; bottom: 80px; }
+    .layout-17 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 64px; }
+
+    /* Layout 18 — Recycle-as-danger */
+    .layout-18 .r-stats { left: 8px; top: 8px; width: 150px; height: 240px; }
+    .layout-18 .r-ritual { left: 166px; top: 8px; width: 280px; height: 200px; }
+    .layout-18 .r-shop { right: 8px; top: 8px; width: 88px; }
+    .layout-18 .r-recycle-pit { left: 166px; bottom: 88px; width: 120px; }
+    .layout-18 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 72px; }
+    .layout-18 .r-shop .recycle-block { display: none; }
+
+    /* Layout 19 — Preview constellation */
+    .layout-19 .r-stats { left: 8px; top: 8px; width: 150px; height: 240px; }
+    .layout-19 .r-ritual { left: 166px; top: 8px; width: 300px; height: 240px; }
+    .layout-19 .r-shop { right: 8px; top: 8px; width: 88px; height: 240px; }
+    .layout-19 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 88px; }
+    .layout-19 .slots-wrap { position: relative; min-height: 130px; }
+
+    /* Layout 20 — Minimal pixel */
+    .layout-20 .r-stats { left: 8px; top: 8px; width: 280px; height: 100px; }
+    .layout-20 .r-ritual { left: 8px; top: 116px; width: 400px; height: 160px; }
+    .layout-20 .r-shop { right: 8px; top: 8px; width: 140px; height: 100px; display: flex; flex-direction: column; gap: 4px; }
+    .layout-20 .r-inventory { left: 8px; right: 8px; bottom: 8px; height: 68px; }
+    .layout-20 .glyph-slot { width: 44px; height: 44px; --slot: 44px; }
+    .layout-20 .stat-grid { grid-template-columns: repeat(4, 1fr); font-size: 9px; }
+
+    .inv-row { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .shop-col { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  </style>
+</head>
+<body>
+  <h1>Ritual Menu — 20 Layout Mockups</h1>
+  <p style="font-size:13px;color:#aaa;margin-bottom:12px;max-width:900px;">
+    640×360 viewport · Click glyphs to socket · Transmorph needs 3 glyphs · 2 glyphs shows 4 possible orbs
+  </p>
+
+  <div class="toolbar">
+    <label>Style:
+      <select id="styleSelect">
+        <option value="wireframe">Wireframe</option>
+        <option value="pixel">Pixel HUD</option>
+      </select>
+    </label>
+    <span>Preset:</span>
+    <button data-preset="empty">Empty</button>
+    <button data-preset="one">1 glyph</button>
+    <button data-preset="twoAir">2× Air</button>
+    <button data-preset="threeNew">3 / new</button>
+    <button data-preset="threeGhost">3 / Ghost</button>
+    <button data-preset="poor">Poor</button>
+    <span style="margin-left:8px">Discovered:</span>
+    <span class="discovered-checks" id="discoveredChecks"></span>
+  </div>
+
+  <div class="layout-strip" id="layoutStrip"></div>
+
+  <div class="preview-wrap">
+    <div class="preview-label" id="previewLabel">Layout 01 — Sketch-faithful</div>
+    <div class="scale-wrap">
+      <div class="stage layout-01" id="mainStage"></div>
+    </div>
+  </div>
+
+  <script>
+(function () {
+  const ELEMENTS = ["Fire", "Water", "Air", "Earth"];
+  const ELEMENT_SHORT = { Fire: "Fi", Water: "Wa", Air: "Ai", Earth: "Ea" };
+
+  const GLYPHS = [
+    { id: "coal", name: "Coal", element: "Fire", attribute: "burn", common: 1 },
+    { id: "fury", name: "Fury", element: "Fire", attribute: "damage", common: 5 },
+    { id: "blast", name: "Blast", element: "Fire", attribute: "splash", common: 0.05 },
+    { id: "rime", name: "Rime", element: "Water", attribute: "chill", common: 1 },
+    { id: "soft", name: "Soft", element: "Water", attribute: "self_damage", common: -10 },
+    { id: "bounty", name: "Bounty", element: "Water", attribute: "glyph_drop", common: 0.01 },
+    { id: "static", name: "Static", element: "Air", attribute: "shock", common: 1 },
+    { id: "shear", name: "Shear", element: "Air", attribute: "crit_chance", common: 0.01 },
+    { id: "drag", name: "Drag", element: "Air", attribute: "speed", common: -10 },
+    { id: "blight", name: "Blight", element: "Earth", attribute: "poison", common: 1 },
+    { id: "dense", name: "Dense", element: "Earth", attribute: "weight", common: 1 },
+    { id: "crush", name: "Crush", element: "Earth", attribute: "crit_damage", common: 0.1 },
+  ];
+
+  const DEFAULT_GLYPH_BY_ELEMENT = {
+    Fire: "fury", Water: "rime", Air: "static", Earth: "blight",
+  };
+
+  const BLANK_STATS = {
+    damage: 10, self_damage: 10, splash: 0, speed: 100, weight: 5,
+    crit_chance: 0.05, crit_damage: 2, glyph_drop: 0.2,
+    burn: 0, chill: 0, shock: 0, poison: 0,
+  };
+
+  const REAL_ORBS = {
+    "Air,Air,Earth": { id: "ghost", name: "Ghost", desc: "Enters and haunts enemies, dealing impact DPS. Exits on death.", motion: "Wayward",
+      damage: 10, self_damage: 10, splash: 0, speed: 110, weight: 2, crit_chance: 0.05, crit_damage: 2, glyph_drop: 0.2, burn: 0, chill: 0, shock: 0, poison: 0 },
+    "Air,Air,Fire": { id: "conduit", name: "Conduit", desc: "Electric tether to player damages enemies in the beam.", motion: "Wayward",
+      damage: 10, self_damage: 10, splash: 0, speed: 130, weight: 5, crit_chance: 0.05, crit_damage: 2, glyph_drop: 0.2, burn: 0, chill: 0, shock: 3, poison: 0 },
+    "Earth,Earth,Water": { id: "rot", name: "Rot", desc: "Inflicts poison stacks on hit.", motion: "Wayward",
+      damage: 5, self_damage: 10, splash: 0.01, speed: 80, weight: 7, crit_chance: 0.05, crit_damage: 2, glyph_drop: 0.2, burn: 0, chill: 0, shock: 0, poison: 3 },
+    "Fire,Fire,Fire": { id: "inferno", name: "Inferno", desc: "Leaves a fire trail inflicting Burn.", motion: "Wayward",
+      damage: 10, self_damage: 15, splash: 0.05, speed: 90, weight: 3, crit_chance: 0.05, crit_damage: 2, glyph_drop: 0.2, burn: 3, chill: 0, shock: 0, poison: 0 },
+  };
+
+  const PLACEHOLDER_NAMES = [
+    "Ember", "Tide", "Gale", "Stone", "Scorch", "Frost", "Zephyr", "Moss",
+    "Flare", "Mist", "Spark", "Boulder", "Ash", "Surge", "Whirl", "Root",
+    "Blaze", "Depth", "Storm", "Clay",
+  ];
+
+  function bagKey(elements) {
+    return [...elements].sort().join(",");
+  }
+
+  function generateAllRecipes() {
+    const recipes = [];
+    let placeholderIdx = 0;
+    for (let i = 0; i < ELEMENTS.length; i++) {
+      for (let j = i; j < ELEMENTS.length; j++) {
+        for (let k = j; k < ELEMENTS.length; k++) {
+          const els = [ELEMENTS[i], ELEMENTS[j], ELEMENTS[k]];
+          const key = bagKey(els);
+          if (REAL_ORBS[key]) {
+            recipes.push({ key, elements: els, ...REAL_ORBS[key] });
+          } else {
+            const name = PLACEHOLDER_NAMES[placeholderIdx++] || ("Orb " + (recipes.length + 1));
+            recipes.push({
+              key, elements: els, id: "placeholder_" + recipes.length, name,
+              desc: "Placeholder effect for " + els.join(" + ") + " combination.",
+              motion: "Wayward",
+              damage: 8 + (i + j + k) * 2, self_damage: 10, splash: 0.01 * (i + 1),
+              speed: 90 + k * 10, weight: 4 + j, crit_chance: 0.05, crit_damage: 2,
+              glyph_drop: 0.2, burn: els.includes("Fire") ? 1 : 0, chill: els.includes("Water") ? 1 : 0,
+              shock: els.includes("Air") ? 1 : 0, poison: els.includes("Earth") ? 1 : 0,
+            });
+          }
+        }
+      }
+    }
+    return recipes;
+  }
+
+  const RECIPES = generateAllRecipes();
+  const RECIPE_BY_KEY = Object.fromEntries(RECIPES.map(r => [r.key, r]));
+
+  const LAYOUTS = [
+    { id: 1, name: "Sketch-faithful", cls: "layout-01" },
+    { id: 2, name: "Sketch + chrome", cls: "layout-02" },
+    { id: 3, name: "Game viewport HUD", cls: "layout-03" },
+    { id: 4, name: "Radial altar", cls: "layout-04" },
+    { id: 5, name: "Two-page codex", cls: "layout-05" },
+    { id: 6, name: "Top toolbar", cls: "layout-06" },
+    { id: 7, name: "Bottom-heavy", cls: "layout-07" },
+    { id: 8, name: "Inspector drawer", cls: "layout-08" },
+    { id: 9, name: "Outcome orbs", cls: "layout-09" },
+    { id: 10, name: "Tooltip-first", cls: "layout-10" },
+    { id: 11, name: "Corner chrome", cls: "layout-11" },
+    { id: 12, name: "Split vault", cls: "layout-12" },
+    { id: 13, name: "Dense dashboard", cls: "layout-13" },
+    { id: 14, name: "Inventory-as-tray", cls: "layout-14" },
+    { id: 15, name: "Vertical stack", cls: "layout-15" },
+    { id: 16, name: "Tabbed", cls: "layout-16" },
+    { id: 17, name: "Wide header + 3 cols", cls: "layout-17" },
+    { id: 18, name: "Recycle-as-danger", cls: "layout-18" },
+    { id: 19, name: "Preview constellation", cls: "layout-19" },
+    { id: 20, name: "Minimal pixel", cls: "layout-20" },
+  ];
+
+  let state = {
+    layout: 1,
+    style: "wireframe",
+    mana: 35,
+    orbTypeId: "blank",
+    orbName: "Blank Orb",
+    orbDesc: "Standard orb with no effect",
+    baseStats: { ...BLANK_STATS },
+    motion: "Wayward",
+    permanentBonuses: {},
+    socketed: [null, null, null],
+    inventory: [
+      { element: "Earth", glyphId: "blight" },
+      { element: "Fire", glyphId: "fury" },
+      null, null, null,
+    ],
+    discovered: new Set(["ghost"]),
+    activeTab: "ritual",
+    recycleTarget: null,
+    transmorphHover: false,
+  };
+
+  const BUY_COST = 20;
+  const RECYCLE_VALUE = 10;
+
+  function glyphById(id) {
+    return GLYPHS.find(g => g.id === id);
+  }
+
+  function makeInvItem(element) {
+    return { element, glyphId: DEFAULT_GLYPH_BY_ELEMENT[element] };
+  }
+
+  function filledSlotCount() {
+    return state.socketed.filter(Boolean).length;
+  }
+
+  function socketElements() {
+    return state.socketed.filter(Boolean).map(s => s.element);
+  }
+
+  function matchRecipe(elements) {
+    return RECIPE_BY_KEY[bagKey(elements)] || null;
+  }
+
+  function currentRecipe() {
+    if (filledSlotCount() !== 3) return null;
+    return matchRecipe(socketElements());
+  }
+
+  function getThirdOutcomes() {
+    if (filledSlotCount() !== 2) return [];
+    const current = socketElements();
+    return ELEMENTS.map(third => {
+      const recipe = matchRecipe([...current, third]);
+      const discovered = state.discovered.has(recipe.id);
+      return { third, recipe, discovered, label: discovered ? recipe.name : "???" };
+    });
+  }
+
+  function computeGlyphBonuses() {
+    const bonuses = {};
+    for (const slot of state.socketed) {
+      if (!slot) continue;
+      const g = glyphById(slot.glyphId);
+      if (!g) continue;
+      bonuses[g.attribute] = (bonuses[g.attribute] || 0) + g.common;
+    }
+    return bonuses;
+  }
+
+  function displayStats() {
+    const stats = { ...state.baseStats };
+    const bonuses = computeGlyphBonuses();
+    for (const [k, v] of Object.entries(bonuses)) {
+      if (k in stats) stats[k] = (stats[k] || 0) + v;
+    }
+    for (const [k, v] of Object.entries(state.permanentBonuses)) {
+      if (k in stats) stats[k] = (stats[k] || 0) + v;
+    }
+    return { stats, bonuses };
+  }
+
+  function formatStat(key, val) {
+    if (["crit_chance", "splash", "glyph_drop"].includes(key)) return Math.round(val * 100) + "%";
+    if (["burn", "chill", "shock", "poison"].includes(key)) return String(Math.round(val));
+    if (Number.isInteger(val)) return String(val);
+    return val.toFixed(1);
+  }
+
+  function canTransmorph() {
+    return state.orbTypeId === "blank" && filledSlotCount() === 3;
+  }
+
+  function effectText() {
+    if (state.orbTypeId === "blank") return "No Effect";
+    return state.orbDesc || state.orbName;
+  }
+
+  function applyPreset(name) {
+    state.socketed = [null, null, null];
+    state.permanentBonuses = {};
+    state.orbTypeId = "blank";
+    state.orbName = "Blank Orb";
+    state.orbDesc = "Standard orb with no effect";
+    state.baseStats = { ...BLANK_STATS };
+    state.motion = "Wayward";
+
+    switch (name) {
+      case "empty":
+        state.mana = 35;
+        state.inventory = [
+          makeInvItem("Earth"), makeInvItem("Fire"), null, null, null,
+        ];
+        break;
+      case "one":
+        state.socketed[0] = makeInvItem("Fire");
+        state.mana = 35;
+        state.inventory = [makeInvItem("Earth"), null, null, null, null];
+        break;
+      case "twoAir":
+        state.socketed[0] = makeInvItem("Air");
+        state.socketed[1] = makeInvItem("Air");
+        state.mana = 35;
+        state.inventory = [makeInvItem("Earth"), makeInvItem("Fire"), null, null, null];
+        break;
+      case "threeNew":
+        state.socketed = [makeInvItem("Air"), makeInvItem("Air"), makeInvItem("Water")];
+        state.mana = 35;
+        state.inventory = [makeInvItem("Earth"), makeInvItem("Fire"), null, null, null];
+        break;
+      case "threeGhost":
+        state.socketed = [makeInvItem("Air"), makeInvItem("Air"), makeInvItem("Earth")];
+        state.mana = 35;
+        state.inventory = [makeInvItem("Fire"), makeInvItem("Water"), null, null, null];
+        break;
+      case "poor":
+        state.mana = 5;
+        state.inventory = [null, null, null, null, null];
+        break;
+    }
+    render();
+  }
+
+  function socketFromInventory(invIndex) {
+    const item = state.inventory[invIndex];
+    if (!item) return;
+    const open = state.socketed.findIndex(s => !s);
+    if (open === -1) return;
+    state.socketed[open] = { ...item };
+    state.inventory[invIndex] = null;
+    render();
+  }
+
+  function unsocket(slotIndex) {
+    const item = state.socketed[slotIndex];
+    if (!item) return;
+    const open = state.inventory.findIndex(i => !i);
+    if (open === -1) return;
+    state.inventory[open] = { ...item };
+    state.socketed[slotIndex] = null;
+    render();
+  }
+
+  function transmorph() {
+    if (!canTransmorph()) return;
+    const recipe = currentRecipe();
+    if (!recipe) return;
+    const bonuses = computeGlyphBonuses();
+    for (const [k, v] of Object.entries(bonuses)) {
+      state.permanentBonuses[k] = (state.permanentBonuses[k] || 0) + v;
+    }
+    state.orbTypeId = recipe.id;
+    state.orbName = recipe.name + " Orb";
+    state.orbDesc = recipe.desc;
+    state.baseStats = {
+      damage: recipe.damage, self_damage: recipe.self_damage, splash: recipe.splash,
+      speed: recipe.speed, weight: recipe.weight, crit_chance: recipe.crit_chance,
+      crit_damage: recipe.crit_damage, glyph_drop: recipe.glyph_drop,
+      burn: recipe.burn, chill: recipe.chill, shock: recipe.shock, poison: recipe.poison,
+    };
+    state.motion = recipe.motion;
+    state.discovered.add(recipe.id);
+    state.socketed = [null, null, null];
+    render();
+  }
+
+  function recycle() {
+    state.mana += RECYCLE_VALUE;
+    state.orbTypeId = "blank";
+    state.orbName = "Blank Orb";
+    state.orbDesc = "Standard orb with no effect";
+    state.baseStats = { ...BLANK_STATS };
+    state.motion = "Wayward";
+    state.permanentBonuses = {};
+    state.socketed = [null, null, null];
+    render();
+  }
+
+  function buyBlank() {
+    if (state.mana < BUY_COST) return;
+    state.mana -= BUY_COST;
+    render();
+  }
+
+  function buildStatsHTML() {
+    const { stats, bonuses } = displayStats();
+    const left = ["damage", "self_damage", "splash", "speed", "weight", "crit_chance", "crit_damage", "glyph_drop"];
+    const right = ["burn", "chill", "shock", "poison"];
+    let html = `<div class="section-label">Effects</div><div class="effects-text">${effectText()}</div>`;
+    html += `<div class="stat-grid" style="margin-top:6px">`;
+    html += `<div>`;
+    html += `<div class="section-label">Base</div>`;
+    for (const k of left) {
+      const b = bonuses[k];
+      html += `<div class="stat-row"><span>${k.replace("_", " ")}</span><span>${formatStat(k, stats[k])}${b ? `<span class="bonus"> +${formatStat(k, b)}</span>` : ""}</span></div>`;
+    }
+    html += `</div><div>`;
+    html += `<div class="section-label">Status</div>`;
+    for (const k of right) {
+      const b = bonuses[k];
+      html += `<div class="stat-row"><span>${k}</span><span>${formatStat(k, stats[k])}${b ? `<span class="bonus"> +${formatStat(k, b)}</span>` : ""}</span></div>`;
+    }
+    html += `</div></div>`;
+    html += `<div class="motion-text"><span class="section-label">Motion</span> ${state.motion}</div>`;
+    return html;
+  }
+
+  function buildSlotsHTML() {
+    const s0 = state.socketed[0], s1 = state.socketed[1], s2 = state.socketed[2];
+    const slot = (item, idx) => {
+      if (!item) return `<div class="glyph-slot empty" data-slot="${idx}"></div>`;
+      return `<div class="glyph-slot filled el-${item.element}" data-slot="${idx}">${ELEMENT_SHORT[item.element]}</div>`;
+    };
+    return `<div class="slots-wrap"><div class="slots-triangle">
+      <div class="orb-preview-circle panel">${state.orbName.split(" ")[0]}</div>
+      <div class="slots-row">${slot(s0, 0)}${slot(s1, 1)}</div>
+      ${slot(s2, 2)}
+    </div></div>`;
+  }
+
+  function buildConstellation() {
+    const outcomes = getThirdOutcomes();
+    if (!outcomes.length) return "";
+    const positions = [
+      { top: "8px", left: "50%", transform: "translateX(-50%)" },
+      { bottom: "8px", left: "8px" },
+      { bottom: "8px", right: "8px" },
+      { top: "50%", right: "0", transform: "translateY(-50%)" },
+    ];
+    return outcomes.map((o, i) => {
+      const pos = positions[i];
+      const style = Object.entries(pos).map(([k,v]) => `${k}:${v}`).join(";");
+      return `<div class="constellation-node" style="${style}">${o.label === "???" ? "?" : o.label.slice(0,3)}</div>`;
+    }).join("");
+  }
+
+  function buildOutcomesHTML(asOrbs) {
+    const outcomes = getThirdOutcomes();
+    if (!outcomes.length) return `<ul class="outcomes"><li style="color:var(--muted)">—</li></ul>`;
+    if (asOrbs) {
+      return `<div class="outcomes-orbs">${outcomes.map(o =>
+        `<div class="outcome-orb el-${o.third}" title="${o.third}">${o.label}</div>`
+      ).join("")}</div>`;
+    }
+    return `<ul class="outcomes">${outcomes.map(o =>
+      `<li><span class="third-el el-${o.third}">${ELEMENT_SHORT[o.third]}</span><span>${o.label}</span></li>`
+    ).join("")}</ul>`;
+  }
+
+  function buildInventoryHTML() {
+    return `<div class="section-label">Inventory</div><div class="inv-row">${state.inventory.map((item, i) => {
+      if (!item) return `<div class="inv-slot empty" data-inv="${i}"></div>`;
+      return `<div class="inv-slot filled el-${item.element}" data-inv="${i}">${item.element.slice(0, 4)}</div>`;
+    }).join("")}</div>`;
+  }
+
+  function buildTransmorphTooltip() {
+    const recipe = currentRecipe();
+    if (!recipe || !state.transmorphHover) return "";
+    const discovered = state.discovered.has(recipe.id);
+    if (!discovered) return `<div class="tooltip mystery">???</div>`;
+    const { stats } = displayStats();
+    return `<div class="tooltip"><strong>${recipe.name}</strong><br>${recipe.desc}<br><br>
+      DMG ${formatStat("damage", stats.damage)} · SPD ${formatStat("speed", stats.speed)}<br>
+      ${recipe.burn ? "Burn " + recipe.burn + " · " : ""}${recipe.poison ? "Poison " + recipe.poison + " · " : ""}
+      ${recipe.shock ? "Shock " + recipe.shock : ""}</div>`;
+  }
+
+  function buildShopInner(includeInv, showClose) {
+    const closeBit = showClose !== false
+      ? `<span class="mana-badge">Mana: ${state.mana}</span><button class="btn close-btn" data-action="close">Close</button>`
+      : "";
+    return `<div class="recycle-block shop-col">
+        <div class="recycle-slot empty" title="Orb to recycle"></div>
+        <button class="btn btn-danger" data-action="recycle">Recycle (+${RECYCLE_VALUE})</button>
+      </div>
+      <button class="btn" data-action="buy" ${state.mana < BUY_COST ? "disabled" : ""}>Buy Blank Orb (${BUY_COST})</button>
+      ${includeInv ? `<div class="inv-inline">${buildInventoryHTML()}</div>` : ""}
+      ${closeBit}`;
+  }
+
+  function renderStage(stageEl, layoutId) {
+    const layout = LAYOUTS.find(l => l.id === layoutId) || LAYOUTS[0];
+    stageEl.className = "stage " + layout.cls + (state.style === "pixel" ? " pixel" : "");
+
+    const showOutcomes = filledSlotCount() === 2;
+    const tab = state.activeTab;
+
+    const headerHTML = `<div class="r-header region">
+      <span class="mana-badge">Mana: ${state.mana}</span>
+      <span>${state.orbName}</span>
+      <button class="btn close-btn" data-action="close">Close</button>
+    </div>`;
+
+    const statsHTML = `<div class="r-stats region panel">${buildStatsHTML()}</div>`;
+
+    const ritualCore = `
+      <div class="orb-title">${state.orbName}</div>
+      ${buildSlotsHTML()}
+      ${layoutId === 19 ? buildConstellation() : ""}
+      <div style="text-align:center;margin:6px 0;position:relative">
+        <button class="btn btn-primary" data-action="transmorph" ${canTransmorph() ? "" : "disabled"}>Transmorph</button>
+        ${buildTransmorphTooltip()}
+      </div>
+      <div class="outcomes-list-wrap" style="${showOutcomes ? "" : "opacity:0.4"}">
+        <div class="section-label">Possible upgrades</div>
+        ${buildOutcomesHTML(layoutId === 9)}
+      </div>
+      ${layoutId === 10 ? `<div class="stats-mini">${effectText()}</div>` : ""}`;
+
+    const ritualHTML = `<div class="r-ritual region panel">${ritualCore}</div>`;
+
+    const hasHeader = [2, 6, 11, 13, 15, 17].includes(layoutId);
+    const shopPanelHTML = `<div class="r-shop region panel shop-col">${buildShopInner(layoutId === 5, !hasHeader)}</div>`;
+
+    const shopToolbarHTML = `<span class="shop-inline">
+        <button class="btn btn-danger" data-action="recycle">Recycle (+${RECYCLE_VALUE})</button>
+        <button class="btn" data-action="buy" ${state.mana < BUY_COST ? "disabled" : ""}>Buy (${BUY_COST})</button>
+      </span>`;
+
+    const recyclePitHTML = `<div class="r-recycle-pit region">
+      <div class="recycle-pit">Recycle<br>pit</div>
+      <button class="btn btn-danger" style="margin-top:4px" data-action="recycle">Recycle (+${RECYCLE_VALUE})</button>
+    </div>`;
+
+    const invHTML = `<div class="r-inventory region panel">${buildInventoryHTML()}</div>`;
+
+    const tabsHTML = `<div class="r-tabs region tab-bar">
+      <div class="tab ${tab === "stats" ? "active" : ""}" data-tab="stats">Stats</div>
+      <div class="tab ${tab === "ritual" ? "active" : ""}" data-tab="ritual">Ritual</div>
+      <div class="tab ${tab === "shop" ? "active" : ""}" data-tab="shop">Shop</div>
+    </div>`;
+
+    let inner = "";
+
+    if (layoutId === 3) inner += `<div class="arena-dim"></div>`;
+
+    if (layoutId === 16) {
+      inner += tabsHTML;
+      if (tab === "stats") inner += statsHTML;
+      else if (tab === "ritual") inner += ritualHTML;
+      else inner += `<div class="r-shop-tab region panel shop-col">${buildShopInner(false, true)}</div>`;
+      inner += invHTML;
+    } else if (layoutId === 12) {
+      inner += ritualHTML + statsHTML.replace('class="r-stats region panel"', 'class="r-stats region panel" style="z-index:2"');
+      inner += `<div class="r-shop region">
+        <div class="panel-block panel shop-col">${buildShopInner(false, true)}</div>
+        <div class="panel-block panel">${buildInventoryHTML()}</div>
+        <button class="btn close-btn" data-action="close">Close · Mana ${state.mana}</button>
+      </div>`;
+    } else if (layoutId === 7) {
+      inner += statsHTML + ritualHTML;
+      inner += `<div class="bottom-bar region" style="left:8px;right:8px;bottom:8px;height:120px">
+        <div class="r-inventory panel">${buildInventoryHTML()}</div>
+        <div class="r-shop panel shop-col" style="display:flex;flex-direction:row;gap:8px;align-items:center;padding:6px">
+          ${buildShopInner(false, true)}
+        </div>
+      </div>`;
+    } else {
+      if ([2, 6, 11, 13, 15, 17].includes(layoutId)) {
+        inner += layoutId === 6
+          ? headerHTML.replace("</div>", shopToolbarHTML + "</div>")
+          : headerHTML;
+      }
+      if (layoutId !== 10) inner += statsHTML;
+      inner += ritualHTML;
+      if (![6, 12].includes(layoutId)) {
+        if (layoutId === 1) {
+          inner += `<div class="r-shop region panel shop-col">${buildShopInner(false, true)}</div>`;
+        } else {
+          inner += shopPanelHTML;
+        }
+      }
+      if (layoutId === 18) inner += recyclePitHTML;
+      if (layoutId !== 5) inner += invHTML;
+    }
+
+    stageEl.innerHTML = inner;
+    bindStageEvents(stageEl);
+  }
+
+  function bindStageEvents(stageEl) {
+    stageEl.querySelectorAll("[data-inv]").forEach(el => {
+      el.addEventListener("click", () => socketFromInventory(+el.dataset.inv));
+    });
+    stageEl.querySelectorAll("[data-slot]").forEach(el => {
+      el.addEventListener("click", () => unsocket(+el.dataset.slot));
+    });
+    stageEl.querySelectorAll("[data-action]").forEach(el => {
+      el.addEventListener("click", () => {
+        const a = el.dataset.action;
+        if (a === "transmorph") transmorph();
+        if (a === "recycle") recycle();
+        if (a === "buy") buyBlank();
+        if (a === "close") alert("Close menu (mock)");
+      });
+    });
+    const tBtn = stageEl.querySelector("[data-action=transmorph]");
+    if (tBtn) {
+      tBtn.addEventListener("mouseenter", () => { state.transmorphHover = true; render(); });
+      tBtn.addEventListener("mouseleave", () => { state.transmorphHover = false; render(); });
+    }
+    stageEl.querySelectorAll("[data-tab]").forEach(el => {
+      el.addEventListener("click", () => { state.activeTab = el.dataset.tab; render(); });
+    });
+  }
+
+  function renderDiscoveredChecks() {
+    const el = document.getElementById("discoveredChecks");
+    const showcase = ["ghost", "conduit", "rot", "inferno"];
+    el.innerHTML = showcase.map(id => {
+      const r = RECIPES.find(x => x.id === id);
+      if (!r) return "";
+      const checked = state.discovered.has(id) ? "checked" : "";
+      return `<label><input type="checkbox" data-orb="${id}" ${checked}> ${r.name}</label>`;
+    }).join("");
+    el.querySelectorAll("input[type=checkbox]").forEach(cb => {
+      cb.addEventListener("change", () => {
+        const id = cb.dataset.orb;
+        if (cb.checked) state.discovered.add(id); else state.discovered.delete(id);
+        render();
+      });
+    });
+  }
+
+  function render() {
+    const layout = LAYOUTS.find(l => l.id === state.layout);
+    document.getElementById("previewLabel").textContent =
+      `Layout ${String(state.layout).padStart(2, "0")} — ${layout.name}`;
+    renderStage(document.getElementById("mainStage"), state.layout);
+    document.querySelectorAll(".layout-thumb").forEach((thumb, i) => {
+      thumb.classList.toggle("active", LAYOUTS[i].id === state.layout);
+    });
+    renderDiscoveredChecks();
+  }
+
+  function initLayoutStrip() {
+    const strip = document.getElementById("layoutStrip");
+    LAYOUTS.forEach(l => {
+      const thumb = document.createElement("div");
+      thumb.className = "layout-thumb";
+      thumb.title = l.name;
+      thumb.innerHTML = `<span>${String(l.id).padStart(2, "0")}<br>${l.name}</span>`;
+      thumb.addEventListener("click", () => { state.layout = l.id; render(); });
+      strip.appendChild(thumb);
+    });
+  }
+
+  document.getElementById("styleSelect").addEventListener("change", e => {
+    state.style = e.target.value;
+    render();
+  });
+
+  document.querySelectorAll("[data-preset]").forEach(btn => {
+    btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+  });
+
+  initLayoutStrip();
+  applyPreset("twoAir");
+})();
+  </script>
+</body>
+</html>

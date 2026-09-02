@@ -47,7 +47,8 @@ A Final Spell/
     │   ├── export_game_data.py / .bat / requirements.txt
     │   └── game_data.json      Exported runtime data (regenerate via .bat)
     ├── globals/
-    │   └── game_data.gd        GameData autoload: loads JSON, generic sheet lookup
+    │   ├── game_data.gd        GameData autoload: loads JSON, generic sheet lookup
+    │   └── orb_recipes.gd      OrbRecipes: element-combo lookups for ritual Transform / hints
     ├── effects/
     │   ├── pixel_fall.gdshader       Per-pixel gravity crumble
     │   ├── destruction_effect.gd     Spawns detached sprite FX on destroy/die; reverse assemble on spawn
@@ -97,7 +98,8 @@ A Final Spell/
 │   │   └── mana_crystal_deposited.ogg / .tres  Glyph deposit SoundEvent (legacy name)
 │   ├── ui/
 │   │   ├── attributes/attribute_box.tscn / .gd   Stat row (icon + value); `@tool` PNG picker from folder
-│   │   ├── ritual_menu/ritual_menu.tscn / .gd  Paused summoning ritual UI
+│   │   ├── inventory/orb_inventory.tscn / .gd    Bottom ritual orb + glyph socket bar (`OrbInventoryBar`)
+│   │   ├── ritual_menu/ritual_menu.tscn / .gd  Paused summoning ritual UI (drag socket / Transform / buy)
 │   │   └── fonts/
 │   │       └── pixel_medium.fnt / .png   BMFont (atlas PNG is skip-imported; assign the .fnt)
 │   └── objects/
@@ -135,7 +137,7 @@ A Final Spell/
 | Name | Path | Purpose |
 |------|------|---------|
 | `AudioManager` | `res://audio/audio_manager.tscn` | Music A/B crossfade + pooled global/positional SFX on Music/SFX buses |
-| `GameData` | `res://globals/game_data.gd` | `@tool` autoload: loads `res://data/game_data.json`; `get_table(sheet)` / `get_row(sheet, id)` / `has_row(sheet, id)` over exported sheets (`orbs`, `glyphs`, `motion`, …) |
+| `GameData` | `res://globals/game_data.gd` | `@tool` autoload: loads `res://data/game_data.json`; `get_table(sheet)` / `get_row(sheet, id)` / `has_row(sheet, id)` over exported sheets (`orbs`, `glyphs`, `attunements`, `motion`, …) |
 
 ## Physics layers (from `project/project.godot`)
 
@@ -154,7 +156,7 @@ A Final Spell/
 
 ### Areas
 - `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, `%Players` / `%Player1`, `%SummoningCircle` under Objects, `%Items` for glyph drops, `%RitualMenu`, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); inspector export `bounce_orbs_off_entities` (default false); no pre-placed orb — typed orbs spawn at launch; `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking
-- `project/areas/level/level.gd` — director: bakes navigation, starts `EnemySpawner`, awaits parallel `begin_level()`; launches **Ghost + Rot + Conduit** from `%SummoningCircle`; on kills rolls **glyph** spawn via orb `glyph_drop` or `glyph_drop_chance` export; weighted glyph rarity **70 / 25 / 5**; `SummoningCircle.ritual_started` → pause + `%RitualMenu.open`; menu `closed` → `release_orb` + unpause; `new_blank_orb_requested` → spawn blank orb at circle; co-op P2 hot-join; win/lose when all players dead; orb tether/time-slow hooks
+- `project/areas/level/level.gd` — director: bakes navigation, starts `EnemySpawner`, awaits parallel `begin_level()`; launches **Ghost + Rot + Conduit** from `%SummoningCircle`; on kills rolls **glyph** spawn via orb `glyph_drop` or `glyph_drop_chance` export; weighted glyph rarity **70 / 25 / 5**; `SummoningCircle.ritual_started` → pause + `%RitualMenu.open` (passes live `orb` group); menu `closed` → `release_orb` + unpause; `new_blank_orb_requested` → spawn blank orb at circle (max 3); `transform_requested` → swap captured orb scene via `swap_captured_orb`; co-op P2 hot-join; win/lose when all players dead; orb tether/time-slow hooks
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -185,7 +187,7 @@ A Final Spell/
 - `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays walk on success); out-of-range Attack does nothing while melee parked; mouse GUI gate only when `controls.uses_mouse()`; attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends (reachable only if `melee_enabled`)
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
-- `project/entities/orbs/blank/blank_orb.tscn` + `blank_orb.gd` (`class_name BlankOrb`) — … **`glyph_drop`** + **3 glyph slots** (`apply_glyph`, `get_stat_snapshot`); **`begin_circle_capture`** / **`release_from_circle`** for summoning ritual; …
+- `project/entities/orbs/blank/blank_orb.tscn` + `blank_orb.gd` (`class_name BlankOrb`) — … **`glyph_drop`** + **3 glyph slots** (`apply_glyph`, `get_stat_snapshot`); **`begin_circle_capture`** / **`release_from_circle`** / **`assume_circle_capture`** for summoning ritual; …
 - `project/entities/orbs/ghost/ghost_orb.tscn` + `ghost_orb.gd` (`class_name GhostOrb`) — dark-purple tint; skips enemy impact HP; on hit enters `POSSESSED` (hide, follow host in world space, 3 DPS via `take_damage(..., SHADOW)`, dark `damage_flash_color`); calls `super.on_hitbox_hit` for weight/splash/status; `DamageComponent.damage_kind = SHADOW` for player/breakable contact labels; emerges on `DestroyComponent.destroyed` with random `begin_flight` (no grace)
 - `project/entities/orbs/rot/rot_orb.tscn` + `rot_orb.gd` (`class_name RotOrb`) — green tint; poison stacks from GameData `poison` stat via base `on_hitbox_hit`
 - `project/entities/orbs/conduit/conduit_orb.tscn` + `conduit_orb.gd` (`class_name ConduitOrb`) — yellow-cyan tint; `%CurrentLine` + `%CurrentArea` / `%CurrentShape` (enemy-mask capsule); while closest player within 130 px, beam ticks 5 HP + 3 Shock per second (skip Shock while stunned); impact shock stacks from GameData
@@ -202,10 +204,12 @@ A Final Spell/
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 - `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
 - `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
-- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`**; `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`capture_orb`** / **`release_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
+- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`**; `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`capture_orb`** / **`release_orb`** / **`swap_captured_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
 - `project/items/glyph/glyph.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `glyph_id` + **Rarity**; element texture + rarity tint; tether pickup, carry, Attack throw, deposit → circle inventory or overflow mana; group **`glyphs`**
 - `project/ui/attributes/attribute_box.tscn` + `.gd` — **`AttributeBox`** (`@tool` `HBoxContainer`); `@export icon_id` dropdown scans `res://ui/attributes/*.png` and applies to `%Icon`; `@export value` + `value_format` (`DECIMAL` / `PERCENT`, fraction × 100 for %) + `decimal_places` (`0` / `1` / `2`) drive `%Value`
-- `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); orb stats, socket/discard glyphs, new blank orb, Done
+- `project/ui/inventory/orb_inventory.tscn` + `.gd` — **`OrbInventoryBar`**: 3 orb sockets + mana label + 3 glyph sockets; focus outline on captured orb; emits `glyph_grab_requested`
+- `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); focused orb stats/effect, drag-and-drop socket/recycle, 2-glyph hints, Transform, Buy, Done
+- `project/globals/orb_recipes.gd` — **`OrbRecipes`**: unordered element-multiset lookups over `orbs` / `attunements`; `hints_for` / `result_for` / `is_playable` / provisional `is_discovered`
 - `project/items/item_picked_up.ogg` + `.tres` — shared SoundEvent for picking up items
 - `project/items/mana_crystal_deposited.ogg` + `.tres` — SoundEvent played when a crystal finishes depositing
 
@@ -231,10 +235,10 @@ A Final Spell/
 - Wired events: entity destroyed/damaged, dash, orb bounce (`impact_soft`), begin/release tether, item pickup, mana crystal deposit; attack swing export exists but unassigned
 
 ### Data
-- `project/data/game_data.xlsx` — source workbook; `schema` sheet lists column types per data sheet; current sheets: `orbs`, `glyphs`, `motion` (plus unused `objects_OLD` / `input` not in schema)
+- `project/data/game_data.xlsx` — source workbook; `schema` sheet lists column types per data sheet; current sheets: `orbs`, `glyphs`, `attunements`, `motion` (plus unused `objects_OLD` / `input` not in schema)
 - `project/data/export_game_data.py` + `export_game_data.bat` + `requirements.txt` — Excel → JSON export (`openpyxl`); schema types: `string`, `int`, `float`, `boolean`
 - `project/data/game_data.json` — runtime dump; regenerate after editing the xlsx (double-click `.bat` or `python export_game_data.py`)
-- `project/globals/game_data.gd` — `GameData` autoload: `tables` / `tables_by_id`; `BlankOrb` loads `orbs` stats (**`glyph_drop`**); **`Glyph`** / ritual socketing read **`glyphs`** rows (`attribute`, rarity tiers); motion not wired yet
+- `project/globals/game_data.gd` — `GameData` autoload: `tables` / `tables_by_id`; `BlankOrb` loads `orbs` stats (**`glyph_drop`**); **`Glyph`** / ritual socketing read **`glyphs`** rows (`attribute`, rarity tiers); **`OrbRecipes`** reads `orbs` / `attunements` element recipes; motion not wired yet
 
 ---
 

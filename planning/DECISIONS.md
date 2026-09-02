@@ -25,16 +25,22 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (design); prototype still launches Ghost / Rot / Conduit (see "Opening typed orb volley")
 
 ### Blank Orb → 20 specialist orbs; Attunement as a second upgrade
-- **Decision (design)**: Socketing glyphs boosts one of the orb's 12 attributes (Common / Rare / Unique values). **Three glyphs on a Blank Orb** can upgrade it into one of **20** specialist orbs with special effects. **Three glyphs on a non-Blank orb** can, with the right combination, trigger **Attunement**. After **two** glyphs are socketed, the ritual menu shows hints of the **four possible Attunements**: `???` if not yet discovered, the Attunement **name** if it has been discovered already.
-- **Why**: Gives Blank Orbs a craft identity and specialist orbs a further chase; the two-glyph hint teaches recipes without spoiling undiscovered ones.
-- **Alternatives**: Glyphs only ever flat-add stats (current prototype) — no orb identity change; auto-upgrade on any three glyphs without recipes — less discovery; show all recipe names immediately — spoils collection.
-- **Status**: planned (design); not in prototype. Recipe table and whether Attunement discovery persists across runs are still open.
+- **Decision (design)**: Socketing glyphs boosts one of the orb's 12 attributes (Common / Rare / Unique values). **Three glyphs on a Blank Orb** can upgrade it into one of **20** specialist orbs with special effects. **Three glyphs on a non-Blank orb** can, with the right combination, trigger **Attunement**. After **two** glyphs are socketed, the ritual menu shows hints of the **four possible** results: recipe **name** if the row exists (prototype always "discovered"), `???` if no matching row.
+- **Why**: Gives Blank Orbs a craft identity and specialist orbs a further chase; the two-glyph hint teaches recipes without inventing names for missing data.
+- **Alternatives**: Glyphs only ever flat-add stats — no orb identity change; auto-upgrade on any three glyphs without recipes — less discovery; show all recipe names immediately without a discovery seam — harder to add meta later.
+- **Status**: decided (in-codebase) for Blank→specialist Transform when `scene_path` exists (Ghost/Rot/Conduit); Attunement Transform not playable yet (no scenes); full 20-orb table still incomplete
 
 ### Ritual menu: all-orb inventory; Blank Orb buy scales
-- **Decision (design)**: The ritual menu shows info about the captured orb **and** an **inventory of all current orbs** at the bottom of the screen. **Buy a new Blank Orb** starts at **20 mana** and **goes up by 10** each purchase. Recycle is **5 / 10 / 20** mana for Common / Rare / Unique (already in prototype). Circle activation is first-use free, then **+5 mana** per use (already in prototype).
+- **Decision (design)**: The ritual menu shows info about the captured orb **and** an **inventory of all current orbs** at the bottom of the screen. **Buy a new Blank Orb** starts at **20 mana** and **goes up by 10** each purchase. Recycle is **5 / 10 / 20** mana for Common / Rare / Unique (already in prototype). Circle activation is first-use free, then **+5 mana** per use (already in prototype). Cap **3 orbs** in play.
 - **Why**: Multi-orb runs need a way to see and choose among orbs without capturing each one first; escalating buy cost paces extra-orb snowball.
-- **Alternatives**: Only show the captured orb — current prototype; flat 20 mana forever — cheaper extra orbs late-run; a between-level shop instead of in-level buy — superseded (see shop entries).
-- **Status**: planned (design); prototype has a paused ritual with stats / socket / discard / flat-20 buy / Done, no all-orb bar and no +10 buy scaling
+- **Alternatives**: Only show the captured orb — previous prototype; flat 20 mana forever — cheaper extra orbs late-run; a between-level shop instead of in-level buy — superseded (see shop entries).
+- **Status**: decided (in-codebase) for inventory bar, recycle-by-drop, Transform, 3-orb cap, flat-20 buy; +10 buy scaling still planned
+
+### Ritual menu v2: drag socketing, Transform, always-on discovery
+- **Decision**: Replaced the button-row ritual UI with `ritual_menu.tscn` + bottom `OrbInventoryBar`. Glyphs move via **mouse hold-drag** or **controller** (dash grab → move_up snap to orb slots → move_left/right across `[recycle, slot0, slot1, slot2]` → dash confirm; tether cancels). Focus stays on the circle-captured orb. After **2** socketed glyphs, four hints appear (one per third element) from `OrbRecipes` over GameData `orbs` / `attunements`. **Transform** enables only when 3 glyphs match a row with a non-null `scene_path`; level swaps the captured orb via `SummoningCircle.swap_captured_orb` + `BlankOrb.assume_circle_capture`. Discovery is provisionally **always on** (`OrbRecipes.is_discovered` → true) so authored names show; `???` only for missing combos.
+- **Why**: Matches the authored v2 layout; one drag model for mouse and pad; Transform gated on playable scenes avoids spawning broken orbs; discovery seam keeps meta-unlock work deferred.
+- **Alternatives**: Godot `_get_drag_data` only — no pad path; selectable focus among all inventory orbs — deferred; Transform on any 3 glyphs / failed ritual — rejected; persistent discovery save — deferred.
+- **Status**: decided (in-codebase)
 
 ### In-level ritual replaces between-level shop
 - **Decision (design)**: Run progression is the **in-level summoning circle ritual** (glyphs, orb upgrades, Attunement, buying Blank Orbs). The source doc no longer has a post-level shop of randomized orb / player / enemy-curse upgrades.
@@ -79,10 +85,10 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Summoning circle ritual: escalating activation, orb capture, paused menu
-- **Decision**: `try_activate()` is repeatable: cost **`activation_step × activation_count`** (default step **5** → first activation **free**, then 5, 10, 15…). While active, first flying **`BlankOrb`** entering `DepositArea` is sucked to center → **`ritual_started`** → **`RitualMenu`** opens with **`get_tree().paused = true`**. Menu shows orb **12 stats**, **3 glyph slots**, stored glyphs (socket / discard), **New Blank Orb (20 mana)**, **Done**. Socketing flat-adds the glyph's `attribute` value from GameData by rarity. **Done** → `release_orb` (random launch) + `deactivate`. `AudioManager` uses `PROCESS_MODE_ALWAYS` so SFX still play while paused.
+- **Decision**: `try_activate()` is repeatable: cost **`activation_step × activation_count`** (default step **5** → first activation **free**, then 5, 10, 15…). While active, first flying **`BlankOrb`** entering `DepositArea` is sucked to center → **`ritual_started`** → **`RitualMenu`** opens with **`get_tree().paused = true`**. Menu shows orb **12 stats**, drag-socket / recycle glyphs, **Transform** (playable recipes), **Buy Blank Orb** (flat 20 mana, max 3 orbs), bottom **orb inventory**, **Done**. Socketing flat-adds the glyph's `attribute` value from GameData by rarity. **Done** → `release_orb` (random launch) + `deactivate`. `AudioManager` uses `PROCESS_MODE_ALWAYS` so SFX still play while paused.
 - **Why**: Separates mana delivery (inventory) from orb customization (ritual); pause keeps menu readable in co-op chaos.
-- **Alternatives**: Real-time menu — orb and enemies keep moving; one-shot 5-mana activate — no escalating cost.
-- **Status**: decided (in-codebase); design adds all-orb inventory, +10 buy scaling, Blank→specialist upgrade, and Attunement (see ritual/Attunement entries above)
+- **Alternatives**: Real-time menu — orb and enemies keep moving; one-shot 5-mana activate — no escalating cost; button Socket/Discard rows — superseded by ritual menu v2 drag model.
+- **Status**: decided (in-codebase); +10 buy scaling still planned
 
 ### Glyph stat upgrades: flat-add from GameData `attribute`
 - **Decision**: Each `glyphs` row names an **`attribute`** (`damage`, `burn`, `glyph_drop`, etc.). Socketing adds **`rarity_common` / `rarity_rare` / `rarity_unique`** flat to that stat. `splash`, `crit_chance`, `glyph_drop` clamp to **0–1**; `damage`, `self_damage`, `speed`, `weight` floor at **0**. Negative values in data (e.g. `soft`, `drag`) reduce stats as authored.
@@ -257,8 +263,8 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Attack cooldown / charges**: redirect cooldown 0.35s; tether post-release cooldown 0.25s; melee parked.
 - **Mana vs glyphs as floor loot**: source overview still says enemies drop vanishing **mana**; Glyphs / Progression sections make **glyphs** the drop and mana the recycle/overflow currency.
 - **Glyph vanish duration**: glyphs currently persist until deposited or orb-destroyed; should grounded glyphs still time out?
-- **Attunement discovery**: `???` vs named hints implies meta-unlock across runs — confirm per-run vs persistent.
-- **20 specialist orbs / Attunement recipes**: which glyph combinations map to which orbs and Attunements?
+- **Attunement discovery**: prototype treats authored recipe names as discovered (`OrbRecipes.is_discovered` always true). Persistent / per-run registry still TBD.
+- **20 specialist orbs / Attunement recipes**: `orbs` / `attunements` sheets hold element combos; only Ghost / Rot / Conduit are playable (`scene_path`). Missing combos show `???` and cannot Transform.
 - **Camera / view perspective**: player uses 4-direction diagonal sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena. Confirm long-term camera for larger stages.
 - **Arc deflect / melee rollback**: flip `deflect_orb_enabled` / `melee_enabled` if proximity Attack redirect needs the old swing again.
 - **Entity bounce default**: keep punch-through or ship bounce-off-entities after desert export playtests.

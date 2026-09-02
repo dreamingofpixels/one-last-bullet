@@ -1,135 +1,441 @@
-[gd_scene format=3 uid="uid://b17dwdxee2iyy"]
+[gd_scene format=3 uid="uid://but7uyy7vg2fy"]
 
-[ext_resource type="Script" uid="uid://cl3fa3t8mvril" path="res://ui/ritual_menu/ritual_menu.gd" id="1_script"]
-[ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_font"]
-
-[sub_resource type="LabelSettings" id="LabelSettings_glss5"]
-font = ExtResource("2_font")
-font_size = 20
+[ext_resource type="Script" uid="uid://3lvaqsbpvxc8" path="res://ui/ritual_menu/ritual_menu.gd" id="1_nr0cy"]
+[ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_dssmn"]
+[ext_resource type="PackedScene" uid="uid://dyxsux8amgcwk" path="res://ui/attributes/attribute_box.tscn" id="3_rni76"]
+[ext_resource type="Texture2D" uid="uid://bo1vvlewgnv41" path="res://entities/orbs/blank/blank_orb.png" id="4_ow601"]
+[ext_resource type="Texture2D" uid="uid://bodj13cjxk3wq" path="res://items/glyphs/glyph_socket.png" id="5_0grhw"]
+[ext_resource type="PackedScene" uid="uid://t0wansvdm4dj" path="res://ui/inventory/orb_inventory.tscn" id="6_0grhw"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_ti24f"]
-font = ExtResource("2_font")
+font = ExtResource("2_dssmn")
 
-[sub_resource type="LabelSettings" id="LabelSettings_0lvlc"]
-font = ExtResource("2_font")
+[sub_resource type="LabelSettings" id="LabelSettings_6pmnr"]
+font = ExtResource("2_dssmn")
 font_size = 12
 
-[sub_resource type="LabelSettings" id="LabelSettings_23x4v"]
-font = ExtResource("2_font")
+[sub_resource type="LabelSettings" id="LabelSettings_qa2gp"]
+font = ExtResource("2_dssmn")
 font_size = 12
 
-[sub_resource type="LabelSettings" id="LabelSettings_title"]
-font = ExtResource("2_font")
-font_size = 12
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_drag"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 1, 1, 1)
 
-[node name="RitualMenu" type="CanvasLayer" unique_id=346671036]
+[node name="RitualMenu" type="CanvasLayer"]
 layer = 30
-script = ExtResource("1_script")
+script = ExtResource("1_nr0cy")
 
-[node name="Panel" type="PanelContainer" parent="." unique_id=562935745]
+[node name="Panel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -960.0
-offset_top = -540.0
-offset_right = -496.0
-offset_bottom = -239.0
+offset_left = -232.0
+offset_top = -153.0
+offset_right = 232.0
+offset_bottom = 153.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="Panel" unique_id=1332622897]
+[node name="Margin" type="MarginContainer" parent="Panel"]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=548014079]
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=1130512949]
+[node name="OrbNameLabel" type="Label" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
-text = "Summoning Ritual"
-label_settings = SubResource("LabelSettings_glss5")
+text = "GHOST"
+label_settings = SubResource("LabelSettings_ti24f")
 horizontal_alignment = 1
 
-[node name="Body" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=349464933]
+[node name="Body" type="HBoxContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
+size_flags_horizontal = 4
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="Left" type="VBoxContainer" parent="Panel/Margin/VBox/Body" unique_id=1154478362]
+[node name="Recycle" type="VBoxContainer" parent="Panel/Margin/VBox/Body"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/Margin/VBox/Body/Recycle"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+
+[node name="RecycleLabel" type="Label" parent="Panel/Margin/VBox/Body/Recycle"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "+ X mana"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="RecycleSocket" type="TextureRect" parent="Panel/Margin/VBox/Body/Recycle"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+custom_maximum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("5_0grhw")
+
+[node name="OrbInFocus" type="VBoxContainer" parent="Panel/Margin/VBox/Body"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 9
 
-[node name="OrbNameLabel" type="Label" parent="Panel/Margin/VBox/Body/Left" unique_id=1698048616]
+[node name="EffectContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus"]
+layout_mode = 2
+
+[node name="EffectLabel" type="Label" parent="Panel/Margin/VBox/Body/OrbInFocus/EffectContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 47)
+layout_mode = 2
+text = "Enters and haunts enemies and deal its damage per second to them. Once dead, exits in a random direction."
+label_settings = SubResource("LabelSettings_6pmnr")
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="StatsContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Orb"
-label_settings = SubResource("LabelSettings_ti24f")
+size_flags_horizontal = 4
+theme_override_constants/separation = 23
 
-[node name="StatsScroll" type="ScrollContainer" parent="Panel/Margin/VBox/Body/Left" unique_id=1005707770]
-custom_minimum_size = Vector2(0, 180)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="StatsContainer" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsScroll" unique_id=1110845207]
-unique_name_in_owner = true
+[node name="Column1" type="VBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SlotsLabel" type="Label" parent="Panel/Margin/VBox/Body/Left" unique_id=923537247]
+[node name="DamageContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1"]
 layout_mode = 2
-text = "Glyph slots"
-label_settings = SubResource("LabelSettings_0lvlc")
+size_flags_horizontal = 0
 
-[node name="SlotsContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left" unique_id=1507704842]
+[node name="DamageBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1/DamageContainer" instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 4
+size_flags_horizontal = 0
+icon_id = "damage_icon"
+value = 10.4
+value_format = 0
+decimal_places = 2
 
-[node name="Right" type="VBoxContainer" parent="Panel/Margin/VBox/Body" unique_id=2104597590]
+[node name="SelfDamageContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="SelfDamageBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1/SelfDamageContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 8.4
+value_format = 0
+decimal_places = 2
+
+[node name="CritChanceContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="CritChanceBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1/CritChanceContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "critical_chance_icon"
+value = 0.01
+value_format = 1
+decimal_places = 2
+
+[node name="CritDamageContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="CritDamageBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1/CritDamageContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 2.0
+decimal_places = 0
+
+[node name="Column2" type="VBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
 
-[node name="ManaLabel" type="Label" parent="Panel/Margin/VBox/Body/Right" unique_id=1587430631]
+[node name="SpeedContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="SpeedBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2/SpeedContainer" instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Mana: 0"
-label_settings = SubResource("LabelSettings_23x4v")
+icon_id = "speed_icon"
+value = 100.0
+value_format = 0
+decimal_places = 0
 
-[node name="InventoryLabel" type="Label" parent="Panel/Margin/VBox/Body/Right" unique_id=2079919614]
+[node name="WeightContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2"]
 layout_mode = 2
-text = "Stored glyphs"
-label_settings = SubResource("LabelSettings_title")
+size_flags_horizontal = 0
 
-[node name="InventoryScroll" type="ScrollContainer" parent="Panel/Margin/VBox/Body/Right" unique_id=1490969242]
-custom_minimum_size = Vector2(0, 180)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="InventoryContainer" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Right/InventoryScroll" unique_id=652640105]
+[node name="WeightBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2/WeightContainer" instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 5.0
+value_format = 0
+decimal_places = 0
+
+[node name="SplashContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="SplashBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2/SplashContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "splash_icon"
+value = 0.03
+value_format = 1
+decimal_places = 0
+
+[node name="GlyphDropContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="GlyphDropBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2/GlyphDropContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.05
+value_format = 1
+decimal_places = 0
+
+[node name="Column3" type="VBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Footer" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=225765984]
+[node name="BurnContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="BurnBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/BurnContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="ChillContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ChillBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/ChillContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 1.0
+value_format = 0
+decimal_places = 0
+
+[node name="ShockContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ShockBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/ShockContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="PoisonContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="PoisonBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/PoisonContainer" instance=ExtResource("3_rni76")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="OrbSlotsContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 4
+
+[node name="OrbSlot1" type="TextureRect" parent="Panel/Margin/VBox/Body/OrbInFocus/OrbSlotsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_0grhw")
+
+[node name="OrbSlot2" type="TextureRect" parent="Panel/Margin/VBox/Body/OrbInFocus/OrbSlotsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_0grhw")
+
+[node name="OrbSlot3" type="TextureRect" parent="Panel/Margin/VBox/Body/OrbInFocus/OrbSlotsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_0grhw")
+
+[node name="TransformSection" type="VBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus"]
+layout_mode = 2
+
+[node name="TransformButton" type="Button" parent="Panel/Margin/VBox/Body/OrbInFocus/TransformSection"]
+unique_name_in_owner = true
+custom_maximum_size = Vector2(80, -1)
+layout_mode = 2
+size_flags_horizontal = 4
+disabled = true
+text = "Transform"
+
+[node name="HintContainer" type="GridContainer" parent="Panel/Margin/VBox/Body/OrbInFocus/TransformSection"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 21
+theme_override_constants/v_separation = 4
+columns = 2
+
+[node name="Hint1" type="Label" parent="Panel/Margin/VBox/Body/OrbInFocus/TransformSection/HintContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "???"
+label_settings = SubResource("LabelSettings_qa2gp")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint2" type="Label" parent="Panel/Margin/VBox/Body/OrbInFocus/TransformSection/HintContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "???"
+label_settings = SubResource("LabelSettings_qa2gp")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint3" type="Label" parent="Panel/Margin/VBox/Body/OrbInFocus/TransformSection/HintContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "???"
+label_settings = SubResource("LabelSettings_qa2gp")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint4" type="Label" parent="Panel/Margin/VBox/Body/OrbInFocus/TransformSection/HintContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "???"
+label_settings = SubResource("LabelSettings_qa2gp")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BuyBlankOrb" type="VBoxContainer" parent="Panel/Margin/VBox/Body"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/Margin/VBox/Body/BuyBlankOrb"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+
+[node name="BuyLabel" type="Label" parent="Panel/Margin/VBox/Body/BuyBlankOrb"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Blank Orb"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="BlankOrbIcon" type="TextureRect" parent="Panel/Margin/VBox/Body/BuyBlankOrb"]
+custom_minimum_size = Vector2(32, 32)
+custom_maximum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("4_ow601")
+
+[node name="BuyButton" type="Button" parent="Panel/Margin/VBox/Body/BuyBlankOrb"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Buy"
+
+[node name="Footer" type="HBoxContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 2
 
-[node name="NewOrbButton" type="Button" parent="Panel/Margin/VBox/Footer" unique_id=299349745]
-unique_name_in_owner = true
-layout_mode = 2
-text = "New Blank Orb (20 mana)"
-
-[node name="DoneButton" type="Button" parent="Panel/Margin/VBox/Footer" unique_id=1704361147]
+[node name="DoneButton" type="Button" parent="Panel/Margin/VBox/Footer"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Done"
+
+[node name="HintInfoContainer" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -80.0
+offset_right = -8.0
+offset_bottom = 80.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="Inventory" parent="." instance=ExtResource("6_0grhw")]
+unique_name_in_owner = true
+
+[node name="DragLayer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="DragPreview" type="Panel" parent="DragLayer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 0
+offset_right = 34.0
+offset_bottom = 34.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_drag")
+
+[node name="DragIcon" type="TextureRect" parent="DragLayer/DragPreview"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = 1.0
+offset_right = -1.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5

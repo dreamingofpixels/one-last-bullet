@@ -17,7 +17,7 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - **Dash**: press Space (or gamepad B) to dash **50 px** toward current facing (8 directions: N/S/E/W + diagonals). While dashing the player is immune to damage, phases through props/enemies, and cannot move or attack. Outer arena walls still block the dash. **4s** cooldown, shown as a small ring above the player's head (drawn by `DashComponent`); cannot start mid-swing or while **carrying a glyph**. A proximity **Attack redirect** clears the dash cooldown so the player can dash immediately after batting the orb.
 - **Loot**: enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (default **10%** per orb row; level fallback **25%**). Drops are one of **12 glyphs** (4 elements × 3 types) at **Common / Rare / Unique** rarity (default weights **70 / 25 / 5**). Pick up with **tether** in focus range. Carrying blocks dash; **Attack** throws the glyph. Deliver into the **summoning circle**: glyph is sucked to center and stored in circle inventory (**max 3**); overflow converts to mana (**5 / 10 / 20** by rarity). Orbs can destroy grounded glyphs (no inventory credit).
 - **Clear**: kill all enemies → level win.
-- **Ritual (in-level)**: activate the summoning circle (first use free, then **+5 mana** per use). The next orb that enters opens a paused menu: that orb's stats, **all current orbs** in a bottom inventory, socket/recycle glyphs, buy a new Blank Orb.
+- **Ritual (in-level)**: activate the summoning circle (first use free, then **+5 mana** per use). The next orb that enters opens a paused menu: that orb's stats, **all current orbs** in a bottom inventory (focused orb highlighted), drag-and-drop glyph socketing / recycle, Transform (when 3 glyphs match a playable recipe), buy a new Blank Orb (max **3** orbs).
 - **Next level**: repeat until 10 clears (run win) or death (HP depleted by enemy contact or own orb).
 
 ## Win / lose
@@ -27,7 +27,7 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 
 ## Orbs
 - **Design**: a **Blank Orb** enters play at level start from the summoning circle in a **random direction**, then travels and bounces freely forever. You start with **one** orb and can acquire more. Speed slow enough to interact but fast enough that avoiding it is a challenge. Speed and damage increase each time you redirect it.
-- **Upgrade path (design)**: each orb has **3 glyph slots**. Socketing boosts one of the 12 attributes (value depends on Common / Rare / Unique). Three glyphs on a **Blank Orb** can upgrade it into one of **20** specialist orbs with special effects. Three glyphs on a **non-Blank** orb can, with the right combination, trigger **Attunement**. After two glyphs are socketed, the menu shows hints of the **four possible Attunements** — `???` if undiscovered, the Attunement name if already found.
+- **Upgrade path (design)**: each orb has **3 glyph slots**. Socketing boosts one of the 12 attributes (value depends on Common / Rare / Unique). Three glyphs on a **Blank Orb** can upgrade it into one of **20** specialist orbs with special effects (Transform button; only enabled when the element combo maps to an authored orb with a scene). Three glyphs on a **non-Blank** orb can, with the right combination, trigger **Attunement**. After two glyphs are socketed, the menu shows hints of the **four possible** results (one per third element) — name if the recipe row exists (prototype treats all as discovered), `???` if no matching row.
 - **Core stats** (all orbs; authored in GameData `orbs` sheet, loaded at runtime via `orb_id`): `damage` (enemy HP), `self_damage` (player HP), `splash` (% of resolved hit damage to others within **50 px**), `speed`, `weight` (knockback distance in px; bowling collisions deal **weight** damage to both enemies; breakables take **+5% damage per weight**), `crit_chance`, `crit_damage`, `glyph_drop` (glyph drop chance on kill), `burn`, `chill`, `shock`, `poison` (stacks applied on enemy hit only). Each orb has **3 glyph slots**; socketing applies flat-add upgrades from GameData `glyphs` rows (`attribute` column + rarity tier values).
 - **Statuses** (enemy-only application from orb hits; all persist until death): **Poison** — 1 damage per stack per second; **Chill** — +5% move and attack-speed slow per stack (capped 90%); **Burn** — on death, explosion deals **5 × stacks** damage in **50 × (1 + 5% × stacks)** px radius (enemies only); **Shock** — at 10 stacks, stun **2 s**, deal **50** damage, clear stacks.
 - **Prototype (playtest)**: player first assembles over ~2 s, then **three typed orbs** launch from the **summoning circle** center in **independent random directions** (`begin_flight`, with player instigator grace): **Ghost**, **Rot**, and **Conduit**. No plain blank orb is launched (`blank_orb.gd` / `.tscn` remain the shared `BlankOrb` base). All three persist and bounce for the rest of the level.
@@ -59,11 +59,11 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 
 ## Progression
 - **During the level**, activate the **summoning circle** (first activation free, then **+5 mana** each time). The next orb that enters opens the **ritual menu**:
-  1. **Socket glyphs**. Three on a Blank Orb → can upgrade to a specialist orb. Three on a non-Blank with the right combo → **Attunement**. After two glyphs, show four possible Attunement hints (`???` vs discovered name).
-  2. **Recycle** a glyph for mana: **5** Common / **10** Rare / **20** Unique.
-  3. **Buy** a new Blank Orb for **20 mana**; price **+10** each purchase.
-- The menu also shows an **inventory of all current orbs** at the bottom of the screen.
-- *(Prototype: ritual menu sockets, discards, and buys a blank orb at a flat 20 mana. Attunement, the 20-orb upgrade table, all-orb inventory bar, and buy-price scaling are not in yet.)*
+  1. **Socket glyphs** by dragging from the bottom glyph inventory into the focused orb's 3 slots (mouse hold-drag, or controller: dash to grab → up to snap to slots → left/right to move including recycle → dash to drop; tether cancels). Three on a Blank Orb → Transform into a specialist when the element combo is playable. Three on a non-Blank with the right combo → **Attunement** (Transform gated the same way once attunements have scenes). After two glyphs, show four possible result hints (`???` vs name).
+  2. **Recycle** by dropping a glyph on the recycle socket: **5** Common / **10** Rare / **20** Unique mana.
+  3. **Buy** a new Blank Orb for **20 mana**; price **+10** each purchase (prototype still flat 20). Cap **3 orbs** in play; Buy disabled at the cap.
+- The menu shows an **inventory of all current orbs** at the bottom; the circle-captured orb stays in focus (display-only for the other sockets).
+- Mana label in the inventory bar updates live on deposit/spend.
 
 ## Enemies
 - Two chaser enemies (`grunt_knife`, `brute`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking, while still dealing **1 contact damage** on a ~0.75s tick once overlapping.
@@ -74,8 +74,8 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 
 ## Economy
 - **Single resource**: **mana** (from recycling stored glyphs, overflow deposits, and future breakables — open).
-- Spent at the summoning circle ritual (**20 mana** for a new blank orb, **+10** each purchase — prototype is still a flat 20).
-- **Summoning circle** holds a level `mana_pool` (label shows the current total) and a **3-slot glyph inventory**. Glyphs destroyed by orbs do **not** enter inventory. **Activation** costs escalate: **0**, then **5**, **10**, **15…** mana (`activation_step × activation_count`). While active, the next orb entering opens the **ritual menu** (tree paused): view all 12 stats, **socket** stored glyphs into the orb (flat-add per GameData), **discard** glyphs for mana, buy a **blank orb**, then **Done** releases the orb and deactivates the circle.
+- Spent at the summoning circle ritual (**20 mana** for a new blank orb, **+10** each purchase — prototype is still a flat 20; max **3** orbs).
+- **Summoning circle** holds a level `mana_pool` (label shows the current total) and a **3-slot glyph inventory**. Glyphs destroyed by orbs do **not** enter inventory. **Activation** costs escalate: **0**, then **5**, **10**, **15…** mana (`activation_step × activation_count`). While active, the next orb entering opens the **ritual menu** (tree paused): view all 12 stats on the focused orb, drag-socket or recycle stored glyphs, Transform when a playable 3-glyph recipe matches, buy a **blank orb** (capped at 3 orbs), then **Done** releases the orb and deactivates the circle.
 
 ## Open questions / design tensions to resolve
 - **Opening volley**: design now starts with **one Blank Orb** from the circle; prototype launches three typed orbs (Ghost / Rot / Conduit). Reconcile after playtest.
@@ -84,8 +84,8 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - **Mana vs glyphs as floor loot**: source overview still says enemies drop **mana** that must be picked up quickly; the Glyphs / Progression sections make **glyphs** the drop and mana the recycle/overflow currency. Treat glyphs as authored loot unless the overview sentence is restored as a second drop.
 - **Glyph vanish duration**: glyphs currently persist until deposited or orb-destroyed; should grounded glyphs still time out?
 - **Glyph rarity weights**: default 70 / 25 / 5 Common / Rare / Unique on drop — tune after playtest?
-- **Attunement discovery**: `???` vs named hints implies meta-unlock across runs — confirm whether discovery is per-run or persistent.
-- **20 specialist orbs / Attunement recipes**: which glyph combinations map to which orbs and Attunements?
+- **Attunement discovery**: prototype treats every authored recipe name as discovered (`OrbRecipes.is_discovered` always true). Persistent / per-run registry still TBD.
+- **20 specialist orbs / Attunement recipes**: `orbs` / `attunements` sheets hold element combos; only Ghost / Rot / Conduit are playable (`scene_path`). Missing combos show `???` and cannot Transform.
 - **Camera / view**: player uses 4-direction diagonal sprites in a top-down-ish arena; confirm long-term camera for larger stages.
 - **Difficulty curve**: how enemy count, obstacles, and layout pressure scale across 10 levels.
 - **Arc deflect rollback**: `AttackComponent.deflect_orb_enabled` is false; proximity Attack redirect covers aim-steer without arc contact.

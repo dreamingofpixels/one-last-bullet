@@ -577,6 +577,26 @@ func release_from_circle(direction: Vector2) -> void:
 	begin_flight(exit_dir, null)
 
 
+## Park this orb at the circle as if it had just finished a capture suck-in (used by Transform swap).
+func assume_circle_capture(center: Vector2) -> void:
+	_circle_captured = true
+	if _capture_tween != null and _capture_tween.is_valid():
+		_capture_tween.kill()
+		_capture_tween = null
+	state = OrbState.FLYING
+	freeze = true
+	linear_velocity = Vector2.ZERO
+	global_position = center
+	orb_sprite.visible = true
+	trail_particles.emitting = false
+	clear_redirect_preview()
+	set_in_focus(false)
+	_focus_requests.clear()
+	orb_in_focus.visible = false
+	hitbox_component.monitoring = false
+	_apply_heading()
+
+
 func is_tethered() -> bool:
 	return state == OrbState.TETHERED
 

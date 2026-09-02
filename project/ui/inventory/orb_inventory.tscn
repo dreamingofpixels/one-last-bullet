@@ -4,16 +4,18 @@
 [ext_resource type="Texture2D" uid="uid://0fvk7t2f6dtd" path="res://ui/inventory/orb_socket.png" id="2_oovcs"]
 [ext_resource type="Texture2D" uid="uid://bodj13cjxk3wq" path="res://items/glyphs/glyph_socket.png" id="3_p1auj"]
 
-[node name="Inventory" type="Control" unique_id=1479164035]
+[node name="Inventory" type="Control"]
 layout_mode = 3
-anchor_right = 0.25
-anchor_bottom = 0.039
-offset_bottom = -0.12000275
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
 script = ExtResource("1_o5tt2")
 
-[node name="Panel" type="Panel" parent="." unique_id=1177387082]
+[node name="Panel" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +23,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=2134699398]
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -30,15 +32,18 @@ grow_horizontal = 2
 grow_vertical = 2
 alignment = 1
 
-[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer" unique_id=1457138407]
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 
-[node name="OrbContainer" type="HBoxContainer" parent="HBoxContainer" unique_id=754686116]
+[node name="OrbContainer" type="HBoxContainer" parent="HBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 2
+theme_override_constants/separation = 4
 
-[node name="OrbSocket1" type="TextureRect" parent="HBoxContainer/OrbContainer" unique_id=745671772]
+[node name="OrbSocket1" type="TextureRect" parent="HBoxContainer/OrbContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 custom_maximum_size = Vector2(32, 32)
 layout_mode = 2
@@ -46,7 +51,8 @@ size_flags_horizontal = 3
 size_flags_vertical = 6
 texture = ExtResource("2_oovcs")
 
-[node name="OrbSocket2" type="TextureRect" parent="HBoxContainer/OrbContainer" unique_id=1837296325]
+[node name="OrbSocket2" type="TextureRect" parent="HBoxContainer/OrbContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 custom_maximum_size = Vector2(32, 32)
 layout_mode = 2
@@ -54,7 +60,8 @@ size_flags_horizontal = 3
 size_flags_vertical = 6
 texture = ExtResource("2_oovcs")
 
-[node name="OrbSocket3" type="TextureRect" parent="HBoxContainer/OrbContainer" unique_id=40454676]
+[node name="OrbSocket3" type="TextureRect" parent="HBoxContainer/OrbContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 custom_maximum_size = Vector2(32, 32)
 layout_mode = 2
@@ -62,38 +69,49 @@ size_flags_horizontal = 3
 size_flags_vertical = 6
 texture = ExtResource("2_oovcs")
 
-[node name="ManaLabel" type="Label" parent="HBoxContainer" unique_id=1405744382]
+[node name="ManaLabel" type="Label" parent="HBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 6
-text = "Mana: 20"
+text = "Mana: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="GlyphContainer" type="HBoxContainer" parent="HBoxContainer" unique_id=155782648]
+[node name="GlyphContainer" type="HBoxContainer" parent="HBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
 
-[node name="GlyphSocket1" type="TextureRect" parent="HBoxContainer/GlyphContainer" unique_id=733696170]
+[node name="GlyphSocket1" type="TextureRect" parent="HBoxContainer/GlyphContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 custom_maximum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
+mouse_filter = 0
 texture = ExtResource("3_p1auj")
 
-[node name="GlyphSocket2" type="TextureRect" parent="HBoxContainer/GlyphContainer" unique_id=1504345004]
+[node name="GlyphSocket2" type="TextureRect" parent="HBoxContainer/GlyphContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 custom_maximum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
+mouse_filter = 0
 texture = ExtResource("3_p1auj")
 
-[node name="GlyphSocket3" type="TextureRect" parent="HBoxContainer/GlyphContainer" unique_id=538372866]
+[node name="GlyphSocket3" type="TextureRect" parent="HBoxContainer/GlyphContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 custom_maximum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
+mouse_filter = 0
 texture = ExtResource("3_p1auj")
 
-[node name="MarginContainer2" type="MarginContainer" parent="HBoxContainer" unique_id=1103950291]
+[node name="MarginContainer2" type="MarginContainer" parent="HBoxContainer"]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2

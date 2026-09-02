@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://but7uyy7vg2fy"]
+[gd_scene format=3 uid="uid://clvkkcfurw4ps"]
 
-[ext_resource type="Script" uid="uid://3lvaqsbpvxc8" path="res://ui/ritual_menu/ritual_menu_2.gd" id="1_nr0cy"]
+[ext_resource type="Script" path="res://ui/ritual_menu/ritual_menu_2.gd" id="1_nr0cy"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_dssmn"]
 [ext_resource type="PackedScene" uid="uid://dyxsux8amgcwk" path="res://ui/attributes/attribute_box.tscn" id="3_rni76"]
 [ext_resource type="Texture2D" uid="uid://bo1vvlewgnv41" path="res://entities/orbs/blank/blank_orb.png" id="4_ow601"]
@@ -353,10 +353,12 @@ layout_mode = 2
 text = "Done"
 
 [node name="Inventory" parent="." unique_id=1479164035 instance=ExtResource("6_0grhw")]
+anchors_preset = -1
 anchor_top = 0.296
 anchor_right = 0.24200001
 anchor_bottom = 0.335
 offset_top = 0.32000732
 offset_right = -0.64001465
 offset_bottom = 0.19998169
+grow_vertical = 2
 metadata/_edit_use_anchors_ = true

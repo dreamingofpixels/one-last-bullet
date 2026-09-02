@@ -68,6 +68,7 @@ func _ready() -> void:
 	summoning_circle.ritual_started.connect(_on_ritual_started)
 	ritual_menu.closed.connect(_on_ritual_menu_closed)
 	ritual_menu.new_blank_orb_requested.connect(_on_new_blank_orb_requested)
+	ritual_menu.transform_requested.connect(_on_transform_requested)
 
 	await get_tree().physics_frame
 	# P2 is instanced as soon as a second pad is already connected — no join button.
@@ -418,7 +419,7 @@ func _on_ritual_started(orb: BlankOrb) -> void:
 		return
 	time_slow_overlay.end()
 	get_tree().paused = true
-	ritual_menu.open(orb, summoning_circle, new_orb_cost)
+	ritual_menu.open(orb, summoning_circle, new_orb_cost, _live_orbs())
 
 
 func _on_ritual_menu_closed() -> void:
@@ -431,9 +432,59 @@ func _on_new_blank_orb_requested() -> void:
 	if _game_over or _cleared:
 		return
 	_spawn_blank_orb_at_circle()
+	ritual_menu.set_orbs(_live_orbs())
+
+
+func _on_transform_requested(orb_id: StringName) -> void:
+	if _game_over or _cleared:
+		return
+	if summoning_circle == null or not is_instance_valid(summoning_circle):
+		return
+	var old_orb: RigidBody2D = summoning_circle.get_captured_orb()
+	if old_orb == null or not is_instance_valid(old_orb):
+		return
+
+	var row: Variant = GameData.get_row(&"orbs", orb_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		return
+	var data: Dictionary = row
+	if not OrbRecipes.is_playable(data):
+		return
+
+	var scene_path: String = String(data.get("scene_path", ""))
+	var packed: PackedScene = load(scene_path) as PackedScene
+	if packed == null:
+		push_warning("RitualMenu: missing orb scene at %s" % scene_path)
+		return
+
+	var new_orb: BlankOrb = packed.instantiate() as BlankOrb
+	if new_orb == null:
+		return
+
+	var spawn_pos: Vector2 = summoning_circle.get_launch_origin()
+	add_child(new_orb)
+	new_orb.global_position = spawn_pos
+	_connect_orb_signals(new_orb)
+	summoning_circle.swap_captured_orb(new_orb)
+
+	if is_instance_valid(old_orb):
+		old_orb.remove_from_group("orb")
+		old_orb.queue_free()
+
+	ritual_menu.open(new_orb, summoning_circle, new_orb_cost, _live_orbs())
+
+
+func _live_orbs() -> Array:
+	var result: Array = []
+	for node in get_tree().get_nodes_in_group("orb"):
+		if is_instance_valid(node):
+			result.append(node)
+	return result
 
 
 func _spawn_blank_orb_at_circle() -> void:
+	if _live_orbs().size() >= RitualMenu.MAX_ORBS:
+		return
 	var orb: BlankOrb = BLANK_ORB_SCENE.instantiate() as BlankOrb
 	add_child(orb)
 	orb.global_position = summoning_circle.get_launch_origin()

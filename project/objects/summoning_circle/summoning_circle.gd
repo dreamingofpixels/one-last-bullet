@@ -173,6 +173,15 @@ func get_captured_orb() -> RigidBody2D:
 	return _captured_orb if is_instance_valid(_captured_orb) else null
 
 
+## Replace the captured orb during a ritual (e.g. Transform) without ending the ritual.
+func swap_captured_orb(new_orb: RigidBody2D) -> void:
+	if not _ritual_running or new_orb == null or not is_instance_valid(new_orb):
+		return
+	_captured_orb = new_orb
+	if new_orb.has_method("assume_circle_capture"):
+		new_orb.assume_circle_capture(get_launch_origin())
+
+
 func _refresh_mana_label() -> void:
 	mana_pool_label.text = str(int(mana_pool))
 

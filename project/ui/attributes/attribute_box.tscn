@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dyxsux8amgcwk"]
 
 [ext_resource type="Script" uid="uid://cmfg68inli0k0" path="res://ui/attributes/attribute_box.gd" id="1_2tpu1"]
-[ext_resource type="Texture2D" uid="uid://85httn27xtw1" path="res://ui/attributes/damage_icon.png" id="1_bxm1u"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_2tpu1"]
+[ext_resource type="Texture2D" uid="uid://dx0ag0l5pk0tp" path="res://ui/attributes/critical_chance_icon.png" id="2_3ekyw"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_3ekyw"]
 font = ExtResource("2_2tpu1")
@@ -15,15 +15,20 @@ offset_bottom = 0.23999786
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_2tpu1")
+icon_id = "critical_chance_icon"
+value = 0.104
+value_format = 1
 
-[node name="DamageIcon" type="TextureRect" parent="." unique_id=184426436]
+[node name="Icon" type="TextureRect" parent="." unique_id=184426436]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(16, 16)
 custom_maximum_size = Vector2(16, 16)
 layout_mode = 2
 size_flags_vertical = 4
-texture = ExtResource("1_bxm1u")
+texture = ExtResource("2_3ekyw")
 
-[node name="DamageLabel" type="Label" parent="." unique_id=1215391375]
+[node name="Value" type="Label" parent="." unique_id=1215391375]
+unique_name_in_owner = true
 layout_mode = 2
-text = "10.4"
+text = "10.4%"
 label_settings = SubResource("LabelSettings_3ekyw")

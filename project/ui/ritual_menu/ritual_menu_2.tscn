@@ -1,7 +1,8 @@
 [gd_scene format=3 uid="uid://but7uyy7vg2fy"]
 
-[ext_resource type="Script" uid="uid://cl3fa3t8mvril" path="res://ui/ritual_menu/ritual_menu.gd" id="1_wte7a"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_dssmn"]
+[ext_resource type="PackedScene" uid="uid://dyxsux8amgcwk" path="res://ui/attributes/attribute_box.tscn" id="3_rni76"]
+[ext_resource type="Texture2D" uid="uid://bodj13cjxk3wq" path="res://items/glyphs/glyph_socket.png" id="5_0grhw"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_glss5"]
 font = ExtResource("2_dssmn")
@@ -10,21 +11,8 @@ font_size = 20
 [sub_resource type="LabelSettings" id="LabelSettings_ti24f"]
 font = ExtResource("2_dssmn")
 
-[sub_resource type="LabelSettings" id="LabelSettings_0lvlc"]
-font = ExtResource("2_dssmn")
-font_size = 12
-
-[sub_resource type="LabelSettings" id="LabelSettings_23x4v"]
-font = ExtResource("2_dssmn")
-font_size = 12
-
-[sub_resource type="LabelSettings" id="LabelSettings_title"]
-font = ExtResource("2_dssmn")
-font_size = 12
-
 [node name="RitualMenu" type="CanvasLayer" unique_id=346671036]
 layer = 30
-script = ExtResource("1_wte7a")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=562935745]
 unique_name_in_owner = true
@@ -36,7 +24,7 @@ anchor_bottom = 0.5
 offset_left = -960.0
 offset_top = -540.0
 offset_right = -496.0
-offset_bottom = -239.0
+offset_bottom = -221.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -57,6 +45,13 @@ text = "Summoning Ritual"
 label_settings = SubResource("LabelSettings_glss5")
 horizontal_alignment = 1
 
+[node name="OrbNameLabel" type="Label" parent="Panel/Margin/VBox" unique_id=1698048616]
+unique_name_in_owner = true
+layout_mode = 2
+text = "GHOST"
+label_settings = SubResource("LabelSettings_ti24f")
+horizontal_alignment = 1
+
 [node name="Body" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=349464933]
 layout_mode = 2
 size_flags_vertical = 3
@@ -67,47 +62,187 @@ custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="OrbNameLabel" type="Label" parent="Panel/Margin/VBox/Body/Left" unique_id=1698048616]
-unique_name_in_owner = true
+[node name="EffectContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left" unique_id=1424128184]
 layout_mode = 2
-text = "Orb"
-label_settings = SubResource("LabelSettings_ti24f")
 
-[node name="StatsScroll" type="ScrollContainer" parent="Panel/Margin/VBox/Body/Left" unique_id=1005707770]
-custom_minimum_size = Vector2(0, 180)
+[node name="Label" type="Label" parent="Panel/Margin/VBox/Body/Left/EffectContainer" unique_id=1150907254]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-size_flags_vertical = 3
+text = "Enters and haunts enemies and deal its damage per second to them. Once dead, exits in a random direction."
+autowrap_mode = 2
 
-[node name="StatsContainer" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsScroll" unique_id=1110845207]
+[node name="StatsContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left" unique_id=1005343358]
+layout_mode = 2
+theme_override_constants/separation = 19
+
+[node name="Column1" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer" unique_id=1110845207]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SlotsLabel" type="Label" parent="Panel/Margin/VBox/Body/Left" unique_id=923537247]
+[node name="DamageContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1" unique_id=1499869830]
 layout_mode = 2
-text = "Glyph slots"
-label_settings = SubResource("LabelSettings_0lvlc")
+
+[node name="DamageBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1/DamageContainer" unique_id=558950410 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 10.4
+value_format = 0
+decimal_places = null
+
+[node name="SelfDamageContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1" unique_id=1931341663]
+layout_mode = 2
+
+[node name="SelfDamageBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1/SelfDamageContainer" unique_id=621180550 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 8.4
+value_format = 0
+decimal_places = null
+
+[node name="CritChanceContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1" unique_id=932993160]
+layout_mode = 2
+
+[node name="CritChanceBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1/CritChanceContainer" unique_id=1949852159 instance=ExtResource("3_rni76")]
+layout_mode = 2
+value = 0.01
+decimal_places = null
+
+[node name="CritDamageContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1" unique_id=1645131412]
+layout_mode = 2
+
+[node name="CritDamageBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column1/CritDamageContainer" unique_id=1426307784 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 2.0
+decimal_places = 0
+
+[node name="Column2" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer" unique_id=413880802]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpeedContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2" unique_id=2007704437]
+layout_mode = 2
+
+[node name="SpeedBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2/SpeedContainer" unique_id=427167355 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "speed_icon"
+value = 100.0
+value_format = 0
+decimal_places = 0
+
+[node name="WeightContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2" unique_id=2066113833]
+layout_mode = 2
+
+[node name="WeightBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2/WeightContainer" unique_id=1308763235 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 5.0
+value_format = 0
+decimal_places = 0
+
+[node name="SplashContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2" unique_id=2098659211]
+layout_mode = 2
+
+[node name="SplashBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2/SplashContainer" unique_id=1520956080 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "splash_icon"
+value = 0.03
+decimal_places = 0
+
+[node name="GlyphDropContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2" unique_id=993654743]
+layout_mode = 2
+
+[node name="GlyphBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column2/GlyphDropContainer" unique_id=204460981 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.05
+decimal_places = 0
+
+[node name="Column3" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer" unique_id=457701610]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BurnContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3" unique_id=2044460856]
+layout_mode = 2
+
+[node name="BurnBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3/BurnContainer" unique_id=1655327649 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="ChillContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3" unique_id=91055729]
+layout_mode = 2
+
+[node name="ChillBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3/ChillContainer" unique_id=1558227752 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 1.0
+value_format = 0
+decimal_places = 0
+
+[node name="ShockContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3" unique_id=291152294]
+layout_mode = 2
+
+[node name="ShockBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3/ShockContainer" unique_id=188576118 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="PoisonContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3" unique_id=290461484]
+layout_mode = 2
+
+[node name="PoisonBox" parent="Panel/Margin/VBox/Body/Left/StatsContainer/Column3/PoisonContainer" unique_id=2142056108 instance=ExtResource("3_rni76")]
+layout_mode = 2
+icon_id = "damage_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
 
 [node name="SlotsContainer" type="HBoxContainer" parent="Panel/Margin/VBox/Body/Left" unique_id=1507704842]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
 theme_override_constants/separation = 4
+
+[node name="GlyphSocket1" type="TextureRect" parent="Panel/Margin/VBox/Body/Left/SlotsContainer" unique_id=544928239]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_0grhw")
+
+[node name="GlyphSocket2" type="TextureRect" parent="Panel/Margin/VBox/Body/Left/SlotsContainer" unique_id=1942746238]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_0grhw")
+
+[node name="GlyphSocket3" type="TextureRect" parent="Panel/Margin/VBox/Body/Left/SlotsContainer" unique_id=2122313665]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_0grhw")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Left" unique_id=890027339]
+layout_mode = 2
+
+[node name="DoneButton" type="Button" parent="Panel/Margin/VBox/Body/Left/VBoxContainer" unique_id=1365721625]
+custom_maximum_size = Vector2(80, -1)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Transform"
+
+[node name="HintContainer" type="VBoxContainer" parent="Panel/Margin/VBox/Body/Left/VBoxContainer" unique_id=89226745]
+layout_mode = 2
 
 [node name="Right" type="VBoxContainer" parent="Panel/Margin/VBox/Body" unique_id=2104597590]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
-
-[node name="ManaLabel" type="Label" parent="Panel/Margin/VBox/Body/Right" unique_id=1587430631]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Mana: 0"
-label_settings = SubResource("LabelSettings_23x4v")
-
-[node name="InventoryLabel" type="Label" parent="Panel/Margin/VBox/Body/Right" unique_id=2079919614]
-layout_mode = 2
-text = "Stored glyphs"
-label_settings = SubResource("LabelSettings_title")
 
 [node name="InventoryScroll" type="ScrollContainer" parent="Panel/Margin/VBox/Body/Right" unique_id=1490969242]
 custom_minimum_size = Vector2(0, 180)
@@ -123,11 +258,6 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 2
-
-[node name="NewOrbButton" type="Button" parent="Panel/Margin/VBox/Footer" unique_id=299349745]
-unique_name_in_owner = true
-layout_mode = 2
-text = "New Blank Orb (20 mana)"
 
 [node name="DoneButton" type="Button" parent="Panel/Margin/VBox/Footer" unique_id=1704361147]
 unique_name_in_owner = true

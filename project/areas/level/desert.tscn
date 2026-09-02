@@ -17,6 +17,7 @@
 [ext_resource type="PackedScene" uid="uid://ni4epc6h4rnd" path="res://objects/summoning_circle/summoning_circle.tscn" id="14_mc6if"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="15_font"]
 [ext_resource type="PackedScene" uid="uid://b17dwdxee2iyy" path="res://ui/ritual_menu/ritual_menu.tscn" id="16_ritual"]
+[ext_resource type="PackedScene" uid="uid://but7uyy7vg2fy" path="res://ui/ritual_menu/ritual_menu_2.tscn" id="18_ynou2"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_egukw"]
 texture = ExtResource("3_wa2qb")
@@ -411,6 +412,7 @@ unique_name_in_owner = true
 
 [node name="RitualMenu" parent="." unique_id=1666574216 instance=ExtResource("16_ritual")]
 unique_name_in_owner = true
+visible = false
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1083207069]
 layer = 20
@@ -427,3 +429,5 @@ theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 16
 text = "Assemble..."
+
+[node name="RitualMenu2" parent="." unique_id=346671036 instance=ExtResource("18_ynou2")]

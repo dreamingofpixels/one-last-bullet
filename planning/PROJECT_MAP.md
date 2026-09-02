@@ -96,6 +96,7 @@ A Final Spell/
 │   │   ├── item_picked_up.ogg / .tres      Shared item pickup SoundEvent
 │   │   └── mana_crystal_deposited.ogg / .tres  Glyph deposit SoundEvent (legacy name)
 │   ├── ui/
+│   │   ├── attributes/attribute_box.tscn / .gd   Stat row (icon + value); `@tool` PNG picker from folder
 │   │   ├── ritual_menu/ritual_menu.tscn / .gd  Paused summoning ritual UI
 │   │   └── fonts/
 │   │       └── pixel_medium.fnt / .png   BMFont (atlas PNG is skip-imported; assign the .fnt)
@@ -203,6 +204,7 @@ A Final Spell/
 - `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
 - `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`**; `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`capture_orb`** / **`release_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
 - `project/items/glyph/glyph.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `glyph_id` + **Rarity**; element texture + rarity tint; tether pickup, carry, Attack throw, deposit → circle inventory or overflow mana; group **`glyphs`**
+- `project/ui/attributes/attribute_box.tscn` + `.gd` — **`AttributeBox`** (`@tool` `HBoxContainer`); `@export icon_id` dropdown scans `res://ui/attributes/*.png` and applies to `%Icon`; `@export value` + `value_format` (`DECIMAL` / `PERCENT`, fraction × 100 for %) + `decimal_places` (`0` / `1` / `2`) drive `%Value`
 - `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); orb stats, socket/discard glyphs, new blank orb, Done
 - `project/items/item_picked_up.ogg` + `.tres` — shared SoundEvent for picking up items
 - `project/items/mana_crystal_deposited.ogg` + `.tres` — SoundEvent played when a crystal finishes depositing

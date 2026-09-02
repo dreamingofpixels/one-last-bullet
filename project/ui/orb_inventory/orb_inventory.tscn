@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://t0wansvdm4dj"]
+
+[ext_resource type="Script" uid="uid://drw0d008htirc" path="res://ui/orb_inventory/orb_inventory.gd" id="1_ja5xy"]
+[ext_resource type="Texture2D" uid="uid://0fvk7t2f6dtd" path="res://ui/orb_inventory/orb_socket.png" id="1_mq2s4"]
+
+[node name="OrbInventory" type="Control" unique_id=1479164035]
+layout_mode = 3
+anchor_right = 0.25
+anchor_bottom = 0.039
+offset_bottom = -0.12000275
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ja5xy")
+
+[node name="Panel" type="Panel" parent="." unique_id=1177387082]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=2134699398]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="OrbSocket1" type="TextureRect" parent="HBoxContainer" unique_id=745671772]
+custom_minimum_size = Vector2(32, 32)
+custom_maximum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+texture = ExtResource("1_mq2s4")
+
+[node name="OrbSocket2" type="TextureRect" parent="HBoxContainer" unique_id=1837296325]
+custom_minimum_size = Vector2(32, 32)
+custom_maximum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+texture = ExtResource("1_mq2s4")
+
+[node name="OrbSocket3" type="TextureRect" parent="HBoxContainer" unique_id=40454676]
+custom_minimum_size = Vector2(32, 32)
+custom_maximum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+texture = ExtResource("1_mq2s4")

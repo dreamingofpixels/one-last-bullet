@@ -1,30 +1,50 @@
-A Final Spell
+Tavern Roguelike
 
 Overview
-You are a wizard stuck in a room with enemies. You have only one spell left to shoot: the orb of chaos. Game starts with you firing that orb, which will bounce around the stage damaging any enemies it hits but also damaging you if you hit it.
-To help you kill your enemies you can re-direct the orb by being close to it and pressing a button. The orb then travels around you and you can release it in order to aim it where you want it to go.
+You are a wizard stuck in a room with enemies. Your only weapon at first is a orb: a Blank Orb. Game starts with your summoning circle shooting that orb, which will bounce around the stage damaging any enemies it hits but also damaging you if you hit it.
+To help you kill your enemies you can re-direct the bullet by being close to it and redirecting it. Each time you redirect it it goes faster and does more damage (to both you and enemies!)
 
 Enemies drop mana which needs to be picked up quickly and can later be used to upgrade the orb
 
 Goal of the Game
-You win the level when all enemies are dead. You lose if you die. You can die from enemies or getting hit by the orb. After winning 10 levels you win the run.
+You win the level when all enemies are dead. You lose if you die. You can die from enemies or getting hit by the bullet. After winning 10 levels you win the run.
 
 Story
 Very lean. You are a wizard defending yourself from various nefarious beings. Doesent have to be more complicated then that. The game is more of a gameplay focused arcade game. 
 
 
-The orb
-Shot by the player at the beginning of the game in any direction from where they are standing (center bottom screen). Then the orb will travel and bounce around freely forever. The speed should be slow enough that the player can interact with the orb but fast enough that avoiding it should be a challenge. The orbs speed and damage increases each time you redirect it
+Orbs
+Shot by the players summoning circle at the beginning of the game in a random direction Then the orbs will travel and bounce around freely forever. The speed should be slow enough that the player can interact with the bullet but fast enough that avoiding it should be a challenge. The orbs speed and damage increases each time you redirect it
+You start with one orb but can acquire more later on.
+
+
+
+
+Orbs have 12 attributes:
+
+damageself_damagecrit_chancecrit_damageHP dealt to enemies on hit.HP dealt to you on contact.Chance a hit rolls as a crit.Damage multiplier when a hit crits.speedweightsplashglyph_dropHow fast the orb travels.Knockback distance (px). Bowling collisions deal this as damage to both enemies; breakables take +5% damage per point.Percent of resolved hit damage applied to others within 50 px.Chance a glyph drops when this orb gets the kill.burnchillshockpoisonStacks on enemy hit. On death, explodes for 5 ◊ stacks in a radius of 50 ◊ (1 + 5% ◊ stacks) px.Stacks on enemy hit. +5% move and attack-speed slow per stack (capped at 90%).Stacks on enemy hit. At 10 stacks: 50 damage, 2 s stun, then stacks clear.Stacks on enemy hit. 1 damage per stack per second until the enemy dies.
 
 
 Stage
-There will be different stages and environment, with randomized enemies and obstacles. Various obstacles interact with the orb and the environment. For example, a barrel of TNT can explode.
-Breaking some things can yield various powerups for the player.
-Enemies will also drop mana which the player can pickup. But the mana disappears after a while so you need to be fast.
+There will be different stages and environment, with randomized enemies and obstacles. Various obstacles interact with the orb and the environment. For example, a barrel of TNT can explode. Rocks can be broken.
 
+Glyphs
+Enemies and obstacles drop Glyphs. These come in 12 different types and divided into four different elements. The player can pick these up and throw them into the summoning circle to store them. A player can have maximum of 3 stored at once. Every extra gets converted into mana.
+
+Glyphs can be put into orbs to give them a boost to one of its 12 attributes. If three glyphs are added, a Blank orb can be upgraded to one of 20 other orbs that all have special effects.
+Glyphs can be of three different rarities: Common, Rare and Unique. This influences the attribute value added by it.
 Progression
-After each level the player enters a ‚Äúshop‚Äù where they can spend mana on various randomized upgrades. It can be things that improve the orb, or the player, or curses the enemies somehow. Much of the fun should be in finding interesting synergies.
+
+During the level the player can activate the summoning circle (first time free, after that price goes up by 5 mana). The next orb that enters the summoning circle opens up a menu where the player can see info about that orb, as well as an inventory at the bottom of the screen of all current orbs.
+In  this menu the player can
+
+1. Put glyphs in orbs. If three glyphs are added to a Blank Orb the orb can be upgraded. 
+If three glyphs are added to a non-Blank Orb it can with the right combination trigger a further upgrade, called Attunement. After adding two glyphs to a orb hints of the four possible Attunements are shown. ì???î if not discovered yet and the name of the Attunement if it has been discovered already.
+
+2. Recycle a glyph to get mana. 5 mana for a Common glyph, 10 for Rare and 20 for unique.
+
+3. Buy a new Blank Orb for 20 mana. Price goes up by 10 each time.
 
 
 Enemies
-For now only two basic enemy that chases the player and damage him on contact.
+For now only two basic enemy that chases the player and damage him on contact. Grunt and Brute.

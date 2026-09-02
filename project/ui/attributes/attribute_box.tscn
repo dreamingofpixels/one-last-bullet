@@ -6,6 +6,7 @@
 
 [sub_resource type="LabelSettings" id="LabelSettings_3ekyw"]
 font = ExtResource("2_2tpu1")
+font_size = 12
 
 [node name="AttributeBox" type="HBoxContainer" unique_id=558950410]
 anchors_preset = -1
@@ -18,10 +19,10 @@ script = ExtResource("1_2tpu1")
 icon_id = "critical_chance_icon"
 value = 0.104
 value_format = 1
+decimal_places = null
 
 [node name="Icon" type="TextureRect" parent="." unique_id=184426436]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(16, 16)
 custom_maximum_size = Vector2(16, 16)
 layout_mode = 2
 size_flags_vertical = 4

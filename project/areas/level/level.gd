@@ -226,6 +226,7 @@ func _launch_opening_orbs() -> void:
 
 	var origin: Vector2 = summoning_circle.get_launch_origin()
 	var scenes: Array[PackedScene] = [
+		#BLANK_ORB_SCENE
 		GHOST_ORB_SCENE,
 		ROT_ORB_SCENE,
 		CONDUIT_ORB_SCENE,

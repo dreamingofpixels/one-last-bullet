@@ -212,6 +212,18 @@ delay_before = 12.0
 entries = Array[ExtResource("9_v5loy")]([SubResource("Resource_ocl8a"), SubResource("Resource_f08up")])
 metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
 
+[sub_resource type="Resource" id="Resource_ti24f"]
+script = ExtResource("9_v5loy")
+enemy_scene = ExtResource("11_mc6if")
+count = 3
+metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
+
+[sub_resource type="Resource" id="Resource_glss5"]
+script = ExtResource("8_igk5d")
+delay_before = 12.0
+entries = Array[ExtResource("9_v5loy")]([SubResource("Resource_ti24f")])
+metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
+
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_arena"]
 resource_local_to_scene = true
 vertices = PackedVector2Array(598, 222, 530, 222, 250, 170, 278, 170, 417, 82, 450, 66, 458, 66, 458, 130, 346, 170, 595, 57, 629, 57, 617, 126, 583, 126, 569, 106, 569, 62, 324, 18, 324, 134, 313, 114, 313, 82, 630, 266, 630, 350, 622, 337, 622, 293, 278, 134, 279, 114, 417, 50, 450, 18, 346, 18, 383, 50, 383, 82, 578, 266, 588, 293, 617, 170, 630, 230, 598, 230, 583, 170, 263, 66, 263, 110, 250, 134, 182, 106, 182, 70, 297, 82, 297, 66, 41, 18, 174, 54, 174, 70, 42, 134, 130, 90, 138, 90, 138, 106, 70, 134, 279, 110, 466, 130, 466, 146, 510, 46, 494, 46, 494, 34, 510, 34, 519, 42, 510, 18, 519, 18, 553, 42, 553, 18, 595, 18, 629, 18, 630, 18, 535, 62, 530, 258, 169, 298, 177, 258, 177, 214, 161, 214, 161, 190, 127, 190, 127, 221, 95, 221, 70, 170, 129, 265, 129, 234, 143, 234, 135, 254, 143, 254, 135, 298, 62, 298, 10, 350, 95, 265, 62, 262, 169, 258, 578, 258, 567, 306, 588, 306, 601, 338, 601, 337, 10, 134, 10, 50, 41, 50, 130, 54, 510, 146, 535, 106, 18, 262, 42, 170, 567, 338, 18, 298, 10, 170)
@@ -381,7 +393,7 @@ unique_name_in_owner = true
 
 [node name="EnemySpawner" parent="." unique_id=127933936 instance=ExtResource("7_spawner")]
 unique_name_in_owner = true
-waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw")])
+waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw"), SubResource("Resource_glss5")])
 assemble_duration = 1.5
 telegraph_duration = 0.3
 

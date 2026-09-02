@@ -10,6 +10,7 @@ const STAT_KEYS: Array[String] = [
 	"burn", "chill", "shock", "poison",
 ]
 
+@onready var panel: PanelContainer = %Panel
 @onready var orb_name_label: Label = %OrbNameLabel
 @onready var stats_container: VBoxContainer = %StatsContainer
 @onready var slots_container: HBoxContainer = %SlotsContainer
@@ -25,9 +26,35 @@ var _new_orb_cost: float = 20.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	_center_panel()
 	visible = false
 	done_button.pressed.connect(_on_done_pressed)
 	new_orb_button.pressed.connect(_on_new_orb_pressed)
+
+
+func _center_panel() -> void:
+	var designed_size: Vector2 = _editor_panel_size()
+	designed_size.x = maxf(designed_size.x, 1.0)
+	designed_size.y = maxf(designed_size.y, 1.0)
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -designed_size.x * 0.5
+	panel.offset_top = -designed_size.y * 0.5
+	panel.offset_right = designed_size.x * 0.5
+	panel.offset_bottom = designed_size.y * 0.5
+
+
+func _editor_panel_size() -> Vector2:
+	var editor_parent := Vector2(
+		float(ProjectSettings.get_setting("display/window/size/viewport_width")),
+		float(ProjectSettings.get_setting("display/window/size/viewport_height")),
+	)
+	return Vector2(
+		(panel.anchor_right - panel.anchor_left) * editor_parent.x + (panel.offset_right - panel.offset_left),
+		(panel.anchor_bottom - panel.anchor_top) * editor_parent.y + (panel.offset_bottom - panel.offset_top),
+	)
 
 
 func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0) -> void:

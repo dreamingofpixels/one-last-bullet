@@ -1,4 +1,4 @@
-Tavern Roguelike
+A Final Spell
 
 Overview
 You are a wizard stuck in a room with enemies. Your only weapon at first is a orb: a Blank Orb. Game starts with your summoning circle shooting that orb, which will bounce around the stage damaging any enemies it hits but also damaging you if you hit it.

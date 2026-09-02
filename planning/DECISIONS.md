@@ -16,19 +16,43 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: The player has a single spell — the **orb of chaos**. It enters play at the start of each level and travels/bounces indefinitely.
 - **Why**: Scarcity and danger in the same object; the wizard has one wild spell left to survive the room.
 - **Alternatives**: Multi-shot mana pool — dilutes the hook; orb that despawns — removes the constant threat.
-- **Status**: superseded — opening release now spawns a 3-orb spread volley for playtest (see below)
+- **Status**: superseded — source design now starts with one **Blank Orb** from the circle and lets the player buy more (see below); prototype still uses a 3-typed opening volley
+
+### Opening launch: one Blank Orb from the summoning circle
+- **Decision (design)**: Each level starts with the **summoning circle** shooting **one Blank Orb** in a **random direction**. The player starts with that single orb and can **acquire more** later (buy from the ritual menu). Mid-combat steer is **proximity redirect** — each redirect raises that orb's speed and damage (to enemies and the player).
+- **Why**: Source doc (`A Final Spell.txt`) dropped player free-aim and the between-level shop; the circle is both the opening beat and the upgrade station. One orb at start preserves the dodge-your-weapon hook; extra orbs are a purchased escalation.
+- **Alternatives**: Player free-aim from center-bottom — previous source doc; three typed orbs at start (Ghost / Rot / Conduit) — current prototype, more room pressure but skips the Blank→specialist upgrade fantasy; tether-orbit then release — previous source steer; keep a between-level shop as a second upgrade layer — no longer in the source doc.
+- **Status**: decided (design); prototype still launches Ghost / Rot / Conduit (see "Opening typed orb volley")
+
+### Blank Orb → 20 specialist orbs; Attunement as a second upgrade
+- **Decision (design)**: Socketing glyphs boosts one of the orb's 12 attributes (Common / Rare / Unique values). **Three glyphs on a Blank Orb** can upgrade it into one of **20** specialist orbs with special effects. **Three glyphs on a non-Blank orb** can, with the right combination, trigger **Attunement**. After **two** glyphs are socketed, the ritual menu shows hints of the **four possible Attunements**: `???` if not yet discovered, the Attunement **name** if it has been discovered already.
+- **Why**: Gives Blank Orbs a craft identity and specialist orbs a further chase; the two-glyph hint teaches recipes without spoiling undiscovered ones.
+- **Alternatives**: Glyphs only ever flat-add stats (current prototype) — no orb identity change; auto-upgrade on any three glyphs without recipes — less discovery; show all recipe names immediately — spoils collection.
+- **Status**: planned (design); not in prototype. Recipe table and whether Attunement discovery persists across runs are still open.
+
+### Ritual menu: all-orb inventory; Blank Orb buy scales
+- **Decision (design)**: The ritual menu shows info about the captured orb **and** an **inventory of all current orbs** at the bottom of the screen. **Buy a new Blank Orb** starts at **20 mana** and **goes up by 10** each purchase. Recycle is **5 / 10 / 20** mana for Common / Rare / Unique (already in prototype). Circle activation is first-use free, then **+5 mana** per use (already in prototype).
+- **Why**: Multi-orb runs need a way to see and choose among orbs without capturing each one first; escalating buy cost paces extra-orb snowball.
+- **Alternatives**: Only show the captured orb — current prototype; flat 20 mana forever — cheaper extra orbs late-run; a between-level shop instead of in-level buy — superseded (see shop entries).
+- **Status**: planned (design); prototype has a paused ritual with stats / socket / discard / flat-20 buy / Done, no all-orb bar and no +10 buy scaling
+
+### In-level ritual replaces between-level shop
+- **Decision (design)**: Run progression is the **in-level summoning circle ritual** (glyphs, orb upgrades, Attunement, buying Blank Orbs). The source doc no longer has a post-level shop of randomized orb / player / enemy-curse upgrades.
+- **Why**: Glyph socketing and orb identity already supply the synergy layer; a second shop would split the economy.
+- **Alternatives**: Keep a between-level shop as an additional layer — previous source doc; shop-only upgrades with no in-level ritual — weaker circle fantasy.
+- **Status**: decided (design); shop entries below are superseded. Multi-level run structure (10 clears) is unchanged.
 
 ### Opening 3-orb launch from summoning circle
 - **Decision**: At level start the player assembles in (~2 s), then **three** chaos orbs launch from the **summoning circle** `DepositArea` origin in **independent random directions** via `begin_flight(dir, player)`. No opening tether; mid-combat tether release stays a single orb. Player instigator grace still applies so assemble→launch does not instantly kill.
 - **Why**: Ties the opening beat to the circle / mana fantasy; random fan creates immediate room pressure without teaching a separate sling shot; keeps the 3-orb playtest density.
-- **Alternatives**: Opening tether + ±20° volley-on-release — previous; design-doc free aim from the player — may return; single orb from circle — weaker room pressure; shared random angle + spread — more readable but less chaotic.
+- **Alternatives**: Opening tether + ±20° volley-on-release — previous; player free-aim from center-bottom — previous source doc, no longer current; single orb from circle — now the source design; shared random angle + spread — more readable but less chaotic.
 - **Status**: superseded — replaced by typed Shadow/Poison/Electric opening volley (see below)
 
 ### Opening typed orb volley (Ghost / Rot / Conduit)
 - **Decision**: Level start launches **one Ghost**, **one Rot**, and **one Conduit** orb from the summoning circle in independent random directions (`begin_flight`, player grace). No plain blank orb is spawned. `blank_orb.gd` / `.tscn` remain the shared `BlankOrb` base (`class_name`, `FLYING` / `TETHERED` / `POSSESSED`). Typed scenes tint `blank_orb.png` and override hit hooks where needed (Ghost possession). Each orb loads **12 core stats** from GameData via `orb_id`. Enemies own a `StatusComponent` for Poison, Shock, Burn, and Chill. Ghost follows its host in world space (not reparented) so enemy `queue_free` cannot free the orb. Conduit current is a `Line2D` + enemy-mask capsule `Area2D` while the closest player is within 130 px.
 - **Why**: Same 3-orb room pressure with readable elemental fantasies; shared bounce/tether/redirect code stays on BlankOrb; status lives on victims so multiple sources can stack later.
-- **Alternatives**: Keep three identical chaos orbs — no type fantasy; add three typed orbs on top of chaos (6 total) — too dense for the arena; per-orb timers instead of StatusComponent — duplicates DoT/stun logic; parent Shadow into the enemy — orb dies with host teardown; raycast-only current without Area2D — harder to tick continuous overlap cleanly.
-- **Status**: decided (in-codebase)
+- **Alternatives**: Keep three identical chaos orbs — no type fantasy; add three typed orbs on top of chaos (6 total) — too dense for the arena; per-orb timers instead of StatusComponent — duplicates DoT/stun logic; parent Shadow into the enemy — orb dies with host teardown; raycast-only current without Area2D — harder to tick continuous overlap cleanly; **one Blank Orb at start** — current source design (see "Opening launch: one Blank Orb").
+- **Status**: decided (in-codebase); playtest — source design now wants one Blank Orb at start
 
 ### Orb folder layout and class rename (`entities/orbs/`)
 - **Decision**: Orbs live under `project/entities/orbs/` with one subfolder per type: `blank/` (shared `BlankOrb` base), `ghost/`, `rot/`, `conduit/`. Shared SFX in `orb_sfx/`. Typed `class_name`s are `GhostOrb`, `RotOrb`, `ConduitOrb` (all extend `BlankOrb`). The old `ChaosOrb` class name and `entities/chaos_orb/` path are retired.
@@ -49,7 +73,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — replaced by circle random launch (see above)
 
 ### Glyphs replace mana crystals; carry, throw, circle inventory
-- **Decision**: Enemies roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity tint (white / blue / gold). `ManaCrystal` retired.
+- **Decision**: Enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity tint (white / blue / gold). `ManaCrystal` retired.
 - **Why**: Glyphs are the upgrade vector for the ritual menu; mana comes from discard/overflow rather than every pickup.
 - **Alternatives**: Keep crystals as mana and add separate glyph drops — two loot types to juggle; auto-socket on deposit — removes ritual menu choice.
 - **Status**: decided (in-codebase)
@@ -58,7 +82,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: `try_activate()` is repeatable: cost **`activation_step × activation_count`** (default step **5** → first activation **free**, then 5, 10, 15…). While active, first flying **`BlankOrb`** entering `DepositArea` is sucked to center → **`ritual_started`** → **`RitualMenu`** opens with **`get_tree().paused = true`**. Menu shows orb **12 stats**, **3 glyph slots**, stored glyphs (socket / discard), **New Blank Orb (20 mana)**, **Done**. Socketing flat-adds the glyph's `attribute` value from GameData by rarity. **Done** → `release_orb` (random launch) + `deactivate`. `AudioManager` uses `PROCESS_MODE_ALWAYS` so SFX still play while paused.
 - **Why**: Separates mana delivery (inventory) from orb customization (ritual); pause keeps menu readable in co-op chaos.
 - **Alternatives**: Real-time menu — orb and enemies keep moving; one-shot 5-mana activate — no escalating cost.
-- **Status**: decided (in-codebase); supersedes "Summoning circle activation ritual"
+- **Status**: decided (in-codebase); design adds all-orb inventory, +10 buy scaling, Blank→specialist upgrade, and Attunement (see ritual/Attunement entries above)
 
 ### Glyph stat upgrades: flat-add from GameData `attribute`
 - **Decision**: Each `glyphs` row names an **`attribute`** (`damage`, `burn`, `glyph_drop`, etc.). Socketing adds **`rarity_common` / `rarity_rare` / `rarity_unique`** flat to that stat. `splash`, `crit_chance`, `glyph_drop` clamp to **0–1**; `damage`, `self_damage`, `speed`, `weight` floor at **0**. Negative values in data (e.g. `soft`, `drag`) reduce stats as authored.
@@ -161,7 +185,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Level start: opening tether instead of slow-mo aim
 - **Decision**: At level start the player first assembles in over ~2 s using reverse `pixel_fall` (`DestructionEffect.play_assemble_from_sprite`), then **one** orb appears already tethered **24 px above** the player (`begin_opening_tether`). Tether (or two full revolutions) releases it along the tangent into `FLYING`. Opening release emits `launched` and does **not** apply the +10% tether boost; `level.gd` then spawns two extras at ±spread (`begin_flight`). `OpeningAimComponent`, the Aim state, and the old free-aim global slow-mo are removed. `OrbTetherComponent.bind_orb()` is only for the opening sling; mid-combat uses the `orb` group. The opening tether now triggers the same 50%/0.5 s time-slow as mid-combat captures (see tether time-slow entry above). `level.gd` starts `EnemySpawner` and the player intro from the same post-nav-ready moment, so enemy telegraphs run while the player is assembling and the tether begins as that intro finishes.
 - **Why**: One tether UX for start and mid-combat; teaches capture/release immediately; adding a short player assemble gives the same material language as enemy spawns and avoids visible pop-in while nav bake settles. Letting enemy telegraphs start at the same time preserves the original room pressure timing instead of delaying wave pacing behind the intro.
-- **Alternatives**: Keep 3s slow-mo free aim — separate system and co-op time_scale issues; **design-doc free aim-and-fire at start** — may return to match source doc; auto-launch upward without tether — skips the core sling lesson; apply boost on opening release — unfair free power on every level start; keep player visible instantly while only enemies assemble — less coherent spawn language and more start-of-level pop-in; delay enemy spawns until after assembly — cleaner intro staging, but pushes combat pacing later than intended.
+- **Alternatives**: Keep 3s slow-mo free aim — separate system and co-op time_scale issues; player free-aim-and-fire at start — previous source doc, no longer current; auto-launch upward without tether — skips the core sling lesson; apply boost on opening release — unfair free power on every level start; keep player visible instantly while only enemies assemble — less coherent spawn language and more start-of-level pop-in; delay enemy spawns until after assembly — cleaner intro staging, but pushes combat pacing later than intended.
 - **Status**: superseded — opening launch is now from the summoning circle (see "Opening 3-orb launch from summoning circle")
 
 ### Single basic enemy: chase + contact kill
@@ -188,51 +212,53 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Keep "One Last Bullet" — mismatches wizard/orb fantasy; "Tavern Roguelike" — genre label, not a title; "Orbital" / "Chaos Orb" puns — less clear about the one-spell hook.
 - **Status**: decided (in-codebase)
 
-### Wizard fantasy; orb of chaos (replaces sheriff / one bullet)
-- **Decision**: Player is a **wizard** with one spell left — the **orb of chaos**. Setting is **tavern roguelike** with varied stages/environments, not a western sheriff defending a saloon.
-- **Why**: Design doc refocused on magic arcade survival; orb tether/redirect is the core hook, not gun fantasy.
-- **Alternatives**: Keep sheriff + bullet western theme — superseded by design doc; generic fantasy mage with many spells — dilutes the one-spell scarcity.
+### Wizard fantasy; Blank Orb (replaces sheriff / one bullet)
+- **Decision**: Player is a **wizard** whose starting weapon is a **Blank Orb**. Setting is **tavern roguelike** with varied stages/environments, not a western sheriff defending a saloon. More orbs can be acquired during the run.
+- **Why**: Design doc refocused on magic arcade survival; proximity redirect of a dangerous orb is the core hook, not gun fantasy.
+- **Alternatives**: Keep sheriff + bullet western theme — superseded by design doc; generic fantasy mage with many spells from the start — dilutes the opening scarcity; one orb of chaos forever — previous source scarcity, now extra orbs are purchased.
 - **Status**: decided (design); prototype still uses a desert arena
 
 ### Mana drops vanish if not picked up quickly
 - **Decision**: Enemies drop **mana** that disappears after a short window. Mana is spent in the between-level shop.
 - **Why**: Creates risk/reward: leave safe space to grab loot while the orb and enemies threaten; mana fits the wizard fantasy.
 - **Alternatives**: Permanent mana until leave — less tension; auto-collect — removes the skill beat; gold currency — superseded (western theme dropped).
-- **Status**: superseded — prototype uses persistent mana crystals delivered to the summoning circle (vanish timer still an open question)
+- **Status**: superseded — glyphs are the authored floor loot; mana comes from recycle/overflow. Source overview still mentions vanishing mana drops (open tension).
 
 ### Run structure: clear level → shop → repeat; 10 levels to win
 - **Decision**: Clear all enemies to finish a level; shop between levels; win the run after 10 clears. Death ends the run.
 - **Why**: Classic roguelike cadence with a defined climax length.
 - **Alternatives**: Endless mode only — no climax; shorter runs — less room for synergy builds.
-- **Status**: decided (design); shop/multi-level not in prototype yet
+- **Status**: superseded — source design now uses in-level ritual for upgrades; 10-level run structure still stands
 
 ### Shop upgrades: orb / player / enemy curses; synergies matter
 - **Decision**: Between-level shop offers randomized upgrades that improve the orb, the player, or curse enemies. Synergies are intentional fun.
 - **Why**: Keeps runs distinct and rewards build-crafting without a huge combat ruleset.
 - **Alternatives**: Fixed upgrade tree — less replay discovery; only player buffs — thinner fantasy.
-- **Status**: decided (design)
+- **Status**: superseded — source design dropped the between-level shop in favor of in-level ritual (glyphs / orb upgrades / Attunement)
 
 ### Minimal story; gameplay-first arcade
 - **Decision**: Story is lean (wizard defending against nefarious beings). No deep narrative required for v1.
-- **Why**: Focus production on the orb/tether/shop loop.
+- **Why**: Focus production on the orb / glyph / ritual loop.
 - **Alternatives**: Heavy campaign narrative — distracts from the arcade core.
 - **Status**: decided (design); supersedes sheriff/saloon story
 
 ### Varied stages with randomized enemies, obstacles, and breakables
-- **Decision**: Stages use **different environments** (tavern is one option) with randomized enemies/obstacles; obstacles can interact with the orb (e.g. TNT); breakables can drop powerups.
+- **Decision**: Stages use **different environments** (tavern is one option) with randomized enemies/obstacles; obstacles can interact with the orb (e.g. TNT); rocks can be broken; enemies **and obstacles** drop **glyphs**.
 - **Why**: Variety and environmental play without locking to one room type.
-- **Alternatives**: Saloon-only stages — superseded; static hand-authored only levels — less replay; pure empty arenas — less toy potential.
+- **Alternatives**: Saloon-only stages — superseded; static hand-authored only levels — less replay; pure empty arenas — less toy potential; breakables drop generic powerups — previous source doc, replaced by glyph drops.
 - **Status**: decided (design); prototype currently has two desert arenas (`desert.tscn`, `desert_2.tscn`)
 
 ---
 
 ## Open design tensions
 
-- **Tether feel**: orbit capture parked (`capture_enabled`); Attack-only redirect playtest; entity punch-through is the default (desert export can enable bounce).
+- **Opening volley**: source design starts with **one Blank Orb** from the circle; prototype launches Ghost / Rot / Conduit. Reconcile after playtest.
+- **Tether feel**: source design now specifies proximity **redirect** (matches Attack-only playtest). Orbit capture remains parked (`capture_enabled`); entity punch-through is the default (desert export can enable bounce).
 - **Attack cooldown / charges**: redirect cooldown 0.35s; tether post-release cooldown 0.25s; melee parked.
-- **Opening shot UX**: design doc says free aim-and-fire at level start from the player; prototype launches three typed orbs (Ghost / Rot / Conduit) from the summoning circle in random directions (conflicts with one-spell scarcity).
-- **Mana vanish duration**: crystals currently persist until deposited or orb-destroyed; should grounded crystals still time out?
-- **Shop draft size and reroll rules**: how many offers, costs, rerolls?
+- **Mana vs glyphs as floor loot**: source overview still says enemies drop vanishing **mana**; Glyphs / Progression sections make **glyphs** the drop and mana the recycle/overflow currency.
+- **Glyph vanish duration**: glyphs currently persist until deposited or orb-destroyed; should grounded glyphs still time out?
+- **Attunement discovery**: `???` vs named hints implies meta-unlock across runs — confirm per-run vs persistent.
+- **20 specialist orbs / Attunement recipes**: which glyph combinations map to which orbs and Attunements?
 - **Camera / view perspective**: player uses 4-direction diagonal sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena. Confirm long-term camera for larger stages.
 - **Arc deflect / melee rollback**: flip `deflect_orb_enabled` / `melee_enabled` if proximity Attack redirect needs the old swing again.
 - **Entity bounce default**: keep punch-through or ship bounce-off-entities after desert export playtests.

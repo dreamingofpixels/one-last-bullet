@@ -37,9 +37,21 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase) for inventory bar, recycle-by-drop, Transform, 3-orb cap, flat-20 buy; +10 buy scaling still planned
 
 ### Ritual menu v2: drag socketing, Transform, always-on discovery
-- **Decision**: Replaced the button-row ritual UI with `ritual_menu.tscn` + bottom `OrbInventoryBar`. Glyphs move via **mouse hold-drag** or **controller** (d-pad or left-stick flick navigates focus across inventory glyphs/orbs, orb slots, recycle, Transform, Buy, Done — analog is **one step per flick**, then the stick must recenter; dash grabs / confirms / removes a socketed glyph; tether cancels). Focus stays on the circle-captured orb for editing. Socketed glyphs can be pulled back off. Dragging hides the source socket icon. Circle inventory seeds one Common Air (`static`) glyph. After **2** socketed glyphs, four hints appear from `OrbRecipes`. **Transform** enables only when 3 glyphs match a row with a non-null `scene_path`. Discovery is provisionally **always on**.
-- **Why**: Matches the authored v2 layout; one drag model for mouse and pad; Transform gated on playable scenes avoids spawning broken orbs; discovery seam keeps meta-unlock work deferred.
-- **Alternatives**: Godot `_get_drag_data` only — no pad path; selectable focus among all inventory orbs for editing — deferred; Transform on any 3 glyphs / failed ritual — rejected; persistent discovery save — deferred.
+- **Decision**: Replaced the button-row ritual UI with `ritual_menu.tscn` + bottom `OrbInventoryBar`. Glyphs move via **mouse hold-drag** or **controller** (d-pad or left-stick flick navigates focus across inventory glyphs, orb slots, recycle, Transform, Buy, Done — analog is **one step per flick**, then the stick must recenter; **bottom orb sockets are not focusable**; dash grabs / confirms; tether cancels). Orb glyph slots are **sparse** (fixed 3 indices; gaps allowed). Dropping onto an occupied slot **swaps**. Confirm on a socketed glyph **picks it back up** (holds on that slot) instead of auto-returning it to inventory. Focus stays on the circle-captured orb for editing. Dragging hides the source socket icon. Starting circle glyphs / mana / opening orbs come from **`RunStartConfig`**. After **2** socketed glyphs, four hints appear from `OrbRecipes`. **Transform** enables only when 3 glyphs match a row with a non-null `scene_path`. Discovery is provisionally **always on**.
+- **Why**: Matches the authored v2 layout; one drag model for mouse and pad; independent slots match visual drop targets; Transform gated on playable scenes avoids spawning broken orbs; discovery seam keeps meta-unlock work deferred.
+- **Alternatives**: Godot `_get_drag_data` only — no pad path; selectable focus among all inventory orbs for editing — rejected (display-only inventory orbs); packed append-only slots — previous, could not land on slot 3 while 1–2 empty; confirm auto-returns to inventory — previous; Transform on any 3 glyphs / failed ritual — rejected; persistent discovery save — deferred.
+- **Status**: decided (in-codebase)
+
+### RunStartConfig: editor-authored starting mana / orbs / glyphs
+- **Decision**: Level root exports a `RunStartConfig` Resource (`run_start_default.tres`) with `starting_mana`, `starting_orbs` (PackedScene array), and `starting_glyphs` (`GlyphEntryConfig` rows with glyph-id dropdown + rarity). `level.gd` applies mana/glyphs via `SummoningCircle.apply_start_config` in `_ready` and launches `starting_orbs` (fallback Ghost/Rot/Conduit if empty). Circle no longer hardcodes the Common Air seed.
+- **Why**: One inspector panel for playtest tuning without editing scripts; shareable `.tres` between scenes later.
+- **Alternatives**: Split exports (mana/glyphs on circle, orbs on level) — two inspector places; plain exports only on `level.gd` — works but weaker reuse; keep hardcoded seeds — harder to A/B.
+- **Status**: decided (in-codebase)
+
+### Single prototype arena (`desert.tscn`)
+- **Decision**: Remove `desert_2.tscn`. The playable prototype is only `desert.tscn`. `big_rock` / `animal_skull` scenes remain in the repo but are not placed in the current arena.
+- **Why**: One level to maintain while the loop is in flux.
+- **Alternatives**: Keep `desert_2` as a destructible-only sandbox — unused and drifted from the main scene.
 - **Status**: decided (in-codebase)
 
 ### In-level ritual replaces between-level shop
@@ -252,7 +264,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Stages use **different environments** (tavern is one option) with randomized enemies/obstacles; obstacles can interact with the orb (e.g. TNT); rocks can be broken; enemies **and obstacles** drop **glyphs**.
 - **Why**: Variety and environmental play without locking to one room type.
 - **Alternatives**: Saloon-only stages — superseded; static hand-authored only levels — less replay; pure empty arenas — less toy potential; breakables drop generic powerups — previous source doc, replaced by glyph drops.
-- **Status**: decided (design); prototype currently has two desert arenas (`desert.tscn`, `desert_2.tscn`)
+- **Status**: decided (design); prototype currently has one desert arena (`desert.tscn`)
 
 ---
 
@@ -291,7 +303,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: `HealthComponent.max_health` defaults to `1.0`, while concrete HP values are authored per scene/entity. Current examples: player `30`, grunt `20`, brute `50`, cactus `5`, `big_rock` `60`, `animal_skull` `20`. Orb damage to **entities** comes from the orb `DamageComponent.damage` (currently `10`) via victim `HitboxComponent` overlap polls; orb damage to **breakables** still uses `_try_apply_orb_damage` on flying `body_entered` / tether world-probe contact. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`. Non-fatal hits can start gameplay i-frames (see below).
 - **Why**: Keeps rules in data; multi-hit is a slider per entity, not special-case code. Shared flash covers entities and breakables without per-scene VFX scripts. Multi-hit props give the orb a reason to revisit the same obstacle and create longer spatial fights around tougher terrain.
 - **Alternatives**: One-hit-kill for everyone (`max_health = 1.0`) — previous design; too harsh with tether proximity; a bool `is_one_shot` — extra flag for something already handled by the value; shader hit flash — heavier for a short modulate.
-- **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"; `big_rock` / `animal_skull` multi-hit breakables are placed in `desert_2.tscn`
+- **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"; `big_rock` / `animal_skull` multi-hit breakable scenes remain (not currently placed in `desert.tscn`)
 
 ### Damage-reveal percentage health bars
 - **Decision**: Every `HealthComponent` owner (player, enemies, breakables) instances `HealthBarComponent`: an 18×2 px world-space bar drawn with `_draw`, fill width = `% of max_health` (not absolute HP, so a 10-HP brute and a 100-HP boss use the same pixel width). Hidden until `damage_taken`; stays visible for **1.5 s**, refreshing on each hit. Per-scene `offset` places it above the sprite.
@@ -458,6 +470,6 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase); motion integration planned
 
 ### Orb core stats and status effects
-- **Decision**: All orbs share 12 core stats on `BlankOrb`, loaded from GameData (`glyph_drop` replaces `crystal_drop`). Per-hit resolution uses `damage` vs `self_damage`, optional crit roll (`crit_chance` × `crit_damage`), splash AOE (50 px), weight knockback + bowling (`weight` collision damage), weight bonus to breakables (`+5% per weight`), and status stacks on enemy hit (`burn` / `chill` / `shock` / `poison`). `HealthComponent.take_damage` accepts an optional `source` node; `last_damage_source` drives per-orb `glyph_drop` on enemy/breakable death. **Glyph slots**: 3 per orb; socketing flat-adds from GameData `glyphs.attribute` by rarity.
+- **Decision**: All orbs share 12 core stats on `BlankOrb`, loaded from GameData (`glyph_drop` replaces `crystal_drop`). Per-hit resolution uses `damage` vs `self_damage`, optional crit roll (`crit_chance` × `crit_damage`), splash AOE (50 px), weight knockback + bowling (`weight` collision damage), weight bonus to breakables (`+5% per weight`), and status stacks on enemy hit (`burn` / `chill` / `shock` / `poison`). `HealthComponent.take_damage` accepts an optional `source` node; `last_damage_source` drives per-orb `glyph_drop` on enemy/breakable death. **Glyph slots**: fixed sparse array of 3 (`apply_glyph_at` / `has_glyph_at` / `socketed_count`); socketing flat-adds from GameData `glyphs.attribute` by rarity.
 - **Why**: Centralizes orb tuning in data; one combat path for typed orbs via `BlankOrb` hooks; statuses live on victims for multi-source stacking later.
 - **Status**: decided (in-codebase); statuses: Poison 1 dmg/stack/s; Chill 5% move+attack slow/stack (max 90%); Burn explodes on death; Shock stuns at 10 stacks for 2 s after 50 burst damage. All stacks persist until death.

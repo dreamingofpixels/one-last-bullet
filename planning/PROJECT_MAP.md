@@ -18,11 +18,11 @@ A Final Spell/
     ├── project.godot
     ├── icon.svg
     ├── areas/
-    │   └── level/
+│   └── level/
 │       ├── desert.tscn     Main playable arena
-│       ├── desert_2.tscn   Destructible-only arena variant
-    │       ├── level.gd        Level director (nav bake, win/lose, starts EnemySpawner)
-    │       └── desert_tilemap.png
+│       ├── level.gd        Level director (nav bake, win/lose, starts EnemySpawner, applies RunStartConfig)
+│       ├── run_start_config.gd / glyph_entry_config.gd / run_start_default.tres  Editor starting mana / orbs / glyphs
+│       └── desert_tilemap.png
     ├── components/             Reusable component scripts + scenes
     │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
 │   ├── health_component.gd / .tscn    HP; flash + optional i-frames; DestroyComponent on death; floating damage labels via DamageKind; last_damage_source + optional source on take_damage
@@ -155,8 +155,9 @@ A Final Spell/
 ## Key scenes & scripts (high-signal)
 
 ### Areas
-- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, `%Players` / `%Player1`, `%SummoningCircle` under Objects, `%Items` for glyph drops, `%RitualMenu`, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); inspector export `bounce_orbs_off_entities` (default false); no pre-placed orb — typed orbs spawn at launch; `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking
-- `project/areas/level/level.gd` — director: bakes navigation, starts `EnemySpawner`, awaits parallel `begin_level()`; launches **Ghost + Rot + Conduit** from `%SummoningCircle`; on kills rolls **glyph** spawn via orb `glyph_drop` or `glyph_drop_chance` export; weighted glyph rarity **70 / 25 / 5**; `SummoningCircle.ritual_started` → pause + `%RitualMenu.open` (passes live `orb` group); menu `closed` → `release_orb` + unpause; `new_blank_orb_requested` → spawn blank orb at circle (max 3); `transform_requested` → swap captured orb scene via `swap_captured_orb`; co-op P2 hot-join; win/lose when all players dead; orb tether/time-slow hooks
+- `project/areas/level/desert.tscn` — playable prototype arena (tile ground, baked `NavigationRegion2D`, walls on `world` + `wall`, `%Players` / `%Player1`, `%SummoningCircle` under Objects, `%Items` for glyph drops, `%RitualMenu`, `EnemySpawner`, HUD with `TimeSlowOverlay` + `StatusLabel`, fixed `Camera2D`); inspector export `bounce_orbs_off_entities` (default false); `@export run_start: RunStartConfig` (`run_start_default.tres`); no pre-placed orb — typed orbs spawn at launch from config; `LowerGround`, `Cliffs`, `Objects`, and `Walls` are in the `navigation_source` group for navmesh baking
+- `project/areas/level/level.gd` — director: bakes navigation, starts `EnemySpawner`, awaits parallel `begin_level()`; applies `RunStartConfig` to the circle then launches configured orbs (default **Ghost + Rot + Conduit**) from `%SummoningCircle`; on kills rolls **glyph** spawn via orb `glyph_drop` or `glyph_drop_chance` export; weighted glyph rarity **70 / 25 / 5**; `SummoningCircle.ritual_started` → pause + `%RitualMenu.open` (passes live `orb` group); menu `closed` → `release_orb` + unpause; `new_blank_orb_requested` → spawn blank orb at circle (max 3); `transform_requested` → swap captured orb scene via `swap_captured_orb`; co-op P2 hot-join; win/lose when all players dead; orb tether/time-slow hooks
+- `project/areas/level/run_start_config.gd` + `glyph_entry_config.gd` + `run_start_default.tres` — editor Resource for starting mana, opening orb scenes, and circle glyph inventory (`GlyphEntryConfig` glyph-id dropdown from GameData)
 
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
@@ -187,7 +188,7 @@ A Final Spell/
 - `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()`; transitions to idle, dash; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays walk on success); out-of-range Attack does nothing while melee parked; mouse GUI gate only when `controls.uses_mouse()`; attack blocked while tethering; forces idle while tethering
 - `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends (reachable only if `melee_enabled`)
 - `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
-- `project/entities/orbs/blank/blank_orb.tscn` + `blank_orb.gd` (`class_name BlankOrb`) — … **`glyph_drop`** + **3 glyph slots** (`apply_glyph`, `remove_glyph`, `get_stat_snapshot`); **`begin_circle_capture`** / **`release_from_circle`** / **`assume_circle_capture`** for summoning ritual; …
+- `project/entities/orbs/blank/blank_orb.tscn` + `blank_orb.gd` (`class_name BlankOrb`) — … **`glyph_drop`** + **3 sparse glyph slots** (`apply_glyph` / `apply_glyph_at` / `has_glyph_at` / `socketed_count` / `remove_glyph`, `get_stat_snapshot`); **`begin_circle_capture`** / **`release_from_circle`** / **`assume_circle_capture`** for summoning ritual; …
 - `project/entities/orbs/ghost/ghost_orb.tscn` + `ghost_orb.gd` (`class_name GhostOrb`) — dark-purple tint; skips enemy impact HP; on hit enters `POSSESSED` (hide, follow host in world space, 3 DPS via `take_damage(..., SHADOW)`, dark `damage_flash_color`); calls `super.on_hitbox_hit` for weight/splash/status; `DamageComponent.damage_kind = SHADOW` for player/breakable contact labels; emerges on `DestroyComponent.destroyed` with random `begin_flight` (no grace)
 - `project/entities/orbs/rot/rot_orb.tscn` + `rot_orb.gd` (`class_name RotOrb`) — green tint; poison stacks from GameData `poison` stat via base `on_hitbox_hit`
 - `project/entities/orbs/conduit/conduit_orb.tscn` + `conduit_orb.gd` (`class_name ConduitOrb`) — yellow-cyan tint; `%CurrentLine` + `%CurrentArea` / `%CurrentShape` (enemy-mask capsule); while closest player within 130 px, beam ticks 5 HP + 3 Shock per second (skip Shock while stunned); impact shock stacks from GameData
@@ -202,13 +203,13 @@ A Final Spell/
 - `project/objects/_base/level_object_variant.gd` — Resource: texture + hand-tuned collision size/offset
 - `project/objects/cactai/cactus.tscn` — breakable cactus; `max_health = 5.0`; Components: HealthComponent + HealthBarComponent + DestroyComponent
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
-- `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); placed in `desert_2.tscn`
-- `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); placed in `desert_2.tscn`
-- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`** (seeds one Common Air `static` glyph); `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`add_inventory_entry`** / **`capture_orb`** / **`release_orb`** / **`swap_captured_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
+- `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); scene remains, not currently placed in `desert.tscn`
+- `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); scene remains, not currently placed in `desert.tscn`
+- `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`**; `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`add_inventory_entry`** / **`insert_inventory_entry`** / **`apply_start_config`** / **`capture_orb`** / **`release_orb`** / **`swap_captured_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
 - `project/items/glyph/glyph.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `glyph_id` + **Rarity**; element texture + rarity tint; tether pickup, carry, Attack throw, deposit → circle inventory or overflow mana; group **`glyphs`**
 - `project/ui/attributes/attribute_box.tscn` + `.gd` — **`AttributeBox`** (`@tool` `HBoxContainer`); `@export icon_id` dropdown scans `res://ui/attributes/*.png` and applies to `%Icon`; `@export value` + `value_format` (`DECIMAL` / `PERCENT`, fraction × 100 for %) + `decimal_places` (`0` / `1` / `2`) drive `%Value`
-- `project/ui/inventory/orb_inventory.tscn` + `.gd` — **`OrbInventoryBar`**: 3 orb sockets + mana label + 3 glyph sockets; focus outline on captured orb; emits `glyph_grab_requested`
-- `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); focused orb stats/effect, drag-and-drop socket/recycle, 2-glyph hints, Transform, Buy, Done
+- `project/ui/inventory/orb_inventory.tscn` + `.gd` — **`OrbInventoryBar`**: 3 orb sockets + mana label + 3 glyph sockets; outline only on the ritual-captured orb (inventory orbs not focusable); emits `glyph_grab_requested`
+- `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); focused orb stats/effect, sparse-slot drag-and-drop socket/recycle with swap, 2-glyph hints, Transform, Buy, Done; controller confirm picks socketed glyphs back up
 - `project/globals/orb_recipes.gd` — **`OrbRecipes`**: unordered element-multiset lookups over `orbs` / `attunements`; `hints_for` / `result_for` / `is_playable` / provisional `is_discovered`
 - `project/items/item_picked_up.ogg` + `.tres` — shared SoundEvent for picking up items
 - `project/items/mana_crystal_deposited.ogg` + `.tres` — SoundEvent played when a crystal finishes depositing

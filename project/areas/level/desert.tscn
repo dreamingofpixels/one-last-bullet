@@ -17,6 +17,7 @@
 [ext_resource type="PackedScene" uid="uid://ni4epc6h4rnd" path="res://objects/summoning_circle/summoning_circle.tscn" id="14_mc6if"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="15_font"]
 [ext_resource type="PackedScene" uid="uid://but7uyy7vg2fy" path="res://ui/ritual_menu/ritual_menu.tscn" id="16_ritual"]
+[ext_resource type="Resource" path="res://areas/level/run_start_default.tres" id="17_runstart"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_egukw"]
 texture = ExtResource("3_wa2qb")
@@ -239,6 +240,7 @@ script = ExtResource("2_level")
 level_music = ExtResource("2_ynou2")
 glyph_drop_chance = 0.5
 bounce_orbs_off_entities = true
+run_start = ExtResource("17_runstart")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=652304502]
 position = Vector2(320, 180)

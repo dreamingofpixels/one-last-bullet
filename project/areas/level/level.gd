@@ -29,6 +29,8 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 @export var new_orb_cost: float = 20.0
 ## When true, flying orbs bounce off players/enemies; when false, they punch through.
 @export var bounce_orbs_off_entities: bool = false
+## Editor-authored starting mana, orbs, and circle glyph inventory.
+@export var run_start: RunStartConfig
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
 @onready var players_root: Node2D = %Players
@@ -53,6 +55,7 @@ func _ready() -> void:
 	randomize()
 	status_label.text = "Assemble..."
 	BlankOrb.set_bounce_off_entities(bounce_orbs_off_entities)
+	_apply_run_start_config()
 
 	if level_music:
 		AudioManager.play_music(level_music)
@@ -81,6 +84,18 @@ func _ready() -> void:
 	_level_intro_done = true
 	_launch_opening_orbs()
 	status_label.text = "Clear the room"
+
+
+func _apply_run_start_config() -> void:
+	var mana: float = 0.0
+	var glyphs: Array = []
+	if run_start != null:
+		mana = run_start.starting_mana
+		glyphs = run_start.starting_glyphs
+	else:
+		# Fallback matches the previous hardcoded seed.
+		glyphs = [{"id": "static", "rarity": Glyph.Rarity.COMMON}]
+	summoning_circle.apply_start_config(mana, glyphs)
 
 
 func _connect_orb_signals(orb: RigidBody2D) -> void:
@@ -226,20 +241,30 @@ func _launch_opening_orbs() -> void:
 	_opening_orbs_spawned = true
 
 	var origin: Vector2 = summoning_circle.get_launch_origin()
-	var scenes: Array[PackedScene] = [
-		#BLANK_ORB_SCENE
-		GHOST_ORB_SCENE,
-		ROT_ORB_SCENE,
-		CONDUIT_ORB_SCENE,
-	]
+	var scenes: Array[PackedScene] = _opening_orb_scenes()
 	for scene in scenes:
+		if scene == null:
+			continue
 		var orb: RigidBody2D = scene.instantiate() as RigidBody2D
+		if orb == null:
+			continue
 		add_child(orb)
 		orb.global_position = origin
 		_connect_orb_signals(orb)
 		orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
 
 	_grant_opening_invulnerability()
+
+
+func _opening_orb_scenes() -> Array[PackedScene]:
+	var scenes: Array[PackedScene] = []
+	if run_start != null and not run_start.starting_orbs.is_empty():
+		for packed in run_start.starting_orbs:
+			if packed != null:
+				scenes.append(packed)
+		return scenes
+	# Fallback matches the previous hardcoded Ghost / Rot / Conduit volley.
+	return [GHOST_ORB_SCENE, ROT_ORB_SCENE, CONDUIT_ORB_SCENE]
 
 
 func _grant_opening_invulnerability() -> void:

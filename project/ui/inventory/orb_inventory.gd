@@ -21,10 +21,8 @@ var _glyph_icons: Array[TextureRect] = []
 var _orb_outlines: Array[Panel] = []
 var _glyph_outlines: Array[Panel] = []
 var _controller_glyph_index: int = 0
-var _controller_orb_index: int = 0
 var _held_glyph_index: int = -1
 var _menu_focus_on_glyphs: bool = true
-var _menu_focus_on_orbs: bool = false
 
 
 func _ready() -> void:
@@ -64,10 +62,10 @@ func set_orbs(orbs: Array, focused: Node) -> void:
 			else:
 				icon.modulate = Color.WHITE
 			var is_focused_orb: bool = orb == focused
-			var is_menu_focus: bool = _menu_focus_on_orbs and i == _controller_orb_index
 			if is_focused_orb:
 				socket.self_modulate = FOCUS_TINT
-			outline.visible = is_focused_orb or is_menu_focus
+			# Only the ritual-captured orb gets an outline — inventory orbs are not focusable.
+			outline.visible = is_focused_orb
 		else:
 			icon.visible = false
 			icon.texture = null
@@ -129,17 +127,8 @@ func get_controller_glyph_index() -> int:
 	return _controller_glyph_index
 
 
-func set_controller_orb_index(index: int) -> void:
-	_controller_orb_index = clampi(index, 0, maxi(_orb_sockets.size() - 1, 0))
-
-
-func get_controller_orb_index() -> int:
-	return _controller_orb_index
-
-
-func set_menu_focus(on_glyphs: bool, on_orbs: bool) -> void:
+func set_menu_focus(on_glyphs: bool) -> void:
 	_menu_focus_on_glyphs = on_glyphs
-	_menu_focus_on_orbs = on_orbs
 	_refresh_glyph_outlines()
 
 

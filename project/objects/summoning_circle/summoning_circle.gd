@@ -35,13 +35,37 @@ var _capture_tween: Tween
 func _ready() -> void:
 	add_to_group("summoning_circle")
 	arcane_particles.emitting = false
-	# Prototype seed: one Common Air glyph so the ritual menu is usable immediately.
-	if glyph_inventory.is_empty():
-		add_inventory_entry(&"static", Glyph.Rarity.COMMON)
 	_refresh_mana_label()
 	deposit_area.body_entered.connect(_on_deposit_area_body_entered)
 	deposit_area.body_exited.connect(_on_deposit_area_body_exited)
 	deposit_area.area_entered.connect(_on_deposit_area_area_entered)
+
+
+## Apply editor-authored starting mana and glyph inventory (called from the level after circle _ready).
+func apply_start_config(mana: float, entries: Array) -> void:
+	mana_pool = maxf(mana, 0.0)
+	glyph_inventory.clear()
+	for entry_variant in entries:
+		if glyph_inventory.size() >= max_glyph_capacity:
+			break
+		var glyph_id: StringName = &""
+		var rarity: int = Glyph.Rarity.COMMON
+		if entry_variant is GlyphEntryConfig:
+			var config: GlyphEntryConfig = entry_variant as GlyphEntryConfig
+			glyph_id = config.glyph_id
+			rarity = int(config.rarity)
+		elif typeof(entry_variant) == TYPE_DICTIONARY:
+			var entry: Dictionary = entry_variant
+			glyph_id = StringName(String(entry.get("id", "")))
+			rarity = int(entry.get("rarity", Glyph.Rarity.COMMON))
+		else:
+			continue
+		if glyph_id.is_empty():
+			continue
+		glyph_inventory.append({"id": String(glyph_id), "rarity": rarity})
+	_refresh_mana_label()
+	inventory_changed.emit()
+	mana_deposited.emit(0.0, mana_pool)
 
 
 func get_launch_origin() -> Vector2:
@@ -134,6 +158,15 @@ func add_inventory_entry(glyph_id: StringName, rarity: int) -> bool:
 	if glyph_inventory.size() >= max_glyph_capacity:
 		return false
 	glyph_inventory.append({"id": String(glyph_id), "rarity": rarity})
+	inventory_changed.emit()
+	return true
+
+
+func insert_inventory_entry(index: int, glyph_id: StringName, rarity: int) -> bool:
+	if glyph_inventory.size() >= max_glyph_capacity:
+		return false
+	var clamped: int = clampi(index, 0, glyph_inventory.size())
+	glyph_inventory.insert(clamped, {"id": String(glyph_id), "rarity": rarity})
 	inventory_changed.emit()
 	return true
 

@@ -110,6 +110,7 @@ var _capture_tween: Tween
 
 func _ready() -> void:
 	_load_stats_from_gamedata()
+	_init_glyph_slots()
 	add_to_group("orb")
 	gravity_scale = 0.0
 	lock_rotation = true
@@ -142,6 +143,12 @@ func _ready() -> void:
 	set_process(false)
 	_sync_damage_component()
 	_apply_heading()
+
+
+func _init_glyph_slots() -> void:
+	socketed_glyphs.resize(glyph_slots)
+	for i in glyph_slots:
+		socketed_glyphs[i] = {}
 
 
 ## Apply the current bounce_off_entities flag to every live orb (HUD checkbox).
@@ -456,11 +463,35 @@ func get_stat_snapshot() -> Dictionary:
 
 
 func get_open_glyph_slots() -> int:
-	return maxi(glyph_slots - socketed_glyphs.size(), 0)
+	return maxi(glyph_slots - socketed_count(), 0)
 
 
+func socketed_count() -> int:
+	var count: int = 0
+	for entry in socketed_glyphs:
+		if not entry.is_empty():
+			count += 1
+	return count
+
+
+func has_glyph_at(index: int) -> bool:
+	if index < 0 or index >= socketed_glyphs.size():
+		return false
+	return not socketed_glyphs[index].is_empty()
+
+
+## Socket into the first empty slot. Prefer apply_glyph_at when the target index matters.
 func apply_glyph(id: StringName, rarity: int) -> bool:
-	if socketed_glyphs.size() >= glyph_slots:
+	for i in socketed_glyphs.size():
+		if socketed_glyphs[i].is_empty():
+			return apply_glyph_at(i, id, rarity)
+	return false
+
+
+func apply_glyph_at(index: int, id: StringName, rarity: int) -> bool:
+	if index < 0 or index >= socketed_glyphs.size():
+		return false
+	if not socketed_glyphs[index].is_empty():
 		return false
 
 	var row: Variant = GameData.get_row(&"glyphs", id)
@@ -484,13 +515,13 @@ func apply_glyph(id: StringName, rarity: int) -> bool:
 	if not _apply_glyph_attribute(attr, value):
 		return false
 
-	socketed_glyphs.append({"id": String(id), "rarity": rarity})
+	socketed_glyphs[index] = {"id": String(id), "rarity": rarity}
 	return true
 
 
-## Reverse a socketed glyph's stat and remove it. Returns the entry, or {} on failure.
+## Reverse a socketed glyph's stat and clear the slot (leaves a gap). Returns the entry, or {} on failure.
 func remove_glyph(slot_index: int) -> Dictionary:
-	if slot_index < 0 or slot_index >= socketed_glyphs.size():
+	if not has_glyph_at(slot_index):
 		return {}
 
 	var entry: Dictionary = socketed_glyphs[slot_index]
@@ -511,7 +542,7 @@ func remove_glyph(slot_index: int) -> Dictionary:
 		if not attr.is_empty():
 			_apply_glyph_attribute(attr, -value)
 
-	socketed_glyphs.remove_at(slot_index)
+	socketed_glyphs[slot_index] = {}
 	return entry
 
 

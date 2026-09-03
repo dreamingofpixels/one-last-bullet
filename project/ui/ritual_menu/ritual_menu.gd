@@ -18,7 +18,6 @@ const ANALOG_NAV_DEADZONE := 0.55
 
 enum FocusZone {
 	INV_GLYPH,
-	INV_ORB,
 	RECYCLE,
 	ORB_SLOT,
 	TRANSFORM,
@@ -317,7 +316,7 @@ func _refresh_orb_slots() -> void:
 			icon.visible = false
 			icon.texture = null
 			continue
-		if i < _orb.socketed_glyphs.size():
+		if _orb.has_glyph_at(i):
 			var entry: Dictionary = _orb.socketed_glyphs[i]
 			var glyph_id: StringName = StringName(String(entry.get("id", "")))
 			var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
@@ -338,9 +337,9 @@ func _refresh_inventory_bar() -> void:
 
 func _refresh_hints() -> void:
 	_clear_hint_info()
-	var socketed_count: int = _orb.socketed_glyphs.size()
-	hint_container.visible = socketed_count == 2
-	if socketed_count != 2:
+	var count: int = _orb.socketed_count()
+	hint_container.visible = count == 2
+	if count != 2:
 		return
 
 	var elements: Array[String] = OrbRecipes.elements_from_socketed(_orb.socketed_glyphs)
@@ -358,7 +357,7 @@ func _refresh_hints() -> void:
 func _refresh_transform() -> void:
 	var elements: Array[String] = OrbRecipes.elements_from_socketed(_orb.socketed_glyphs)
 	var can_transform: bool = (
-		_orb.socketed_glyphs.size() >= 3
+		_orb.socketed_count() >= 3
 		and OrbRecipes.is_playable(OrbRecipes.result_for(_orb, elements))
 	)
 	transform_button.disabled = not can_transform
@@ -461,7 +460,7 @@ func _on_orb_slot_gui_input(event: InputEvent, slot_index: int) -> void:
 	var mouse: InputEventMouseButton = event as InputEventMouseButton
 	if mouse.button_index != MOUSE_BUTTON_LEFT or not mouse.pressed:
 		return
-	if _orb == null or slot_index < 0 or slot_index >= _orb.socketed_glyphs.size():
+	if _orb == null or not _orb.has_glyph_at(slot_index):
 		return
 	get_viewport().set_input_as_handled()
 	_begin_drag_from_orb_slot(slot_index, true)
@@ -486,7 +485,7 @@ func _begin_drag_from_inventory(index: int, from_mouse: bool) -> void:
 
 
 func _begin_drag_from_orb_slot(slot_index: int, from_mouse: bool) -> void:
-	if _orb == null or slot_index < 0 or slot_index >= _orb.socketed_glyphs.size():
+	if _orb == null or not _orb.has_glyph_at(slot_index):
 		return
 	var entry: Dictionary = _orb.remove_glyph(slot_index)
 	if entry.is_empty():
@@ -495,7 +494,8 @@ func _begin_drag_from_orb_slot(slot_index: int, from_mouse: bool) -> void:
 	_held_orb_slot = slot_index
 	_held_entry = entry
 	_dragging_mouse = from_mouse
-	_target_index = DROP_INV_0
+	# Start on the slot it came from so confirm-to-grab leaves it highlighted and movable.
+	_target_index = DROP_SLOT_0 + slot_index
 	_show_drag_preview(_held_entry)
 	_refresh_stats()
 	_refresh_orb_slots()
@@ -517,11 +517,11 @@ func _show_drag_preview(entry: Dictionary) -> void:
 
 
 func _cancel_drag() -> void:
-	# If we pulled a glyph off an orb slot, put it back.
+	# If we pulled a glyph off an orb slot, put it back in that slot.
 	if _held_orb_slot >= 0 and not _held_entry.is_empty() and _orb != null and is_instance_valid(_orb):
 		var glyph_id: StringName = StringName(String(_held_entry.get("id", "")))
 		var rarity: int = int(_held_entry.get("rarity", Glyph.Rarity.COMMON))
-		_orb.apply_glyph(glyph_id, rarity)
+		_orb.apply_glyph_at(_held_orb_slot, glyph_id, rarity)
 	_held_inv_index = -1
 	_held_orb_slot = -1
 	_held_entry = {}
@@ -583,19 +583,8 @@ func _on_controller_confirm() -> void:
 		FocusZone.INV_GLYPH:
 			_begin_drag_from_inventory(_focus_index, false)
 		FocusZone.ORB_SLOT:
-			if _orb != null and _focus_index < _orb.socketed_glyphs.size():
-				# Remove placed glyph back to inventory when possible.
-				if _circle != null and _circle.has_inventory_space():
-					var entry: Dictionary = _orb.remove_glyph(_focus_index)
-					if not entry.is_empty():
-						_circle.add_inventory_entry(
-							StringName(String(entry.get("id", ""))),
-							int(entry.get("rarity", Glyph.Rarity.COMMON))
-						)
-						_refresh_ui()
-				else:
-					# No inventory space: start a hold so the player can recycle / place elsewhere.
-					_begin_drag_from_orb_slot(_focus_index, false)
+			if _orb != null and _orb.has_glyph_at(_focus_index):
+				_begin_drag_from_orb_slot(_focus_index, false)
 		FocusZone.TRANSFORM:
 			if not transform_button.disabled:
 				_on_transform_pressed()
@@ -612,11 +601,7 @@ func _navigate_focus(dir: Vector2) -> void:
 	match _focus_zone:
 		FocusZone.INV_GLYPH:
 			if dir.x < 0.0:
-				if _focus_index <= 0:
-					_focus_zone = FocusZone.INV_ORB
-					_focus_index = maxi(_count_live_orbs() - 1, 0)
-				else:
-					_focus_index -= 1
+				_focus_index = maxi(_focus_index - 1, 0)
 			elif dir.x > 0.0:
 				var max_g: int = maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0)
 				_focus_index = mini(_focus_index + 1, max_g)
@@ -624,26 +609,12 @@ func _navigate_focus(dir: Vector2) -> void:
 				_focus_zone = FocusZone.ORB_SLOT
 				_focus_index = mini(_focus_index, 2)
 			inventory.set_controller_glyph_index(_focus_index)
-		FocusZone.INV_ORB:
-			if dir.x < 0.0:
-				_focus_index = maxi(_focus_index - 1, 0)
-			elif dir.x > 0.0:
-				var max_o: int = maxi(_count_live_orbs() - 1, 0)
-				if _focus_index >= max_o:
-					_focus_zone = FocusZone.INV_GLYPH
-					_focus_index = 0
-				else:
-					_focus_index += 1
-			elif dir.y < 0.0:
-				_focus_zone = FocusZone.RECYCLE
-				_focus_index = 0
-			inventory.set_controller_orb_index(_focus_index)
 		FocusZone.RECYCLE:
 			if dir.x > 0.0:
 				_focus_zone = FocusZone.ORB_SLOT
 				_focus_index = 0
 			elif dir.y > 0.0:
-				_focus_zone = FocusZone.INV_ORB
+				_focus_zone = FocusZone.INV_GLYPH
 				_focus_index = 0
 			elif dir.y < 0.0:
 				_focus_zone = FocusZone.DONE
@@ -711,12 +682,9 @@ func _navigate_focus(dir: Vector2) -> void:
 
 func _apply_focus_visuals() -> void:
 	var on_glyphs: bool = _focus_zone == FocusZone.INV_GLYPH and not _is_holding()
-	var on_orbs: bool = _focus_zone == FocusZone.INV_ORB and not _is_holding()
-	inventory.set_menu_focus(on_glyphs, on_orbs)
+	inventory.set_menu_focus(on_glyphs)
 	if on_glyphs:
 		inventory.set_controller_glyph_index(_focus_index)
-	if on_orbs:
-		inventory.set_controller_orb_index(_focus_index)
 	inventory.set_orbs(_orbs, _orb)
 
 	for i in _slot_outlines.size():
@@ -757,7 +725,11 @@ func _move_drop_target(delta: int) -> void:
 func _snap_to_first_empty_orb_slot() -> void:
 	var open_index: int = 0
 	if _orb != null:
-		open_index = mini(_orb.socketed_glyphs.size(), 2)
+		open_index = 2
+		for i in _orb.socketed_glyphs.size():
+			if not _orb.has_glyph_at(i):
+				open_index = i
+				break
 	_target_index = DROP_SLOT_0 + open_index
 	_place_preview_on_target()
 	_refresh_drop_target_outline()
@@ -808,22 +780,16 @@ func _resolve_drop(target: int) -> void:
 			var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
 			_circle.deposit(float(Glyph.MANA_BY_RARITY.get(rarity, 5.0)))
 	elif target >= DROP_SLOT_0 and target <= DROP_SLOT_2:
-		if from_inv >= 0:
-			_socket_from_inventory(from_inv)
-		elif not entry.is_empty():
-			var glyph_id: StringName = StringName(String(entry.get("id", "")))
-			var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
-			if not _orb.apply_glyph(glyph_id, rarity):
-				if not _circle.add_inventory_entry(glyph_id, rarity):
-					_orb.apply_glyph(glyph_id, rarity)
+		_resolve_slot_drop(target - DROP_SLOT_0, from_inv, from_slot, entry)
 	elif target >= DROP_INV_0 and target <= DROP_INV_2:
 		if from_slot >= 0 and not entry.is_empty():
 			if not _circle.add_inventory_entry(
 				StringName(String(entry.get("id", ""))),
 				int(entry.get("rarity", Glyph.Rarity.COMMON))
 			):
-				# Inventory full — restore onto the orb.
-				_orb.apply_glyph(
+				# Inventory full — restore onto the original orb slot.
+				_orb.apply_glyph_at(
+					from_slot,
 					StringName(String(entry.get("id", ""))),
 					int(entry.get("rarity", Glyph.Rarity.COMMON))
 				)
@@ -833,7 +799,8 @@ func _resolve_drop(target: int) -> void:
 	else:
 		# Unknown target: restore.
 		if from_slot >= 0 and not entry.is_empty():
-			_orb.apply_glyph(
+			_orb.apply_glyph_at(
+				from_slot,
 				StringName(String(entry.get("id", ""))),
 				int(entry.get("rarity", Glyph.Rarity.COMMON))
 			)
@@ -841,15 +808,83 @@ func _resolve_drop(target: int) -> void:
 	_refresh_ui()
 
 
-func _socket_from_inventory(index: int) -> void:
-	var entry: Dictionary = _circle.remove_inventory_entry(index)
+func _resolve_slot_drop(slot_index: int, from_inv: int, from_slot: int, entry: Dictionary) -> void:
 	if entry.is_empty():
 		return
+
 	var glyph_id: StringName = StringName(String(entry.get("id", "")))
 	var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
-	if not _orb.apply_glyph(glyph_id, rarity):
-		_circle.glyph_inventory.insert(mini(index, _circle.glyph_inventory.size()), entry)
-		_circle.inventory_changed.emit()
+
+	# Same slot the held glyph came from — put it back.
+	if from_slot == slot_index:
+		_orb.apply_glyph_at(slot_index, glyph_id, rarity)
+		return
+
+	if not _orb.has_glyph_at(slot_index):
+		if from_inv >= 0:
+			_circle.remove_inventory_entry(from_inv)
+		if not _orb.apply_glyph_at(slot_index, glyph_id, rarity):
+			_restore_held_glyph(from_inv, from_slot, glyph_id, rarity)
+		return
+
+	# Occupied: swap the target glyph into the held glyph's origin.
+	var displaced: Dictionary = _orb.remove_glyph(slot_index)
+	if not _orb.apply_glyph_at(slot_index, glyph_id, rarity):
+		# Restore displaced, then restore held.
+		if not displaced.is_empty():
+			_orb.apply_glyph_at(
+				slot_index,
+				StringName(String(displaced.get("id", ""))),
+				int(displaced.get("rarity", Glyph.Rarity.COMMON))
+			)
+		_restore_held_glyph(from_inv, from_slot, glyph_id, rarity)
+		return
+
+	if from_inv >= 0:
+		_circle.remove_inventory_entry(from_inv)
+		if not displaced.is_empty():
+			if not _circle.insert_inventory_entry(
+				from_inv,
+				StringName(String(displaced.get("id", ""))),
+				int(displaced.get("rarity", Glyph.Rarity.COMMON))
+			):
+				# No room — put displaced back on the orb (held already landed).
+				_orb.apply_glyph(
+					StringName(String(displaced.get("id", ""))),
+					int(displaced.get("rarity", Glyph.Rarity.COMMON))
+				)
+	elif from_slot >= 0:
+		if not displaced.is_empty():
+			if not _orb.apply_glyph_at(
+				from_slot,
+				StringName(String(displaced.get("id", ""))),
+				int(displaced.get("rarity", Glyph.Rarity.COMMON))
+			):
+				_orb.apply_glyph(
+					StringName(String(displaced.get("id", ""))),
+					int(displaced.get("rarity", Glyph.Rarity.COMMON))
+				)
+	elif not displaced.is_empty():
+		# No known origin — try inventory, else first open orb slot.
+		if not _circle.add_inventory_entry(
+			StringName(String(displaced.get("id", ""))),
+			int(displaced.get("rarity", Glyph.Rarity.COMMON))
+		):
+			_orb.apply_glyph(
+				StringName(String(displaced.get("id", ""))),
+				int(displaced.get("rarity", Glyph.Rarity.COMMON))
+			)
+
+
+func _restore_held_glyph(from_inv: int, from_slot: int, glyph_id: StringName, rarity: int) -> void:
+	if from_slot >= 0:
+		if not _orb.apply_glyph_at(from_slot, glyph_id, rarity):
+			_orb.apply_glyph(glyph_id, rarity)
+	elif from_inv >= 0:
+		if not _circle.insert_inventory_entry(from_inv, glyph_id, rarity):
+			_circle.add_inventory_entry(glyph_id, rarity)
+	else:
+		_orb.apply_glyph(glyph_id, rarity)
 
 
 func _recycle_inventory_glyph(index: int) -> void:

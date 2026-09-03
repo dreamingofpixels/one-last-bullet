@@ -13,6 +13,8 @@ const DROP_SLOT_2 := 3
 const DROP_INV_0 := 4
 const DROP_INV_1 := 5
 const DROP_INV_2 := 6
+## Stick must pass this strength to take one menu step, then return below it for the next.
+const ANALOG_NAV_DEADZONE := 0.55
 
 enum FocusZone {
 	INV_GLYPH,
@@ -78,6 +80,8 @@ var _showing_transform_preview: bool = false
 
 var _focus_zone: FocusZone = FocusZone.INV_GLYPH
 var _focus_index: int = 0
+## True after an analog flick until the left stick recenters (one step per flick).
+var _analog_nav_latched: bool = false
 
 
 func _ready() -> void:
@@ -138,6 +142,8 @@ func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0,
 	visible = true
 	_focus_zone = FocusZone.INV_GLYPH
 	_focus_index = 0
+	# Ignore a stick that was already deflected from walking into the circle.
+	_analog_nav_latched = _move_stick().length() >= ANALOG_NAV_DEADZONE
 
 	if _circle != null:
 		if not _circle.inventory_changed.is_connected(_refresh_ui):
@@ -200,43 +206,71 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
+	if event is InputEventJoypadMotion:
+		_handle_analog_nav()
+		return
+
 	if event.is_action_pressed("move_up"):
-		if _is_holding():
-			_snap_to_first_empty_orb_slot()
-		else:
-			_navigate_focus(Vector2.UP)
+		_apply_menu_nav(Vector2.UP)
 		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("move_down"):
-		if _is_holding():
-			_target_index = DROP_INV_0
-			_place_preview_on_target()
-			_refresh_drop_target_outline()
-		else:
-			_navigate_focus(Vector2.DOWN)
+		_apply_menu_nav(Vector2.DOWN)
 		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("move_left"):
-		if _is_holding():
-			_move_drop_target(-1)
-		else:
-			_navigate_focus(Vector2.LEFT)
+		_apply_menu_nav(Vector2.LEFT)
 		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("move_right"):
-		if _is_holding():
-			_move_drop_target(1)
-		else:
-			_navigate_focus(Vector2.RIGHT)
+		_apply_menu_nav(Vector2.RIGHT)
 		get_viewport().set_input_as_handled()
 		return
 
 
 func _is_holding() -> bool:
 	return _held_inv_index >= 0 or _held_orb_slot >= 0
+
+
+func _move_stick() -> Vector2:
+	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
+
+
+func _handle_analog_nav() -> void:
+	var stick: Vector2 = _move_stick()
+	if stick.length() < ANALOG_NAV_DEADZONE:
+		_analog_nav_latched = false
+		return
+	if _analog_nav_latched:
+		get_viewport().set_input_as_handled()
+		return
+	_analog_nav_latched = true
+	var dir: Vector2
+	if absf(stick.x) >= absf(stick.y):
+		dir = Vector2.RIGHT if stick.x > 0.0 else Vector2.LEFT
+	else:
+		dir = Vector2.DOWN if stick.y > 0.0 else Vector2.UP
+	_apply_menu_nav(dir)
+	get_viewport().set_input_as_handled()
+
+
+func _apply_menu_nav(dir: Vector2) -> void:
+	if _is_holding():
+		if dir == Vector2.UP:
+			_snap_to_first_empty_orb_slot()
+		elif dir == Vector2.DOWN:
+			_target_index = DROP_INV_0
+			_place_preview_on_target()
+			_refresh_drop_target_outline()
+		elif dir == Vector2.LEFT:
+			_move_drop_target(-1)
+		elif dir == Vector2.RIGHT:
+			_move_drop_target(1)
+		return
+	_navigate_focus(dir)
 
 
 func _on_mana_changed(_amount: float, _total: float) -> void:

@@ -10,6 +10,19 @@ const DROP_RECYCLE := 0
 const DROP_SLOT_0 := 1
 const DROP_SLOT_1 := 2
 const DROP_SLOT_2 := 3
+const DROP_INV_0 := 4
+const DROP_INV_1 := 5
+const DROP_INV_2 := 6
+
+enum FocusZone {
+	INV_GLYPH,
+	INV_ORB,
+	RECYCLE,
+	ORB_SLOT,
+	TRANSFORM,
+	BUY,
+	DONE,
+}
 
 @onready var panel: PanelContainer = %Panel
 @onready var orb_name_label: Label = %OrbNameLabel
@@ -53,21 +66,31 @@ var _new_orb_cost: float = 20.0
 var _orb_slots: Array[TextureRect] = []
 var _hint_labels: Array[Label] = []
 var _slot_icons: Array[TextureRect] = []
+var _slot_outlines: Array[Panel] = []
 
-var _held_index: int = -1
+## Held glyph: from inventory index, or from an orb slot (-1 / -1 = nothing held).
+var _held_inv_index: int = -1
+var _held_orb_slot: int = -1
+var _held_entry: Dictionary = {}
 var _target_index: int = DROP_SLOT_0
 var _dragging_mouse: bool = false
-var _controller_mode: bool = false
 var _showing_transform_preview: bool = false
+
+var _focus_zone: FocusZone = FocusZone.INV_GLYPH
+var _focus_index: int = 0
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	_orb_slots = [orb_slot_1, orb_slot_2, orb_slot_3]
 	_hint_labels = [hint_1, hint_2, hint_3, hint_4]
-	for slot in _orb_slots:
+	for i in _orb_slots.size():
+		var slot: TextureRect = _orb_slots[i]
 		_ensure_slot_icon(slot)
 		_slot_icons.append(slot.get_node("Icon") as TextureRect)
+		_slot_outlines.append(_ensure_outline(slot))
+		slot.gui_input.connect(_on_orb_slot_gui_input.bind(i))
+	_ensure_outline(recycle_socket)
 	_center_panel()
 	visible = false
 	drag_preview.visible = false
@@ -88,7 +111,7 @@ func _center_panel() -> void:
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
-	panel.anchor_bottom = 0.5
+	panel.anchor_bottom = 0.45
 	panel.offset_left = -designed_size.x * 0.5
 	panel.offset_top = -designed_size.y * 0.5
 	panel.offset_right = designed_size.x * 0.5
@@ -113,6 +136,8 @@ func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0,
 	_orbs = orbs.duplicate()
 	_cancel_drag()
 	visible = true
+	_focus_zone = FocusZone.INV_GLYPH
+	_focus_index = 0
 
 	if _circle != null:
 		if not _circle.inventory_changed.is_connected(_refresh_ui):
@@ -124,6 +149,7 @@ func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0,
 
 	buy_label.text = "Blank Orb\n(%d mana)" % int(_new_orb_cost)
 	_refresh_ui()
+	_apply_focus_visuals()
 
 
 func close_menu() -> void:
@@ -145,10 +171,11 @@ func set_orbs(orbs: Array) -> void:
 	_orbs = orbs.duplicate()
 	if visible:
 		_refresh_inventory_bar()
+		_apply_focus_visuals()
 
 
 func _process(_delta: float) -> void:
-	if not visible or _held_index < 0:
+	if not visible or not _is_holding():
 		return
 	if _dragging_mouse:
 		_update_drag_preview_position(get_viewport().get_mouse_position())
@@ -159,44 +186,57 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if _held_index >= 0 and _dragging_mouse:
+	if _is_holding() and _dragging_mouse:
 		return
 
 	if event.is_action_pressed("dash"):
-		if _held_index < 0:
-			_try_controller_grab()
-		else:
-			_confirm_controller_drop()
+		_on_controller_confirm()
 		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("tether"):
-		if _held_index >= 0:
+		if _is_holding():
 			_cancel_drag()
 			get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("move_up"):
-		if _held_index >= 0:
+		if _is_holding():
 			_snap_to_first_empty_orb_slot()
-			get_viewport().set_input_as_handled()
+		else:
+			_navigate_focus(Vector2.UP)
+		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("move_down"):
+		if _is_holding():
+			_target_index = DROP_INV_0
+			_place_preview_on_target()
+			_refresh_drop_target_outline()
+		else:
+			_navigate_focus(Vector2.DOWN)
+		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("move_left"):
-		if _held_index >= 0:
+		if _is_holding():
 			_move_drop_target(-1)
 		else:
-			_move_controller_glyph(-1)
+			_navigate_focus(Vector2.LEFT)
 		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("move_right"):
-		if _held_index >= 0:
+		if _is_holding():
 			_move_drop_target(1)
 		else:
-			_move_controller_glyph(1)
+			_navigate_focus(Vector2.RIGHT)
 		get_viewport().set_input_as_handled()
 		return
+
+
+func _is_holding() -> bool:
+	return _held_inv_index >= 0 or _held_orb_slot >= 0
 
 
 func _on_mana_changed(_amount: float, _total: float) -> void:
@@ -216,6 +256,7 @@ func _refresh_ui() -> void:
 	_refresh_transform()
 	_refresh_buy()
 	recycle_label.text = "Drop to\nrecycle"
+	_apply_focus_visuals()
 
 
 func _refresh_stats() -> void:
@@ -237,6 +278,11 @@ func _refresh_stats() -> void:
 func _refresh_orb_slots() -> void:
 	for i in _orb_slots.size():
 		var icon: TextureRect = _slot_icons[i]
+		# Hide the slot being dragged so it does not look duplicated.
+		if i == _held_orb_slot:
+			icon.visible = false
+			icon.texture = null
+			continue
 		if i < _orb.socketed_glyphs.size():
 			var entry: Dictionary = _orb.socketed_glyphs[i]
 			var glyph_id: StringName = StringName(String(entry.get("id", "")))
@@ -252,7 +298,7 @@ func _refresh_orb_slots() -> void:
 
 func _refresh_inventory_bar() -> void:
 	inventory.set_orbs(_orbs, _orb)
-	inventory.set_glyphs(_circle.glyph_inventory)
+	inventory.set_glyphs(_circle.glyph_inventory, _held_inv_index)
 	inventory.set_mana(_circle.mana_pool)
 
 
@@ -372,23 +418,32 @@ func _on_transform_hover(active: bool) -> void:
 
 
 func _on_inventory_glyph_grab(index: int) -> void:
-	_begin_drag(index, true)
+	_begin_drag_from_inventory(index, true)
 
 
-func _begin_drag(index: int, from_mouse: bool) -> void:
+func _on_orb_slot_gui_input(event: InputEvent, slot_index: int) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mouse: InputEventMouseButton = event as InputEventMouseButton
+	if mouse.button_index != MOUSE_BUTTON_LEFT or not mouse.pressed:
+		return
+	if _orb == null or slot_index < 0 or slot_index >= _orb.socketed_glyphs.size():
+		return
+	get_viewport().set_input_as_handled()
+	_begin_drag_from_orb_slot(slot_index, true)
+
+
+func _begin_drag_from_inventory(index: int, from_mouse: bool) -> void:
 	if _circle == null or index < 0 or index >= _circle.glyph_inventory.size():
 		return
-	_held_index = index
+	_held_inv_index = index
+	_held_orb_slot = -1
+	_held_entry = _circle.glyph_inventory[index].duplicate()
 	_dragging_mouse = from_mouse
-	_controller_mode = not from_mouse
 	_target_index = DROP_SLOT_0
-	inventory.set_held_glyph_index(_held_index)
-	var entry: Dictionary = _circle.glyph_inventory[index]
-	var glyph_id: StringName = StringName(String(entry.get("id", "")))
-	var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
-	drag_icon.texture = _texture_for_glyph_id(glyph_id)
-	drag_icon.modulate = Glyph.RARITY_MODULATE.get(rarity, Color.WHITE) as Color
-	drag_preview.visible = true
+	_show_drag_preview(_held_entry)
+	inventory.set_held_glyph_index(_held_inv_index)
+	_refresh_inventory_bar()
 	if from_mouse:
 		_update_drag_preview_position(get_viewport().get_mouse_position())
 	else:
@@ -396,14 +451,54 @@ func _begin_drag(index: int, from_mouse: bool) -> void:
 	_refresh_drop_target_outline()
 
 
+func _begin_drag_from_orb_slot(slot_index: int, from_mouse: bool) -> void:
+	if _orb == null or slot_index < 0 or slot_index >= _orb.socketed_glyphs.size():
+		return
+	var entry: Dictionary = _orb.remove_glyph(slot_index)
+	if entry.is_empty():
+		return
+	_held_inv_index = -1
+	_held_orb_slot = slot_index
+	_held_entry = entry
+	_dragging_mouse = from_mouse
+	_target_index = DROP_INV_0
+	_show_drag_preview(_held_entry)
+	_refresh_stats()
+	_refresh_orb_slots()
+	_refresh_hints()
+	_refresh_transform()
+	if from_mouse:
+		_update_drag_preview_position(get_viewport().get_mouse_position())
+	else:
+		_place_preview_on_target()
+	_refresh_drop_target_outline()
+
+
+func _show_drag_preview(entry: Dictionary) -> void:
+	var glyph_id: StringName = StringName(String(entry.get("id", "")))
+	var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
+	drag_icon.texture = _texture_for_glyph_id(glyph_id)
+	drag_icon.modulate = Glyph.RARITY_MODULATE.get(rarity, Color.WHITE) as Color
+	drag_preview.visible = true
+
+
 func _cancel_drag() -> void:
-	_held_index = -1
+	# If we pulled a glyph off an orb slot, put it back.
+	if _held_orb_slot >= 0 and not _held_entry.is_empty() and _orb != null and is_instance_valid(_orb):
+		var glyph_id: StringName = StringName(String(_held_entry.get("id", "")))
+		var rarity: int = int(_held_entry.get("rarity", Glyph.Rarity.COMMON))
+		_orb.apply_glyph(glyph_id, rarity)
+	_held_inv_index = -1
+	_held_orb_slot = -1
+	_held_entry = {}
 	_dragging_mouse = false
-	_controller_mode = false
 	_target_index = DROP_SLOT_0
 	drag_preview.visible = false
 	inventory.set_held_glyph_index(-1)
-	_refresh_drop_target_outline()
+	if visible and _orb != null and _circle != null:
+		_refresh_ui()
+	else:
+		_refresh_drop_target_outline()
 
 
 func _update_drag_preview_position(pos: Vector2) -> void:
@@ -411,7 +506,7 @@ func _update_drag_preview_position(pos: Vector2) -> void:
 
 
 func _finish_mouse_drop() -> void:
-	if _held_index < 0:
+	if not _is_holding():
 		return
 	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
 	var target: int = _hit_test_drop_target(mouse_pos)
@@ -422,39 +517,205 @@ func _finish_mouse_drop() -> void:
 
 
 func _hit_test_drop_target(pos: Vector2) -> int:
-	var targets: Array[Control] = [recycle_socket, orb_slot_1, orb_slot_2, orb_slot_3]
+	var targets: Array[Control] = _drop_target_controls()
 	for i in targets.size():
 		var control: Control = targets[i]
+		if control == null:
+			continue
 		var rect := Rect2(control.global_position, control.size)
 		if rect.has_point(pos):
 			return i
 	return -1
 
 
-func _try_controller_grab() -> void:
-	var index: int = inventory.get_controller_glyph_index()
-	if _circle == null or index < 0 or index >= _circle.glyph_inventory.size():
+func _drop_target_controls() -> Array[Control]:
+	return [
+		recycle_socket,
+		orb_slot_1,
+		orb_slot_2,
+		orb_slot_3,
+		inventory.get_glyph_socket(0),
+		inventory.get_glyph_socket(1),
+		inventory.get_glyph_socket(2),
+	]
+
+
+func _on_controller_confirm() -> void:
+	if _is_holding():
+		_resolve_drop(_target_index)
 		return
-	_begin_drag(index, false)
+
+	match _focus_zone:
+		FocusZone.INV_GLYPH:
+			_begin_drag_from_inventory(_focus_index, false)
+		FocusZone.ORB_SLOT:
+			if _orb != null and _focus_index < _orb.socketed_glyphs.size():
+				# Remove placed glyph back to inventory when possible.
+				if _circle != null and _circle.has_inventory_space():
+					var entry: Dictionary = _orb.remove_glyph(_focus_index)
+					if not entry.is_empty():
+						_circle.add_inventory_entry(
+							StringName(String(entry.get("id", ""))),
+							int(entry.get("rarity", Glyph.Rarity.COMMON))
+						)
+						_refresh_ui()
+				else:
+					# No inventory space: start a hold so the player can recycle / place elsewhere.
+					_begin_drag_from_orb_slot(_focus_index, false)
+		FocusZone.TRANSFORM:
+			if not transform_button.disabled:
+				_on_transform_pressed()
+		FocusZone.BUY:
+			if not buy_button.disabled:
+				_on_buy_pressed()
+		FocusZone.DONE:
+			_on_done_pressed()
+		_:
+			pass
 
 
-func _confirm_controller_drop() -> void:
-	if _held_index < 0:
-		return
-	_resolve_drop(_target_index)
+func _navigate_focus(dir: Vector2) -> void:
+	match _focus_zone:
+		FocusZone.INV_GLYPH:
+			if dir.x < 0.0:
+				if _focus_index <= 0:
+					_focus_zone = FocusZone.INV_ORB
+					_focus_index = maxi(_count_live_orbs() - 1, 0)
+				else:
+					_focus_index -= 1
+			elif dir.x > 0.0:
+				var max_g: int = maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0)
+				_focus_index = mini(_focus_index + 1, max_g)
+			elif dir.y < 0.0:
+				_focus_zone = FocusZone.ORB_SLOT
+				_focus_index = mini(_focus_index, 2)
+			inventory.set_controller_glyph_index(_focus_index)
+		FocusZone.INV_ORB:
+			if dir.x < 0.0:
+				_focus_index = maxi(_focus_index - 1, 0)
+			elif dir.x > 0.0:
+				var max_o: int = maxi(_count_live_orbs() - 1, 0)
+				if _focus_index >= max_o:
+					_focus_zone = FocusZone.INV_GLYPH
+					_focus_index = 0
+				else:
+					_focus_index += 1
+			elif dir.y < 0.0:
+				_focus_zone = FocusZone.RECYCLE
+				_focus_index = 0
+			inventory.set_controller_orb_index(_focus_index)
+		FocusZone.RECYCLE:
+			if dir.x > 0.0:
+				_focus_zone = FocusZone.ORB_SLOT
+				_focus_index = 0
+			elif dir.y > 0.0:
+				_focus_zone = FocusZone.INV_ORB
+				_focus_index = 0
+			elif dir.y < 0.0:
+				_focus_zone = FocusZone.DONE
+				_focus_index = 0
+		FocusZone.ORB_SLOT:
+			if dir.x < 0.0:
+				if _focus_index <= 0:
+					_focus_zone = FocusZone.RECYCLE
+					_focus_index = 0
+				else:
+					_focus_index -= 1
+			elif dir.x > 0.0:
+				if _focus_index >= 2:
+					_focus_zone = FocusZone.TRANSFORM
+					_focus_index = 0
+				else:
+					_focus_index += 1
+			elif dir.y > 0.0:
+				_focus_zone = FocusZone.INV_GLYPH
+				_focus_index = mini(_focus_index, maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0))
+			elif dir.y < 0.0:
+				_focus_zone = FocusZone.DONE
+				_focus_index = 0
+		FocusZone.TRANSFORM:
+			if dir.x < 0.0:
+				_focus_zone = FocusZone.ORB_SLOT
+				_focus_index = 2
+			elif dir.x > 0.0:
+				_focus_zone = FocusZone.BUY
+				_focus_index = 0
+			elif dir.y > 0.0:
+				_focus_zone = FocusZone.INV_GLYPH
+				_focus_index = 0
+			elif dir.y < 0.0:
+				_focus_zone = FocusZone.DONE
+				_focus_index = 0
+			_showing_transform_preview = true
+			_show_transform_preview()
+		FocusZone.BUY:
+			if dir.x < 0.0:
+				_focus_zone = FocusZone.TRANSFORM
+				_focus_index = 0
+			elif dir.y > 0.0:
+				_focus_zone = FocusZone.INV_GLYPH
+				_focus_index = maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0)
+			elif dir.y < 0.0:
+				_focus_zone = FocusZone.DONE
+				_focus_index = 0
+		FocusZone.DONE:
+			if dir.y > 0.0:
+				_focus_zone = FocusZone.ORB_SLOT
+				_focus_index = 1
+			elif dir.x < 0.0:
+				_focus_zone = FocusZone.RECYCLE
+				_focus_index = 0
+			elif dir.x > 0.0:
+				_focus_zone = FocusZone.BUY
+				_focus_index = 0
+
+	if _focus_zone != FocusZone.TRANSFORM:
+		_showing_transform_preview = false
+		_refresh_hints()
+	_apply_focus_visuals()
 
 
-func _move_controller_glyph(delta: int) -> void:
-	if _circle == null or _circle.glyph_inventory.is_empty():
-		return
-	var count: int = _circle.glyph_inventory.size()
-	var next: int = inventory.get_controller_glyph_index() + delta
-	next = clampi(next, 0, count - 1)
-	inventory.set_controller_glyph_index(next)
+func _apply_focus_visuals() -> void:
+	var on_glyphs: bool = _focus_zone == FocusZone.INV_GLYPH and not _is_holding()
+	var on_orbs: bool = _focus_zone == FocusZone.INV_ORB and not _is_holding()
+	inventory.set_menu_focus(on_glyphs, on_orbs)
+	if on_glyphs:
+		inventory.set_controller_glyph_index(_focus_index)
+	if on_orbs:
+		inventory.set_controller_orb_index(_focus_index)
+	inventory.set_orbs(_orbs, _orb)
+
+	for i in _slot_outlines.size():
+		_slot_outlines[i].visible = (
+			not _is_holding()
+			and _focus_zone == FocusZone.ORB_SLOT
+			and i == _focus_index
+		)
+
+	var recycle_outline: Panel = recycle_socket.get_node_or_null("Outline") as Panel
+	if recycle_outline:
+		recycle_outline.visible = not _is_holding() and _focus_zone == FocusZone.RECYCLE
+
+	transform_button.modulate = (
+		Color(1.35, 1.35, 1.35, 1.0)
+		if _focus_zone == FocusZone.TRANSFORM and not _is_holding()
+		else Color.WHITE
+	)
+	buy_button.modulate = (
+		Color(1.35, 1.35, 1.35, 1.0)
+		if _focus_zone == FocusZone.BUY and not _is_holding()
+		else Color.WHITE
+	)
+	done_button.modulate = (
+		Color(1.35, 1.35, 1.35, 1.0)
+		if _focus_zone == FocusZone.DONE and not _is_holding()
+		else Color.WHITE
+	)
 
 
 func _move_drop_target(delta: int) -> void:
-	_target_index = clampi(_target_index + delta, DROP_RECYCLE, DROP_SLOT_2)
+	var max_target: int = DROP_INV_2
+	_target_index = clampi(_target_index + delta, DROP_RECYCLE, max_target)
 	_place_preview_on_target()
 	_refresh_drop_target_outline()
 
@@ -469,37 +730,84 @@ func _snap_to_first_empty_orb_slot() -> void:
 
 
 func _place_preview_on_target() -> void:
-	var targets: Array[Control] = [recycle_socket, orb_slot_1, orb_slot_2, orb_slot_3]
+	var targets: Array[Control] = _drop_target_controls()
 	if _target_index < 0 or _target_index >= targets.size():
 		return
 	var target: Control = targets[_target_index]
+	if target == null:
+		return
 	drag_preview.global_position = target.global_position + (target.size - drag_preview.size) * 0.5
 
 
 func _refresh_drop_target_outline() -> void:
-	var targets: Array[Control] = [recycle_socket, orb_slot_1, orb_slot_2, orb_slot_3]
+	var targets: Array[Control] = _drop_target_controls()
 	for i in targets.size():
 		var control: Control = targets[i]
-		if _held_index >= 0 and i == _target_index and not _dragging_mouse:
+		if control == null:
+			continue
+		if _is_holding() and i == _target_index and not _dragging_mouse:
 			control.self_modulate = Color(1.4, 1.4, 1.4, 1.0)
 		else:
 			control.self_modulate = Color.WHITE
 
 
 func _resolve_drop(target: int) -> void:
-	if _held_index < 0 or _circle == null or _orb == null:
+	if not _is_holding() or _circle == null or _orb == null:
 		_cancel_drag()
 		return
-	var held: int = _held_index
+
+	var from_inv: int = _held_inv_index
+	var from_slot: int = _held_orb_slot
+	var entry: Dictionary = _held_entry.duplicate()
+	# Clear hold flags before mutating so refresh doesn't hide slots incorrectly.
+	_held_inv_index = -1
+	_held_orb_slot = -1
+	_held_entry = {}
+	_dragging_mouse = false
+	drag_preview.visible = false
+	inventory.set_held_glyph_index(-1)
+
 	if target == DROP_RECYCLE:
-		_recycle_glyph(held)
+		if from_inv >= 0:
+			_recycle_inventory_glyph(from_inv)
+		elif not entry.is_empty():
+			var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
+			_circle.deposit(float(Glyph.MANA_BY_RARITY.get(rarity, 5.0)))
 	elif target >= DROP_SLOT_0 and target <= DROP_SLOT_2:
-		_socket_glyph(held)
-	_cancel_drag()
+		if from_inv >= 0:
+			_socket_from_inventory(from_inv)
+		elif not entry.is_empty():
+			var glyph_id: StringName = StringName(String(entry.get("id", "")))
+			var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
+			if not _orb.apply_glyph(glyph_id, rarity):
+				if not _circle.add_inventory_entry(glyph_id, rarity):
+					_orb.apply_glyph(glyph_id, rarity)
+	elif target >= DROP_INV_0 and target <= DROP_INV_2:
+		if from_slot >= 0 and not entry.is_empty():
+			if not _circle.add_inventory_entry(
+				StringName(String(entry.get("id", ""))),
+				int(entry.get("rarity", Glyph.Rarity.COMMON))
+			):
+				# Inventory full — restore onto the orb.
+				_orb.apply_glyph(
+					StringName(String(entry.get("id", ""))),
+					int(entry.get("rarity", Glyph.Rarity.COMMON))
+				)
+		elif from_inv >= 0:
+			# Dropped back onto inventory — leave as-is.
+			pass
+	else:
+		# Unknown target: restore.
+		if from_slot >= 0 and not entry.is_empty():
+			_orb.apply_glyph(
+				StringName(String(entry.get("id", ""))),
+				int(entry.get("rarity", Glyph.Rarity.COMMON))
+			)
+
 	_refresh_ui()
 
 
-func _socket_glyph(index: int) -> void:
+func _socket_from_inventory(index: int) -> void:
 	var entry: Dictionary = _circle.remove_inventory_entry(index)
 	if entry.is_empty():
 		return
@@ -510,7 +818,7 @@ func _socket_glyph(index: int) -> void:
 		_circle.inventory_changed.emit()
 
 
-func _recycle_glyph(index: int) -> void:
+func _recycle_inventory_glyph(index: int) -> void:
 	if index < 0 or index >= _circle.glyph_inventory.size():
 		return
 	var entry: Dictionary = _circle.glyph_inventory[index]
@@ -539,6 +847,27 @@ func _ensure_slot_icon(slot: TextureRect) -> void:
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	icon.visible = false
 	slot.add_child(icon)
+
+
+func _ensure_outline(socket: Control) -> Panel:
+	if socket.has_node("Outline"):
+		return socket.get_node("Outline") as Panel
+	var outline := Panel.new()
+	outline.name = "Outline"
+	outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	outline.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outline.offset_left = -1.0
+	outline.offset_top = -1.0
+	outline.offset_right = 1.0
+	outline.offset_bottom = 1.0
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = Color.WHITE
+	style.set_border_width_all(1)
+	outline.add_theme_stylebox_override("panel", style)
+	outline.visible = false
+	socket.add_child(outline)
+	return outline
 
 
 func _on_buy_pressed() -> void:

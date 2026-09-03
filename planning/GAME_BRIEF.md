@@ -17,7 +17,7 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - **Dash**: press Space (or gamepad B) to dash **50 px** toward current facing (8 directions: N/S/E/W + diagonals). While dashing the player is immune to damage, phases through props/enemies, and cannot move or attack. Outer arena walls still block the dash. **4s** cooldown, shown as a small ring above the player's head (drawn by `DashComponent`); cannot start mid-swing or while **carrying a glyph**. A proximity **Attack redirect** clears the dash cooldown so the player can dash immediately after batting the orb.
 - **Loot**: enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (default **10%** per orb row; level fallback **25%**). Drops are one of **12 glyphs** (4 elements × 3 types) at **Common / Rare / Unique** rarity (default weights **70 / 25 / 5**). Pick up with **tether** in focus range. Carrying blocks dash; **Attack** throws the glyph. Deliver into the **summoning circle**: glyph is sucked to center and stored in circle inventory (**max 3**); overflow converts to mana (**5 / 10 / 20** by rarity). Orbs can destroy grounded glyphs (no inventory credit).
 - **Clear**: kill all enemies → level win.
-- **Ritual (in-level)**: activate the summoning circle (first use free, then **+5 mana** per use). The next orb that enters opens a paused menu: that orb's stats, **all current orbs** in a bottom inventory (focused orb highlighted), drag-and-drop glyph socketing / recycle, Transform (when 3 glyphs match a playable recipe), buy a new Blank Orb (max **3** orbs).
+- **Ritual (in-level)**: activate the summoning circle (first use free, then **+5 mana** per use). The next orb that enters opens a paused menu: that orb's stats, **all current orbs** in a bottom inventory (focused orb highlighted), drag-and-drop glyph socketing / recycle (glyphs can also be pulled back off orb slots), Transform (when 3 glyphs match a playable recipe), buy a new Blank Orb (max **3** orbs). Circle inventory starts with one Common **Air** glyph (`static`).
 - **Next level**: repeat until 10 clears (run win) or death (HP depleted by enemy contact or own orb).
 
 ## Win / lose
@@ -59,11 +59,11 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 
 ## Progression
 - **During the level**, activate the **summoning circle** (first activation free, then **+5 mana** each time). The next orb that enters opens the **ritual menu**:
-  1. **Socket glyphs** by dragging from the bottom glyph inventory into the focused orb's 3 slots (mouse hold-drag, or controller: dash to grab → up to snap to slots → left/right to move including recycle → dash to drop; tether cancels). Three on a Blank Orb → Transform into a specialist when the element combo is playable. Three on a non-Blank with the right combo → **Attunement** (Transform gated the same way once attunements have scenes). After two glyphs, show four possible result hints (`???` vs name).
+  1. **Socket glyphs** by dragging from the bottom glyph inventory into the focused orb's 3 slots (mouse hold-drag, or controller d-pad to move focus / dash to grab → up to snap to slots → left/right across recycle and slots → dash to drop; tether cancels). Socketed glyphs can be **removed** (mouse-drag off the slot, or controller focus + dash — returns to inventory if there is space). Three on a Blank Orb → Transform into a specialist when the element combo is playable. Three on a non-Blank with the right combo → **Attunement** (Transform gated the same way once attunements have scenes). After two glyphs, show four possible result hints (`???` vs name).
   2. **Recycle** by dropping a glyph on the recycle socket: **5** Common / **10** Rare / **20** Unique mana.
   3. **Buy** a new Blank Orb for **20 mana**; price **+10** each purchase (prototype still flat 20). Cap **3 orbs** in play; Buy disabled at the cap.
-- The menu shows an **inventory of all current orbs** at the bottom; the circle-captured orb stays in focus (display-only for the other sockets).
-- Mana label in the inventory bar updates live on deposit/spend.
+- The menu shows an **inventory of all current orbs** at the bottom; the circle-captured orb stays in focus (display-only for the other sockets). D-pad can highlight orbs and other menu controls.
+- Circle glyph inventory starts with one Common Air glyph (`static`). Mana label in the inventory bar updates live on deposit/spend.
 
 ## Enemies
 - Two chaser enemies (`grunt_knife`, `brute`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking, while still dealing **1 contact damage** on a ~0.75s tick once overlapping.

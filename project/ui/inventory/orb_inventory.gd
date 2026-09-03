@@ -21,7 +21,10 @@ var _glyph_icons: Array[TextureRect] = []
 var _orb_outlines: Array[Panel] = []
 var _glyph_outlines: Array[Panel] = []
 var _controller_glyph_index: int = 0
+var _controller_orb_index: int = 0
 var _held_glyph_index: int = -1
+var _menu_focus_on_glyphs: bool = true
+var _menu_focus_on_orbs: bool = false
 
 
 func _ready() -> void:
@@ -60,17 +63,26 @@ func set_orbs(orbs: Array, focused: Node) -> void:
 				icon.modulate = orb.base_modulate
 			else:
 				icon.modulate = Color.WHITE
-			if orb == focused:
+			var is_focused_orb: bool = orb == focused
+			var is_menu_focus: bool = _menu_focus_on_orbs and i == _controller_orb_index
+			if is_focused_orb:
 				socket.self_modulate = FOCUS_TINT
-				outline.visible = true
+			outline.visible = is_focused_orb or is_menu_focus
 		else:
 			icon.visible = false
 			icon.texture = null
 
 
-func set_glyphs(entries: Array) -> void:
+func set_glyphs(entries: Array, hide_index: int = -1) -> void:
+	_held_glyph_index = hide_index
 	for i in _glyph_sockets.size():
 		var icon: TextureRect = _glyph_icons[i]
+		if i == hide_index:
+			# Source socket shows empty while that glyph is being dragged.
+			icon.visible = false
+			icon.texture = null
+			icon.modulate = Color.WHITE
+			continue
 		if i < entries.size() and typeof(entries[i]) == TYPE_DICTIONARY:
 			var entry: Dictionary = entries[i]
 			var glyph_id: StringName = StringName(String(entry.get("id", "")))
@@ -89,6 +101,18 @@ func set_mana(value: float) -> void:
 	mana_label.text = "Mana: %d" % int(value)
 
 
+func get_glyph_socket(index: int) -> Control:
+	if index < 0 or index >= _glyph_sockets.size():
+		return null
+	return _glyph_sockets[index]
+
+
+func get_orb_socket(index: int) -> Control:
+	if index < 0 or index >= _orb_sockets.size():
+		return null
+	return _orb_sockets[index]
+
+
 func get_glyph_socket_rect(index: int) -> Rect2:
 	if index < 0 or index >= _glyph_sockets.size():
 		return Rect2()
@@ -105,8 +129,26 @@ func get_controller_glyph_index() -> int:
 	return _controller_glyph_index
 
 
+func set_controller_orb_index(index: int) -> void:
+	_controller_orb_index = clampi(index, 0, maxi(_orb_sockets.size() - 1, 0))
+
+
+func get_controller_orb_index() -> int:
+	return _controller_orb_index
+
+
+func set_menu_focus(on_glyphs: bool, on_orbs: bool) -> void:
+	_menu_focus_on_glyphs = on_glyphs
+	_menu_focus_on_orbs = on_orbs
+	_refresh_glyph_outlines()
+
+
 func set_held_glyph_index(index: int) -> void:
 	_held_glyph_index = index
+	# Hide the source icon immediately so it does not look duplicated next to the drag preview.
+	for i in _glyph_icons.size():
+		if i == index:
+			_glyph_icons[i].visible = false
 	_refresh_glyph_outlines()
 
 
@@ -151,7 +193,7 @@ func _refresh_glyph_outlines() -> void:
 		var outlined: bool = false
 		if _held_glyph_index >= 0:
 			outlined = i == _held_glyph_index
-		elif has_glyph:
+		elif _menu_focus_on_glyphs and has_glyph:
 			outlined = i == _controller_glyph_index
 		outline.visible = outlined
 

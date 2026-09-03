@@ -35,6 +35,9 @@ var _capture_tween: Tween
 func _ready() -> void:
 	add_to_group("summoning_circle")
 	arcane_particles.emitting = false
+	# Prototype seed: one Common Air glyph so the ritual menu is usable immediately.
+	if glyph_inventory.is_empty():
+		add_inventory_entry(&"static", Glyph.Rarity.COMMON)
 	_refresh_mana_label()
 	deposit_area.body_entered.connect(_on_deposit_area_body_entered)
 	deposit_area.body_exited.connect(_on_deposit_area_body_exited)
@@ -125,6 +128,18 @@ func remove_inventory_entry(index: int) -> Dictionary:
 	glyph_inventory.remove_at(index)
 	inventory_changed.emit()
 	return entry
+
+
+func add_inventory_entry(glyph_id: StringName, rarity: int) -> bool:
+	if glyph_inventory.size() >= max_glyph_capacity:
+		return false
+	glyph_inventory.append({"id": String(glyph_id), "rarity": rarity})
+	inventory_changed.emit()
+	return true
+
+
+func has_inventory_space() -> bool:
+	return glyph_inventory.size() < max_glyph_capacity
 
 
 func capture_orb(orb: RigidBody2D) -> void:

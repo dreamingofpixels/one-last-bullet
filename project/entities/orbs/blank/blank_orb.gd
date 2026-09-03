@@ -488,6 +488,33 @@ func apply_glyph(id: StringName, rarity: int) -> bool:
 	return true
 
 
+## Reverse a socketed glyph's stat and remove it. Returns the entry, or {} on failure.
+func remove_glyph(slot_index: int) -> Dictionary:
+	if slot_index < 0 or slot_index >= socketed_glyphs.size():
+		return {}
+
+	var entry: Dictionary = socketed_glyphs[slot_index]
+	var glyph_id: StringName = StringName(String(entry.get("id", "")))
+	var rarity: int = int(entry.get("rarity", GLYPH_RARITY_COMMON))
+	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
+	if row != null and typeof(row) == TYPE_DICTIONARY:
+		var data: Dictionary = row
+		var attr: StringName = StringName(String(data.get("attribute", "")))
+		var value: float = 0.0
+		match rarity:
+			GLYPH_RARITY_RARE:
+				value = float(data.get("rarity_rare", 0.0))
+			GLYPH_RARITY_UNIQUE:
+				value = float(data.get("rarity_unique", 0.0))
+			_:
+				value = float(data.get("rarity_common", 0.0))
+		if not attr.is_empty():
+			_apply_glyph_attribute(attr, -value)
+
+	socketed_glyphs.remove_at(slot_index)
+	return entry
+
+
 func _apply_glyph_attribute(attr: StringName, value: float) -> bool:
 	var key: String = String(attr)
 	var sync_damage: bool = false

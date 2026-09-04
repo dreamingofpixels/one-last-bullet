@@ -35,6 +35,12 @@ const ICON_DIR: String = "res://ui/attributes/"
 		decimal_places = new_value
 		_apply_value()
 
+## When true, shows "?" instead of the formatted numeric value (e.g. ??? hint preview).
+@export var unknown: bool = false:
+	set(new_value):
+		unknown = new_value
+		_apply_value()
+
 @onready var icon: TextureRect = %Icon
 @onready var value_label: Label = %Value
 
@@ -76,7 +82,7 @@ func _apply_icon() -> void:
 func _apply_value() -> void:
 	if not is_node_ready():
 		return
-	var text: String = _format_value(value, value_format, decimal_places)
+	var text: String = "?" if unknown else _format_value(value, value_format, decimal_places)
 	if value_label.text == text:
 		return
 	value_label.text = text

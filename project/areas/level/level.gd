@@ -70,6 +70,7 @@ func _ready() -> void:
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	summoning_circle.ritual_started.connect(_on_ritual_started)
 	ritual_menu.closed.connect(_on_ritual_menu_closed)
+	ritual_menu.inspect_closed.connect(_on_inspect_closed)
 	ritual_menu.new_blank_orb_requested.connect(_on_new_blank_orb_requested)
 	ritual_menu.transform_requested.connect(_on_transform_requested)
 
@@ -124,6 +125,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("restart"):
 		Engine.time_scale = 1.0
 		get_tree().reload_current_scene()
+		return
+	if event.is_action_pressed("pause"):
+		_try_open_inspect()
+		get_viewport().set_input_as_handled()
+
+
+func _try_open_inspect() -> void:
+	if _game_over or _cleared:
+		return
+	if ritual_menu.visible:
+		return
+	if get_tree().paused:
+		return
+	time_slow_overlay.end()
+	get_tree().paused = true
+	ritual_menu.open_inspect(summoning_circle, _live_orbs())
 
 
 func _connect_breakable_destroy_signals() -> void:
@@ -451,6 +468,10 @@ func _on_ritual_menu_closed() -> void:
 	get_tree().paused = false
 	if summoning_circle != null and is_instance_valid(summoning_circle):
 		summoning_circle.release_orb()
+
+
+func _on_inspect_closed() -> void:
+	get_tree().paused = false
 
 
 func _on_new_blank_orb_requested() -> void:

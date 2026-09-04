@@ -42,6 +42,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Godot `_get_drag_data` only — no pad path; selectable focus among all inventory orbs for editing — rejected (display-only inventory orbs); packed append-only slots — previous, could not land on slot 3 while 1–2 empty; confirm auto-returns to inventory — previous; hot-potato live-swap (place held / pick up displaced) — rejected, hid the placed glyph under the held-slot hide and felt like the wrong glyph was held; live-swap when orb is full (inventory-held) — rejected (confirm-to-swap when full); side-panel Transform/hint info boxes — superseded by in-panel preview on hint focus/hover; Transform on any 3 glyphs / failed ritual — rejected; persistent discovery save — deferred.
 - **Status**: decided (in-codebase)
 
+### Pause inspect: view-only ritual menu
+- **Decision**: Esc / gamepad Start pauses the tree and opens the same `RitualMenu` in **inspect** mode. Shows orb info (name, effect, 12 stats, socketed glyphs) plus the bottom orb/glyph inventory and mana. **Transform**, **recycle**, **buy**, and recipe **hints** are hidden. No glyph drag/socket. Inventory orbs are **selectable** (mouse click or controller focus) to switch which orb’s info is shown. Close via Esc / Start / Done emits `inspect_closed` and does **not** call `release_orb`. If the full ritual is already open, Esc / Start acts as Done (releases the captured orb as usual).
+- **Why**: Players need a mid-combat inventory check without paying circle activation or mutating orbs/glyphs outside the ritual gate.
+- **Alternatives**: Separate inspect HUD scene — duplicates layout; allow socketing from pause — skips activation cost and breaks the circle fantasy; always show first orb only — weaker with 3 orbs; real-time overlay without pause — hard to read in co-op chaos.
+- **Status**: decided (in-codebase)
+
 ### RunStartConfig: editor-authored starting mana / orbs / glyphs
 - **Decision**: Level root exports a `RunStartConfig` Resource (`run_start_default.tres`) with `starting_mana`, `starting_orbs` (PackedScene array), and `starting_glyphs` (`GlyphEntryConfig` rows with glyph-id dropdown + rarity). `level.gd` applies mana/glyphs via `SummoningCircle.apply_start_config` in `_ready` and launches `starting_orbs` (fallback Ghost/Rot/Conduit if empty). Circle no longer hardcodes the Common Air seed.
 - **Why**: One inspector panel for playtest tuning without editing scripts; shareable `.tres` between scenes later.

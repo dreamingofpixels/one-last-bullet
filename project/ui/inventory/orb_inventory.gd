@@ -2,6 +2,7 @@ class_name OrbInventoryBar
 extends Control
 
 signal glyph_grab_requested(index: int)
+signal orb_selected(index: int)
 
 const BLANK_ORB_TEXTURE := preload("res://entities/orbs/blank/blank_orb.png")
 const FOCUS_TINT := Color(1.45, 1.45, 1.45, 1.0)
@@ -21,16 +22,23 @@ var _glyph_icons: Array[TextureRect] = []
 var _orb_outlines: Array[Panel] = []
 var _glyph_outlines: Array[Panel] = []
 var _controller_glyph_index: int = 0
+var _controller_orb_index: int = 0
 var _held_glyph_index: int = -1
 var _menu_focus_on_glyphs: bool = true
+var _menu_focus_on_orbs: bool = false
+var _orbs_selectable: bool = false
+var _glyphs_interactive: bool = true
+var _filled_orb_count: int = 0
 
 
 func _ready() -> void:
 	_orb_sockets = [orb_socket_1, orb_socket_2, orb_socket_3]
 	_glyph_sockets = [glyph_socket_1, glyph_socket_2, glyph_socket_3]
-	for socket in _orb_sockets:
+	for i in _orb_sockets.size():
+		var socket: TextureRect = _orb_sockets[i]
 		_ensure_orb_icon(socket)
 		_orb_outlines.append(_ensure_outline(socket))
+		socket.gui_input.connect(_on_orb_socket_gui_input.bind(i))
 	for i in _glyph_sockets.size():
 		var socket: TextureRect = _glyph_sockets[i]
 		socket.gui_input.connect(_on_glyph_socket_gui_input.bind(i))
@@ -47,6 +55,7 @@ func _ready() -> void:
 
 
 func set_orbs(orbs: Array, focused: Node) -> void:
+	_filled_orb_count = 0
 	for i in _orb_sockets.size():
 		var socket: TextureRect = _orb_sockets[i]
 		var icon: TextureRect = socket.get_node("Icon") as TextureRect
@@ -54,6 +63,7 @@ func set_orbs(orbs: Array, focused: Node) -> void:
 		socket.self_modulate = Color.WHITE
 		outline.visible = false
 		if i < orbs.size() and is_instance_valid(orbs[i]):
+			_filled_orb_count += 1
 			var orb: Node = orbs[i]
 			icon.visible = true
 			icon.texture = BLANK_ORB_TEXTURE
@@ -64,11 +74,12 @@ func set_orbs(orbs: Array, focused: Node) -> void:
 			var is_focused_orb: bool = orb == focused
 			if is_focused_orb:
 				socket.self_modulate = FOCUS_TINT
-			# Only the ritual-captured orb gets an outline — inventory orbs are not focusable.
+			# Ritual: only the captured orb is outlined. Inspect: selected orb is outlined.
 			outline.visible = is_focused_orb
 		else:
 			icon.visible = false
 			icon.texture = null
+	_refresh_orb_controller_outline()
 
 
 func set_glyphs(entries: Array, hide_index: int = -1) -> void:
@@ -128,9 +139,35 @@ func get_controller_glyph_index() -> int:
 	return _controller_glyph_index
 
 
+func set_controller_orb_index(index: int) -> void:
+	_controller_orb_index = clampi(index, 0, maxi(_filled_orb_count - 1, 0))
+	_refresh_orb_controller_outline()
+
+
+func get_controller_orb_index() -> int:
+	return _controller_orb_index
+
+
+func get_filled_orb_count() -> int:
+	return _filled_orb_count
+
+
 func set_menu_focus(on_glyphs: bool) -> void:
 	_menu_focus_on_glyphs = on_glyphs
 	_refresh_glyph_outlines()
+
+
+func set_orb_menu_focus(on_orbs: bool) -> void:
+	_menu_focus_on_orbs = on_orbs
+	_refresh_orb_controller_outline()
+
+
+func set_orbs_selectable(enabled: bool) -> void:
+	_orbs_selectable = enabled
+
+
+func set_glyphs_interactive(enabled: bool) -> void:
+	_glyphs_interactive = enabled
 
 
 func set_held_glyph_index(index: int) -> void:
@@ -188,6 +225,16 @@ func _refresh_glyph_outlines() -> void:
 		outline.visible = outlined
 
 
+func _refresh_orb_controller_outline() -> void:
+	if not _menu_focus_on_orbs:
+		return
+	for i in _orb_sockets.size():
+		var outline: Panel = _orb_outlines[i]
+		var icon: TextureRect = _orb_sockets[i].get_node("Icon") as TextureRect
+		if icon.visible and i == _controller_orb_index:
+			outline.visible = true
+
+
 func _texture_for_glyph_id(glyph_id: StringName) -> Texture2D:
 	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
 	if row == null or typeof(row) != TYPE_DICTIONARY:
@@ -196,7 +243,26 @@ func _texture_for_glyph_id(glyph_id: StringName) -> Texture2D:
 	return Glyph.ELEMENT_TEXTURES.get(element, Glyph.ELEMENT_TEXTURES["Fire"]) as Texture2D
 
 
+func _on_orb_socket_gui_input(event: InputEvent, index: int) -> void:
+	if not _orbs_selectable:
+		return
+	if not (event is InputEventMouseButton):
+		return
+	var mouse: InputEventMouseButton = event as InputEventMouseButton
+	if mouse.button_index != MOUSE_BUTTON_LEFT or not mouse.pressed:
+		return
+	if index >= _orb_sockets.size():
+		return
+	var icon: TextureRect = _orb_sockets[index].get_node("Icon") as TextureRect
+	if icon == null or not icon.visible:
+		return
+	accept_event()
+	orb_selected.emit(index)
+
+
 func _on_glyph_socket_gui_input(event: InputEvent, index: int) -> void:
+	if not _glyphs_interactive:
+		return
 	if not (event is InputEventMouseButton):
 		return
 	var mouse: InputEventMouseButton = event as InputEventMouseButton

@@ -2,6 +2,7 @@ class_name RitualMenu
 extends CanvasLayer
 
 signal closed
+signal inspect_closed
 signal new_blank_orb_requested
 signal transform_requested(orb_id: StringName)
 
@@ -18,8 +19,14 @@ const ANALOG_NAV_DEADZONE := 0.55
 ## Held drag preview is darkened vs focus outline / rune glow.
 const HELD_PREVIEW_DARKEN := Color(0.65, 0.65, 0.65, 1.0)
 
+enum MenuMode {
+	RITUAL,
+	INSPECT,
+}
+
 enum FocusZone {
 	INV_GLYPH,
+	INV_ORB,
 	RECYCLE,
 	ORB_SLOT,
 	TRANSFORM,
@@ -47,14 +54,17 @@ enum FocusZone {
 @onready var orb_slot_1: TextureRect = %OrbSlot1
 @onready var orb_slot_2: TextureRect = %OrbSlot2
 @onready var orb_slot_3: TextureRect = %OrbSlot3
+@onready var recycle_column: VBoxContainer = %Recycle
 @onready var recycle_socket: TextureRect = %RecycleSocket
 @onready var recycle_label: Label = %RecycleLabel
+@onready var transform_section: VBoxContainer = %TransformSection
 @onready var transform_button: Button = %TransformButton
 @onready var hint_container: GridContainer = %HintContainer
 @onready var hint_1: Label = %Hint1
 @onready var hint_2: Label = %Hint2
 @onready var hint_3: Label = %Hint3
 @onready var hint_4: Label = %Hint4
+@onready var buy_column: VBoxContainer = %BuyBlankOrb
 @onready var buy_button: Button = %BuyButton
 @onready var buy_label: Label = %BuyLabel
 @onready var done_button: Button = %DoneButton
@@ -62,6 +72,7 @@ enum FocusZone {
 @onready var drag_preview: Panel = %DragPreview
 @onready var drag_icon: TextureRect = %DragIcon
 
+var _menu_mode: MenuMode = MenuMode.RITUAL
 var _orb: BlankOrb = null
 var _circle: SummoningCircle = null
 var _orbs: Array = []
@@ -124,6 +135,7 @@ func _ready() -> void:
 	buy_button.pressed.connect(_on_buy_pressed)
 	transform_button.pressed.connect(_on_transform_pressed)
 	inventory.glyph_grab_requested.connect(_on_inventory_glyph_grab)
+	inventory.orb_selected.connect(_on_inventory_orb_selected)
 
 
 func _center_panel() -> void:
@@ -152,6 +164,7 @@ func _editor_panel_size() -> Vector2:
 
 
 func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0, orbs: Array = []) -> void:
+	_menu_mode = MenuMode.RITUAL
 	_orb = orb as BlankOrb
 	_circle = circle
 	_new_orb_cost = new_orb_cost
@@ -159,38 +172,62 @@ func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0,
 	_cancel_drag()
 	_hovered_hint_index = -1
 	visible = true
+	_set_economy_columns_visible(true)
+	inventory.set_orbs_selectable(false)
+	inventory.set_glyphs_interactive(true)
 	_focus_zone = FocusZone.INV_GLYPH
 	_focus_index = 0
 	# Ignore a stick that was already deflected from walking into the circle.
 	_analog_nav_latched = _move_stick().length() >= ANALOG_NAV_DEADZONE
 
-	if _circle != null:
-		if not _circle.inventory_changed.is_connected(_refresh_ui):
-			_circle.inventory_changed.connect(_refresh_ui)
-		if not _circle.mana_deposited.is_connected(_on_mana_changed):
-			_circle.mana_deposited.connect(_on_mana_changed)
-		if not _circle.mana_spent.is_connected(_on_mana_changed):
-			_circle.mana_spent.connect(_on_mana_changed)
+	_connect_circle_signals()
 
 	buy_label.text = "Blank Orb\n(%d mana)" % int(_new_orb_cost)
 	_refresh_ui()
 	_apply_focus_visuals()
 
 
+func open_inspect(circle: SummoningCircle, orbs: Array = []) -> void:
+	_menu_mode = MenuMode.INSPECT
+	_circle = circle
+	_orbs = orbs.duplicate()
+	_orb = null
+	for candidate in _orbs:
+		if is_instance_valid(candidate):
+			_orb = candidate as BlankOrb
+			break
+	_cancel_drag()
+	_hovered_hint_index = -1
+	visible = true
+	_set_economy_columns_visible(false)
+	inventory.set_orbs_selectable(true)
+	inventory.set_glyphs_interactive(false)
+	_focus_zone = FocusZone.INV_ORB if _count_live_orbs() > 0 else FocusZone.DONE
+	_focus_index = 0
+	_analog_nav_latched = _move_stick().length() >= ANALOG_NAV_DEADZONE
+
+	_connect_circle_signals()
+	_refresh_ui()
+	_apply_focus_visuals()
+
+
+func is_inspect_mode() -> bool:
+	return _menu_mode == MenuMode.INSPECT
+
+
 func close_menu() -> void:
 	_cancel_drag()
 	_hovered_hint_index = -1
 	_hint_data.clear()
-	if _circle != null and is_instance_valid(_circle):
-		if _circle.inventory_changed.is_connected(_refresh_ui):
-			_circle.inventory_changed.disconnect(_refresh_ui)
-		if _circle.mana_deposited.is_connected(_on_mana_changed):
-			_circle.mana_deposited.disconnect(_on_mana_changed)
-		if _circle.mana_spent.is_connected(_on_mana_changed):
-			_circle.mana_spent.disconnect(_on_mana_changed)
+	_disconnect_circle_signals()
+	inventory.set_orbs_selectable(false)
+	inventory.set_glyphs_interactive(true)
+	inventory.set_orb_menu_focus(false)
+	_set_economy_columns_visible(true)
 	_orb = null
 	_circle = null
 	_orbs.clear()
+	_menu_mode = MenuMode.RITUAL
 	visible = false
 
 
@@ -199,6 +236,34 @@ func set_orbs(orbs: Array) -> void:
 	if visible:
 		_refresh_inventory_bar()
 		_apply_focus_visuals()
+
+
+func _connect_circle_signals() -> void:
+	if _circle == null:
+		return
+	if not _circle.inventory_changed.is_connected(_refresh_ui):
+		_circle.inventory_changed.connect(_refresh_ui)
+	if not _circle.mana_deposited.is_connected(_on_mana_changed):
+		_circle.mana_deposited.connect(_on_mana_changed)
+	if not _circle.mana_spent.is_connected(_on_mana_changed):
+		_circle.mana_spent.connect(_on_mana_changed)
+
+
+func _disconnect_circle_signals() -> void:
+	if _circle == null or not is_instance_valid(_circle):
+		return
+	if _circle.inventory_changed.is_connected(_refresh_ui):
+		_circle.inventory_changed.disconnect(_refresh_ui)
+	if _circle.mana_deposited.is_connected(_on_mana_changed):
+		_circle.mana_deposited.disconnect(_on_mana_changed)
+	if _circle.mana_spent.is_connected(_on_mana_changed):
+		_circle.mana_spent.disconnect(_on_mana_changed)
+
+
+func _set_economy_columns_visible(show_economy: bool) -> void:
+	recycle_column.visible = show_economy
+	buy_column.visible = show_economy
+	transform_section.visible = show_economy
 
 
 func _process(_delta: float) -> void:
@@ -213,7 +278,14 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	if event.is_action_pressed("pause"):
+		_on_done_pressed()
+		get_viewport().set_input_as_handled()
+		return
 	if _is_holding() and _dragging_mouse:
+		return
+	if _menu_mode == MenuMode.INSPECT:
+		_input_inspect(event)
 		return
 
 	if event.is_action_pressed("dash"):
@@ -225,6 +297,37 @@ func _input(event: InputEvent) -> void:
 		if _is_holding():
 			_cancel_drag()
 			get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventJoypadMotion:
+		_handle_analog_nav()
+		return
+
+	if event.is_action_pressed("move_up"):
+		_apply_menu_nav(Vector2.UP)
+		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("move_down"):
+		_apply_menu_nav(Vector2.DOWN)
+		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("move_left"):
+		_apply_menu_nav(Vector2.LEFT)
+		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("move_right"):
+		_apply_menu_nav(Vector2.RIGHT)
+		get_viewport().set_input_as_handled()
+		return
+
+
+func _input_inspect(event: InputEvent) -> void:
+	if event.is_action_pressed("dash"):
+		_on_controller_confirm()
+		get_viewport().set_input_as_handled()
 		return
 
 	if event is InputEventJoypadMotion:
@@ -279,6 +382,9 @@ func _handle_analog_nav() -> void:
 
 
 func _apply_menu_nav(dir: Vector2) -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		_navigate_inspect_focus(dir)
+		return
 	if _is_holding():
 		if dir == Vector2.UP:
 			_snap_to_first_empty_orb_slot()
@@ -299,16 +405,32 @@ func _on_mana_changed(_amount: float, _total: float) -> void:
 
 
 func _refresh_ui() -> void:
-	if _orb == null or not is_instance_valid(_orb) or _circle == null or not is_instance_valid(_circle):
+	if _circle == null or not is_instance_valid(_circle):
 		return
 
-	_refresh_orb_slots()
+	if _orb != null and is_instance_valid(_orb):
+		_refresh_orb_slots()
+		if _menu_mode == MenuMode.RITUAL:
+			_refresh_hints()
+			_refresh_transform()
+			_refresh_buy()
+			recycle_label.text = "Drop to\nrecycle"
+		else:
+			_hide_hints()
+		_apply_orb_info_display()
+	else:
+		orb_name_label.text = ""
+		effect_label.text = ""
+		for box in _stat_boxes:
+			box.unknown = false
+			box.value = 0.0
+		for i in _slot_icons.size():
+			_slot_icons[i].visible = false
+			_slot_icons[i].texture = null
+			Glyph.clear_rarity_visual(_slot_icons[i])
+		_hide_hints()
+
 	_refresh_inventory_bar()
-	_refresh_hints()
-	_refresh_transform()
-	_refresh_buy()
-	recycle_label.text = "Drop to\nrecycle"
-	_apply_orb_info_display()
 	_apply_focus_visuals()
 
 
@@ -454,7 +576,7 @@ func _hide_hints() -> void:
 	hint_container.visible = false
 	_hovered_hint_index = -1
 	if _focus_zone == FocusZone.HINT:
-		_focus_zone = FocusZone.TRANSFORM
+		_focus_zone = FocusZone.TRANSFORM if _menu_mode == MenuMode.RITUAL else FocusZone.DONE
 		_focus_index = 0
 	hint_container.columns = 2
 	for i in _hint_labels.size():
@@ -547,10 +669,32 @@ func _effect_text_for_orb(orb: BlankOrb) -> String:
 
 
 func _on_inventory_glyph_grab(index: int) -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		return
 	_begin_drag_from_inventory(index, true)
 
 
+func _on_inventory_orb_selected(index: int) -> void:
+	if _menu_mode != MenuMode.INSPECT:
+		return
+	_select_inspect_orb(index)
+
+
+func _select_inspect_orb(index: int) -> void:
+	if index < 0 or index >= _orbs.size():
+		return
+	var candidate: Variant = _orbs[index]
+	if not is_instance_valid(candidate):
+		return
+	_orb = candidate as BlankOrb
+	_focus_zone = FocusZone.INV_ORB
+	_focus_index = index
+	_refresh_ui()
+
+
 func _on_orb_slot_gui_input(event: InputEvent, slot_index: int) -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		return
 	if not (event is InputEventMouseButton):
 		return
 	var mouse: InputEventMouseButton = event as InputEventMouseButton
@@ -563,6 +707,8 @@ func _on_orb_slot_gui_input(event: InputEvent, slot_index: int) -> void:
 
 
 func _begin_drag_from_inventory(index: int, from_mouse: bool) -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		return
 	if _circle == null or index < 0 or index >= _circle.glyph_inventory.size():
 		return
 	_held_inv_index = index
@@ -581,6 +727,8 @@ func _begin_drag_from_inventory(index: int, from_mouse: bool) -> void:
 
 
 func _begin_drag_from_orb_slot(slot_index: int, from_mouse: bool) -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		return
 	if _orb == null or not _orb.has_glyph_at(slot_index):
 		return
 	var entry: Dictionary = _orb.remove_glyph(slot_index)
@@ -673,6 +821,16 @@ func _drop_target_controls() -> Array[Control]:
 
 
 func _on_controller_confirm() -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		match _focus_zone:
+			FocusZone.INV_ORB:
+				_select_inspect_orb(_focus_index)
+			FocusZone.DONE:
+				_on_done_pressed()
+			_:
+				pass
+		return
+
 	if _is_holding():
 		_resolve_drop(_target_index)
 		return
@@ -691,10 +849,40 @@ func _on_controller_confirm() -> void:
 				_on_buy_pressed()
 		FocusZone.DONE:
 			_on_done_pressed()
-		FocusZone.HINT, FocusZone.RECYCLE:
+		FocusZone.HINT, FocusZone.RECYCLE, FocusZone.INV_ORB:
 			pass
 		_:
 			pass
+
+
+func _navigate_inspect_focus(dir: Vector2) -> void:
+	var orb_count: int = _count_live_orbs()
+	match _focus_zone:
+		FocusZone.INV_ORB:
+			if dir.y < 0.0:
+				_focus_zone = FocusZone.DONE
+				_focus_index = 0
+			elif dir.x < 0.0:
+				_focus_index = maxi(_focus_index - 1, 0)
+				if orb_count > 0:
+					_select_inspect_orb(_focus_index)
+					return
+			elif dir.x > 0.0:
+				_focus_index = mini(_focus_index + 1, maxi(orb_count - 1, 0))
+				if orb_count > 0:
+					_select_inspect_orb(_focus_index)
+					return
+		FocusZone.DONE:
+			if dir.y > 0.0 and orb_count > 0:
+				_focus_zone = FocusZone.INV_ORB
+				_focus_index = 0
+				_select_inspect_orb(_focus_index)
+				return
+		_:
+			_focus_zone = FocusZone.INV_ORB if orb_count > 0 else FocusZone.DONE
+			_focus_index = 0
+	_apply_orb_info_display()
+	_apply_focus_visuals()
 
 
 func _navigate_focus(dir: Vector2) -> void:
@@ -828,26 +1016,40 @@ func _navigate_focus(dir: Vector2) -> void:
 
 
 func _apply_focus_visuals() -> void:
-	var on_glyphs: bool = _focus_zone == FocusZone.INV_GLYPH and not _is_holding()
+	var on_glyphs: bool = (
+		_menu_mode == MenuMode.RITUAL
+		and _focus_zone == FocusZone.INV_GLYPH
+		and not _is_holding()
+	)
+	var on_orbs: bool = _menu_mode == MenuMode.INSPECT and _focus_zone == FocusZone.INV_ORB
 	inventory.set_menu_focus(on_glyphs)
+	inventory.set_orb_menu_focus(on_orbs)
 	if on_glyphs:
 		inventory.set_controller_glyph_index(_focus_index)
+	if on_orbs:
+		inventory.set_controller_orb_index(_focus_index)
 	inventory.set_orbs(_orbs, _orb)
 
 	for i in _slot_outlines.size():
 		_slot_outlines[i].visible = (
-			not _is_holding()
+			_menu_mode == MenuMode.RITUAL
+			and not _is_holding()
 			and _focus_zone == FocusZone.ORB_SLOT
 			and i == _focus_index
 		)
 
 	var recycle_outline: Panel = recycle_socket.get_node_or_null("Outline") as Panel
 	if recycle_outline:
-		recycle_outline.visible = not _is_holding() and _focus_zone == FocusZone.RECYCLE
+		recycle_outline.visible = (
+			_menu_mode == MenuMode.RITUAL
+			and not _is_holding()
+			and _focus_zone == FocusZone.RECYCLE
+		)
 
 	for i in _hint_outlines.size():
 		var highlighted: bool = (
-			_hints_visible()
+			_menu_mode == MenuMode.RITUAL
+			and _hints_visible()
 			and _hint_labels[i].visible
 			and not _is_holding()
 			and (
@@ -859,12 +1061,12 @@ func _apply_focus_visuals() -> void:
 
 	transform_button.modulate = (
 		Color(1.35, 1.35, 1.35, 1.0)
-		if _focus_zone == FocusZone.TRANSFORM and not _is_holding()
+		if _menu_mode == MenuMode.RITUAL and _focus_zone == FocusZone.TRANSFORM and not _is_holding()
 		else Color.WHITE
 	)
 	buy_button.modulate = (
 		Color(1.35, 1.35, 1.35, 1.0)
-		if _focus_zone == FocusZone.BUY and not _is_holding()
+		if _menu_mode == MenuMode.RITUAL and _focus_zone == FocusZone.BUY and not _is_holding()
 		else Color.WHITE
 	)
 	done_button.modulate = (
@@ -1170,6 +1372,8 @@ func _ensure_outline(socket: Control) -> Panel:
 
 
 func _on_buy_pressed() -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		return
 	if _circle == null or not _circle.spend(_new_orb_cost):
 		return
 	new_blank_orb_requested.emit()
@@ -1177,6 +1381,8 @@ func _on_buy_pressed() -> void:
 
 
 func _on_transform_pressed() -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		return
 	if _orb == null:
 		return
 	var elements: Array[String] = OrbRecipes.elements_from_socketed(_orb.socketed_glyphs)
@@ -1188,5 +1394,9 @@ func _on_transform_pressed() -> void:
 
 
 func _on_done_pressed() -> void:
+	var was_inspect: bool = _menu_mode == MenuMode.INSPECT
 	close_menu()
-	closed.emit()
+	if was_inspect:
+		inspect_closed.emit()
+	else:
+		closed.emit()

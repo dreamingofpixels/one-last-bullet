@@ -44,6 +44,7 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - **Tether**: right click (keyboard); X button (gamepad)
 - **Dash**: Space (keyboard); B button (gamepad)
 - **Aim**: mouse for the keyboard player; right stick for gamepad players
+- **Pause / inspect**: Esc (keyboard) or Start (gamepad) opens the ritual UI in **view-only** mode — orb + glyph inventory and orb info (stats / sockets). Transform, recycle, and buy are hidden. Click or focus inventory orbs to switch which orb is shown. Esc / Start / Done closes without releasing any orb. If the real ritual menu is already open, Esc / Start closes it like Done.
 - **Restart**: R
 - **Co-op**: up to 4 local players supported by the input system; P1 uses keyboard + mouse + gamepad device 0; **P2 is added automatically** when a second gamepad is connected (no join button) — instances `player.tscn` with `player_index = 2` and assembles in at the same time as P1; mid-level plug-in still hot-joins. P3/P4 action bindings not yet authored in project.godot. Run ends only when **all** players are dead.
 

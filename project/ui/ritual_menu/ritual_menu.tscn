@@ -72,6 +72,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 12
 
 [node name="Recycle" type="VBoxContainer" parent="Panel/Margin/VBox/Body" unique_id=1114842516]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel/Margin/VBox/Body/Recycle" unique_id=1784923118]
@@ -296,6 +297,7 @@ layout_mode = 2
 texture = ExtResource("5_0grhw")
 
 [node name="TransformSection" type="VBoxContainer" parent="Panel/Margin/VBox/Body/OrbInFocus" unique_id=1857364751]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="TransformButton" type="Button" parent="Panel/Margin/VBox/Body/OrbInFocus/TransformSection" unique_id=286456810]
@@ -352,6 +354,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="BuyBlankOrb" type="VBoxContainer" parent="Panel/Margin/VBox/Body" unique_id=293799501]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel/Margin/VBox/Body/BuyBlankOrb" unique_id=1261120917]

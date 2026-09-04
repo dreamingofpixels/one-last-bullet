@@ -55,7 +55,6 @@ enum FocusZone {
 @onready var hint_2: Label = %Hint2
 @onready var hint_3: Label = %Hint3
 @onready var hint_4: Label = %Hint4
-@onready var hint_info_container: VBoxContainer = %HintInfoContainer
 @onready var buy_button: Button = %BuyButton
 @onready var buy_label: Label = %BuyLabel
 @onready var done_button: Button = %DoneButton
@@ -74,6 +73,8 @@ var _hint_data: Array[Dictionary] = []
 var _slot_icons: Array[TextureRect] = []
 var _slot_outlines: Array[Panel] = []
 var _stat_boxes: Array[AttributeBox] = []
+var _hint_label_settings_normal: LabelSettings = null
+var _hint_label_settings_large: LabelSettings = null
 
 ## Held glyph: from inventory index, or from an orb slot (-1 / -1 = nothing held).
 var _held_inv_index: int = -1
@@ -81,7 +82,6 @@ var _held_orb_slot: int = -1
 var _held_entry: Dictionary = {}
 var _target_index: int = DROP_SLOT_0
 var _dragging_mouse: bool = false
-var _showing_transform_preview: bool = false
 ## Mouse-hovered hint index (-1 = none). Wins over controller HINT focus for preview.
 var _hovered_hint_index: int = -1
 
@@ -100,6 +100,10 @@ func _ready() -> void:
 		speed_box, weight_box, splash_box, glyph_drop_box,
 		burn_box, chill_box, shock_box, poison_box,
 	]
+	_hint_label_settings_normal = hint_1.label_settings
+	if _hint_label_settings_normal != null:
+		_hint_label_settings_large = _hint_label_settings_normal.duplicate()
+		_hint_label_settings_large.font_size = 16
 	for i in _orb_slots.size():
 		var slot: TextureRect = _orb_slots[i]
 		_ensure_slot_icon(slot)
@@ -119,10 +123,6 @@ func _ready() -> void:
 	done_button.pressed.connect(_on_done_pressed)
 	buy_button.pressed.connect(_on_buy_pressed)
 	transform_button.pressed.connect(_on_transform_pressed)
-	transform_button.mouse_entered.connect(_on_transform_hover.bind(true))
-	transform_button.mouse_exited.connect(_on_transform_hover.bind(false))
-	transform_button.focus_entered.connect(_on_transform_hover.bind(true))
-	transform_button.focus_exited.connect(_on_transform_hover.bind(false))
 	inventory.glyph_grab_requested.connect(_on_inventory_glyph_grab)
 
 
@@ -392,6 +392,8 @@ func _apply_hint_preview(hint: Dictionary) -> void:
 
 
 func _on_hint_hover(index: int, active: bool) -> void:
+	if active and (index < 0 or index >= _hint_labels.size() or not _hint_labels[index].visible):
+		return
 	if active:
 		_hovered_hint_index = index
 	elif _hovered_hint_index == index:
@@ -428,23 +430,46 @@ func _refresh_inventory_bar() -> void:
 
 
 func _refresh_hints() -> void:
-	if not _showing_transform_preview:
-		_clear_hint_info()
 	var count: int = _orb.socketed_count()
-	hint_container.visible = count == 2
 	_hint_data.clear()
-	if count != 2:
-		_hovered_hint_index = -1
-		if _focus_zone == FocusZone.HINT:
-			_focus_zone = FocusZone.TRANSFORM
-			_focus_index = 0
-		for label in _hint_labels:
-			label.text = "???"
+
+	if count == 2:
+		_show_four_hints()
 		return
 
+	if count == 3:
+		var elements: Array[String] = OrbRecipes.elements_from_socketed(_orb.socketed_glyphs)
+		var row: Dictionary = OrbRecipes.result_for(_orb, elements)
+		if not row.is_empty():
+			_show_single_result_hint(row)
+			return
+
+	_hide_hints()
+
+
+func _hide_hints() -> void:
+	hint_container.visible = false
+	_hovered_hint_index = -1
+	if _focus_zone == FocusZone.HINT:
+		_focus_zone = FocusZone.TRANSFORM
+		_focus_index = 0
+	hint_container.columns = 2
+	for i in _hint_labels.size():
+		_hint_labels[i].visible = true
+		_hint_labels[i].text = "???"
+		if _hint_label_settings_normal != null:
+			_hint_labels[i].label_settings = _hint_label_settings_normal
+
+
+func _show_four_hints() -> void:
+	hint_container.visible = true
+	hint_container.columns = 2
 	var elements: Array[String] = OrbRecipes.elements_from_socketed(_orb.socketed_glyphs)
 	var hints: Array = OrbRecipes.hints_for(_orb, elements)
 	for i in _hint_labels.size():
+		_hint_labels[i].visible = true
+		if _hint_label_settings_normal != null:
+			_hint_labels[i].label_settings = _hint_label_settings_normal
 		if i < hints.size():
 			var hint: Dictionary = hints[i]
 			_hint_data.append(hint)
@@ -454,6 +479,41 @@ func _refresh_hints() -> void:
 			_hint_data.append({"label": "???", "row": {}, "discovered": false})
 
 
+func _show_single_result_hint(row: Dictionary) -> void:
+	hint_container.visible = true
+	hint_container.columns = 1
+	var row_id: StringName = StringName(String(row.get("id", "")))
+	var discovered: bool = OrbRecipes.is_discovered(row_id)
+	var label_text: String = "???"
+	if discovered:
+		label_text = String(row.get("name", "???"))
+	var hint := {
+		"label": label_text,
+		"row": row,
+		"discovered": discovered,
+	}
+	_hint_data.append(hint)
+	hint_1.visible = true
+	hint_1.text = label_text.to_upper()
+	if _hint_label_settings_large != null:
+		hint_1.label_settings = _hint_label_settings_large
+	elif _hint_label_settings_normal != null:
+		hint_1.label_settings = _hint_label_settings_normal
+	for i in range(1, _hint_labels.size()):
+		_hint_labels[i].visible = false
+		_hint_labels[i].text = "???"
+		if _hint_label_settings_normal != null:
+			_hint_labels[i].label_settings = _hint_label_settings_normal
+	if _hovered_hint_index > 0:
+		_hovered_hint_index = -1
+	if _focus_zone == FocusZone.HINT:
+		_focus_index = 0
+
+
+func _is_single_result_hint() -> bool:
+	return _hint_data.size() == 1
+
+
 func _refresh_transform() -> void:
 	var elements: Array[String] = OrbRecipes.elements_from_socketed(_orb.socketed_glyphs)
 	var can_transform: bool = (
@@ -461,8 +521,6 @@ func _refresh_transform() -> void:
 		and OrbRecipes.is_playable(OrbRecipes.result_for(_orb, elements))
 	)
 	transform_button.disabled = not can_transform
-	if _showing_transform_preview:
-		_show_transform_preview()
 
 
 func _refresh_buy() -> void:
@@ -483,72 +541,6 @@ func _effect_text_for_orb(orb: BlankOrb) -> String:
 	if row == null or typeof(row) != TYPE_DICTIONARY:
 		return ""
 	return String((row as Dictionary).get("effect", ""))
-
-
-func _clear_hint_info() -> void:
-	for child in hint_info_container.get_children():
-		child.queue_free()
-
-
-func _add_hint_info_box(hint: Dictionary) -> void:
-	var row: Dictionary = hint.get("row", {}) as Dictionary
-	if row.is_empty():
-		return
-	var box := PanelContainer.new()
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 4)
-	margin.add_theme_constant_override("margin_top", 4)
-	margin.add_theme_constant_override("margin_right", 4)
-	margin.add_theme_constant_override("margin_bottom", 4)
-	var vbox := VBoxContainer.new()
-	var title := Label.new()
-	title.text = String(row.get("name", "???"))
-	var body := Label.new()
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.custom_minimum_size = Vector2(160, 0)
-	var desc: String = String(row.get("desc", ""))
-	if desc.is_empty():
-		desc = String(row.get("effect", ""))
-	body.text = desc if not desc.is_empty() else "???"
-	vbox.add_child(title)
-	vbox.add_child(body)
-	margin.add_child(vbox)
-	box.add_child(margin)
-	hint_info_container.add_child(box)
-
-
-func _show_transform_preview() -> void:
-	_clear_hint_info()
-	var elements: Array[String] = OrbRecipes.elements_from_socketed(_orb.socketed_glyphs)
-	var row: Dictionary = OrbRecipes.result_for(_orb, elements)
-	if row.is_empty() or not OrbRecipes.is_discovered(StringName(String(row.get("id", "")))):
-		_add_unknown_preview_box()
-		return
-	var hint := {"row": row, "discovered": true}
-	_add_hint_info_box(hint)
-
-
-func _add_unknown_preview_box() -> void:
-	var box := PanelContainer.new()
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 4)
-	margin.add_theme_constant_override("margin_top", 4)
-	margin.add_theme_constant_override("margin_right", 4)
-	margin.add_theme_constant_override("margin_bottom", 4)
-	var label := Label.new()
-	label.text = "???\n???"
-	margin.add_child(label)
-	box.add_child(margin)
-	hint_info_container.add_child(box)
-
-
-func _on_transform_hover(active: bool) -> void:
-	_showing_transform_preview = active
-	if active:
-		_show_transform_preview()
-	else:
-		_refresh_hints()
-		_apply_orb_info_display()
 
 
 func _on_inventory_glyph_grab(index: int) -> void:
@@ -713,8 +705,11 @@ func _navigate_focus(dir: Vector2) -> void:
 			elif dir.y < 0.0:
 				if _hints_visible():
 					_focus_zone = FocusZone.HINT
-					# Prefer bottom row under the glyph index (0/1 → 2/3).
-					_focus_index = 2 if _focus_index <= 0 else 3
+					if _is_single_result_hint():
+						_focus_index = 0
+					else:
+						# Prefer bottom row under the glyph index (0/1 → 2/3).
+						_focus_index = 2 if _focus_index <= 0 else 3
 				else:
 					_focus_zone = FocusZone.ORB_SLOT
 					_focus_index = mini(_focus_index, 2)
@@ -766,7 +761,21 @@ func _navigate_focus(dir: Vector2) -> void:
 				_focus_zone = FocusZone.DONE
 				_focus_index = 0
 		FocusZone.HINT:
-			if dir.x < 0.0:
+			if _is_single_result_hint():
+				_focus_index = 0
+				if dir.x < 0.0:
+					_focus_zone = FocusZone.RECYCLE
+					_focus_index = 0
+				elif dir.x > 0.0:
+					_focus_zone = FocusZone.BUY
+					_focus_index = 0
+				elif dir.y < 0.0:
+					_focus_zone = FocusZone.TRANSFORM
+					_focus_index = 0
+				elif dir.y > 0.0:
+					_focus_zone = FocusZone.INV_GLYPH
+					_focus_index = mini(0, maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0))
+			elif dir.x < 0.0:
 				if _focus_index == 0 or _focus_index == 2:
 					_focus_zone = FocusZone.RECYCLE
 					_focus_index = 0
@@ -811,12 +820,6 @@ func _navigate_focus(dir: Vector2) -> void:
 				_focus_zone = FocusZone.BUY
 				_focus_index = 0
 
-	if _focus_zone == FocusZone.TRANSFORM:
-		_showing_transform_preview = true
-		_show_transform_preview()
-	else:
-		_showing_transform_preview = false
-		_refresh_hints()
 	_apply_orb_info_display()
 	_apply_focus_visuals()
 
@@ -842,6 +845,7 @@ func _apply_focus_visuals() -> void:
 	for i in _hint_outlines.size():
 		var highlighted: bool = (
 			_hints_visible()
+			and _hint_labels[i].visible
 			and not _is_holding()
 			and (
 				_hovered_hint_index == i

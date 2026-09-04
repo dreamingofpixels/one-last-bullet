@@ -389,21 +389,6 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Done"
 
-[node name="HintInfoContainer" type="VBoxContainer" parent="." unique_id=708828349]
-unique_name_in_owner = true
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -80.0
-offset_right = -8.0
-offset_bottom = 80.0
-grow_horizontal = 0
-grow_vertical = 2
-theme_override_constants/separation = 4
-
 [node name="Inventory" parent="." unique_id=1653315014 instance=ExtResource("6_0grhw")]
 unique_name_in_owner = true
 

@@ -91,7 +91,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — replaced by circle random launch (see above)
 
 ### Glyphs replace mana crystals; carry, throw, circle inventory
-- **Decision**: Enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity shown by **center-rune glow** (Common off, Rare hot white rune, Unique hotter + pulse — no whole-sprite tint). `ManaCrystal` retired.
+- **Decision**: Enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity shown by **unison center-rune blink** (Common white, Rare jade + rising motes, Unique gold + denser motes). `ManaCrystal` retired.
 - **Why**: Glyphs are the upgrade vector for the ritual menu; mana comes from discard/overflow rather than every pickup.
 - **Alternatives**: Keep crystals as mana and add separate glyph drops — two loot types to juggle; auto-socket on deposit — removes ritual menu choice.
 - **Status**: decided (in-codebase)
@@ -108,10 +108,10 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Percent-of-base multiplier — rejected after data moved to absolute adds for core stats.
 - **Status**: decided (in-codebase)
 
-### Glyph rarity: center-rune glow (no whole-sprite tint)
-- **Decision**: Rare / Unique glyphs light only the dark center rune via `glyph_rarity.gdshader` (center + low-luma mask; no `return` in `fragment`). Common has no glow; Rare mixes the rune toward white; Unique is hotter and pulses with shader `TIME`. `Glyph.apply_rarity_visual` duplicates a `ShaderMaterial` per CanvasItem and sets `glow` / `pulse` uniforms (world sprites, ritual slots, inventory icons, drag preview). Element fill is never rarity-modulated.
-- **Why**: Whole-sprite blue/gold tint fought element color (especially Air and Water) and would collide with future yellow/purple elements. Rune-only hot white keeps rarity readable without claiming a hue. Shared instance uniforms failed to compile / apply; per-item material duplicates are reliable on Sprite2D and TextureRect.
-- **Alternatives**: Whole-sprite rarity modulate (previous) — muddy element reads; rarity rim overlays (gold/violet) — deferred; separate rune-mask PNGs — deferred for shader heuristic first; shared material + instance uniforms — previous, shader `return` broke compile and params did not stick.
+### Glyph rarity: unison blink + jade/gold particles
+- **Decision**: All glyphs pulse the dark center rune in unison via `glyph_rarity.gdshader` (`TIME` + shared `pulse_speed`). Rarity is the blink **tint** plus rising motes from `glyph_rarity_particles.tscn`: **Common** white blink, no particles; **Rare** jade blink + jade motes (`amount` 8); **Unique** gold blink + denser gold motes (`amount` 16). `Glyph.apply_rarity_visual` sets `glow` / `pulse` / `tint` on a per-item duplicated `ShaderMaterial` and configures particles (authored under the world sprite; lazily instanced under ritual UI icons / drag preview). Ritual menu `PROCESS_MODE_WHEN_PAUSED` keeps blink + particles alive while paused.
+- **Why**: Pure white hot-rune on Rare was hard to read as a tier step; colored blink + particles make Rare/Unique pop at a glance without whole-sprite modulate. Unison pulse keeps the loot language coherent.
+- **Alternatives**: Whole-sprite rarity modulate — muddy element reads; Common off / Rare hot white / Unique pulse — previous, Rare looked wrong; rarity rim overlays — deferred; element-native Common blink — rejected for white (matches prior Unique look).
 - **Status**: decided (in-codebase)
 
 ### Mana crystals: carry, throw, deposit into summoning circle

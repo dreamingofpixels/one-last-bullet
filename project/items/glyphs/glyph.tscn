@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_destroy"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="6_hbar"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
+[ext_resource type="PackedScene" path="res://items/glyphs/glyph_rarity_particles.tscn" id="8_particles"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 4.0
@@ -19,7 +20,7 @@ radius = 6.0
 radius = 5.0
 height = 14.0
 
-[node name="Glyph" type="RigidBody2D"]
+[node name="Glyph" type="RigidBody2D" unique_id=1454728676]
 collision_layer = 32
 gravity_scale = 0.0
 lock_rotation = true
@@ -27,46 +28,49 @@ script = ExtResource("1_script")
 throw_speed = 300.0
 deposit_suck_speed = 120.0
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1754144645]
 unique_name_in_owner = true
 texture_filter = 1
 texture = ExtResource("2_tex")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="RarityParticles" parent="Sprite2D" unique_id=1762908896 instance=ExtResource("8_particles")]
+unique_name_in_owner = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1928380237]
 unique_name_in_owner = true
 shape = SubResource("CapsuleShape2D_body")
 
-[node name="PresenceArea" type="Area2D" parent="."]
+[node name="PresenceArea" type="Area2D" parent="." unique_id=1091289485]
 unique_name_in_owner = true
 collision_layer = 32
 collision_mask = 0
 monitoring = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PresenceArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PresenceArea" unique_id=522175183]
 shape = SubResource("CircleShape2D_presence")
 
-[node name="Components" type="Node2D" parent="."]
+[node name="Components" type="Node2D" parent="." unique_id=1168678995]
 script = ExtResource("3_handler")
 
-[node name="HealthComponent" type="Node2D" parent="Components" node_paths=PackedStringArray("destroy_component")]
+[node name="HealthComponent" type="Node2D" parent="Components" unique_id=326908765 node_paths=PackedStringArray("destroy_component")]
 script = ExtResource("4_health")
 max_health = 20.0
 destroy_component = NodePath("../DestroyComponent")
 
-[node name="HealthBarComponent" parent="Components" node_paths=PackedStringArray("health_component") instance=ExtResource("6_hbar")]
+[node name="HealthBarComponent" parent="Components" unique_id=298512131 node_paths=PackedStringArray("health_component") instance=ExtResource("6_hbar")]
 health_component = NodePath("../HealthComponent")
 offset = Vector2(0, -14)
 
-[node name="DestroyComponent" type="Node2D" parent="Components" node_paths=PackedStringArray("sprite")]
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=761977515 node_paths=PackedStringArray("sprite")]
 script = ExtResource("5_destroy")
 sprite = NodePath("../../Sprite2D")
 
-[node name="HitboxComponent" type="Area2D" parent="Components" node_paths=PackedStringArray("health_component")]
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1187059867 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true
 collision_layer = 0
 collision_mask = 8
 script = ExtResource("7_hitbox")
 health_component = NodePath("../HealthComponent")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1845359765]
 shape = SubResource("CapsuleShape2D_hitbox")

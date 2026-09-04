@@ -115,9 +115,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Glyph rarity: unison blink + jade/gold particles
-- **Decision**: All glyphs pulse the dark center rune in unison via `glyph_rarity.gdshader` (`TIME` + shared `pulse_speed`). Rarity is the blink **tint** plus rising motes from `glyph_rarity_particles.tscn`: **Common** white blink, no particles; **Rare** jade blink + jade motes (`amount` 8); **Unique** gold blink + denser gold motes (`amount` 16). `Glyph.apply_rarity_visual` sets `glow` / `pulse` / `tint` on a per-item duplicated `ShaderMaterial` and configures particles (authored under the world sprite; lazily instanced under ritual UI icons / drag preview). Ritual menu `PROCESS_MODE_WHEN_PAUSED` keeps blink + particles alive while paused.
-- **Why**: Pure white hot-rune on Rare was hard to read as a tier step; colored blink + particles make Rare/Unique pop at a glance without whole-sprite modulate. Unison pulse keeps the loot language coherent.
-- **Alternatives**: Whole-sprite rarity modulate — muddy element reads; Common off / Rare hot white / Unique pulse — previous, Rare looked wrong; rarity rim overlays — deferred; element-native Common blink — rejected for white (matches prior Unique look).
+- **Decision**: White center-rune pixels are recolored to a rarity **base tint**, then blink toward a **darker** shade of that tint in unison via `glyph_rarity.gdshader` (`TIME` + shared `PULSE_SPEED`; high-luma mask). **Common** white ↔ darker grey; **Rare** jade ↔ darker jade + jade motes (`amount` 8); **Unique** purple ↔ darker purple + denser motes (`amount` 16). `Glyph.apply_rarity_visual` sets `glow` / `pulse` / `tint` / `tint_dark` on a per-item duplicated `ShaderMaterial` and configures particles. Ritual menu `PROCESS_MODE_WHEN_PAUSED` keeps blink + particles alive while paused.
+- **Why**: Base rarity color is always readable; blink is a shade change of the same hue rather than mixing from etched dark toward bright. White rune art + high-luma mask keeps element fill clean.
+- **Alternatives**: Whole-sprite rarity modulate — muddy element reads; mix white toward tint only (no dark trough) — weak blink; dark-luma etched mask — previous, broke when signs went white.
 - **Status**: decided (in-codebase)
 
 ### Mana crystals: carry, throw, deposit into summoning circle

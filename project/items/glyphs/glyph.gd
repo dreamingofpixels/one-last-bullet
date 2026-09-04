@@ -24,14 +24,18 @@ const ELEMENT_TEXTURES: Dictionary = {
 const RARITY_SHADER: Shader = preload("res://items/glyphs/glyph_rarity.gdshader")
 const RARITY_PARTICLES_SCENE: PackedScene = preload("res://items/glyphs/glyph_rarity_particles.tscn")
 const RARITY_PARTICLES_NODE := &"RarityParticles"
-const COMMON_GLOW := 0.2
-const RARE_GLOW := 1.4
-const UNIQUE_GLOW := 1.5
+## Full recolor of white rune pixels to the rarity base tint.
+const COMMON_GLOW := 1.0
+const RARE_GLOW := 1.0
+const UNIQUE_GLOW := 1.0
 const RARE_PARTICLE_AMOUNT := 8
 const UNIQUE_PARTICLE_AMOUNT := 16
 const TINT_COMMON := Color(1.0, 1.0, 1.0, 1.0)
-const TINT_RARE := Color(0.248, 0.842, 0.545, 1.0)
-const TINT_UNIQUE := Color(0.617, 0.312, 0.992, 1.0)
+const TINT_COMMON_DARK := Color(0.741, 0.741, 0.741, 1.0)
+const TINT_RARE := Color(0.203, 0.675, 0.437, 1.0)
+const TINT_RARE_DARK := Color(0.095, 0.399, 0.247, 1.0)
+const TINT_UNIQUE := Color(0.578, 0.166, 0.984, 1.0)
+const TINT_UNIQUE_DARK := Color(0.292, 0.125, 0.534, 1.0)
 
 static var _rarity_material_base: ShaderMaterial
 
@@ -58,6 +62,7 @@ static func _rarity_visuals(rarity_tier: int) -> Dictionary:
 			return {
 				"glow": RARE_GLOW,
 				"tint": TINT_RARE,
+				"tint_dark": TINT_RARE_DARK,
 				"particles": true,
 				"amount": RARE_PARTICLE_AMOUNT,
 			}
@@ -65,6 +70,7 @@ static func _rarity_visuals(rarity_tier: int) -> Dictionary:
 			return {
 				"glow": UNIQUE_GLOW,
 				"tint": TINT_UNIQUE,
+				"tint_dark": TINT_UNIQUE_DARK,
 				"particles": true,
 				"amount": UNIQUE_PARTICLE_AMOUNT,
 			}
@@ -72,6 +78,7 @@ static func _rarity_visuals(rarity_tier: int) -> Dictionary:
 			return {
 				"glow": COMMON_GLOW,
 				"tint": TINT_COMMON,
+				"tint_dark": TINT_COMMON_DARK,
 				"particles": false,
 				"amount": 0,
 			}
@@ -117,7 +124,7 @@ static func _configure_rarity_particles(item: CanvasItem, rarity_tier: int) -> v
 	particles.emitting = true
 
 
-## All rarities pulse the center rune in unison. Tint + particles carry rarity.
+## All rarities recolor the white rune to a base tint and blink toward a darker tint.
 static func apply_rarity_visual(item: CanvasItem, rarity_tier: int) -> void:
 	if item == null or not is_instance_valid(item):
 		return
@@ -126,6 +133,7 @@ static func apply_rarity_visual(item: CanvasItem, rarity_tier: int) -> void:
 	mat.set_shader_parameter(&"glow", float(visuals.get("glow", COMMON_GLOW)))
 	mat.set_shader_parameter(&"pulse", 1.0)
 	mat.set_shader_parameter(&"tint", visuals.get("tint", TINT_COMMON) as Color)
+	mat.set_shader_parameter(&"tint_dark", visuals.get("tint_dark", TINT_COMMON_DARK) as Color)
 	_configure_rarity_particles(item, rarity_tier)
 
 
@@ -136,6 +144,7 @@ static func clear_rarity_visual(item: CanvasItem) -> void:
 	mat.set_shader_parameter(&"glow", 0.0)
 	mat.set_shader_parameter(&"pulse", 0.0)
 	mat.set_shader_parameter(&"tint", TINT_COMMON)
+	mat.set_shader_parameter(&"tint_dark", TINT_COMMON_DARK)
 	item.modulate = Color.WHITE
 	var existing: Node = item.get_node_or_null(NodePath(String(RARITY_PARTICLES_NODE)))
 	if existing is GPUParticles2D:

@@ -15,6 +15,8 @@ const DROP_INV_1 := 5
 const DROP_INV_2 := 6
 ## Stick must pass this strength to take one menu step, then return below it for the next.
 const ANALOG_NAV_DEADZONE := 0.55
+## Held drag preview is darkened vs focus outline / rarity tint.
+const HELD_PREVIEW_DARKEN := Color(0.65, 0.65, 0.65, 1.0)
 
 enum FocusZone {
 	INV_GLYPH,
@@ -25,7 +27,7 @@ enum FocusZone {
 	DONE,
 }
 
-@onready var panel: PanelContainer = %Panel
+@onready var panel: ColorRect = %Panel
 @onready var orb_name_label: Label = %OrbNameLabel
 @onready var effect_label: Label = %EffectLabel
 @onready var damage_box: AttributeBox = %DamageBox
@@ -512,7 +514,8 @@ func _show_drag_preview(entry: Dictionary) -> void:
 	var glyph_id: StringName = StringName(String(entry.get("id", "")))
 	var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
 	drag_icon.texture = _texture_for_glyph_id(glyph_id)
-	drag_icon.modulate = Glyph.RARITY_MODULATE.get(rarity, Color.WHITE) as Color
+	var rarity_color: Color = Glyph.RARITY_MODULATE.get(rarity, Color.WHITE) as Color
+	drag_icon.modulate = rarity_color * HELD_PREVIEW_DARKEN
 	drag_preview.visible = true
 
 
@@ -521,7 +524,8 @@ func _cancel_drag() -> void:
 	if _held_orb_slot >= 0 and not _held_entry.is_empty() and _orb != null and is_instance_valid(_orb):
 		var glyph_id: StringName = StringName(String(_held_entry.get("id", "")))
 		var rarity: int = int(_held_entry.get("rarity", Glyph.Rarity.COMMON))
-		_orb.apply_glyph_at(_held_orb_slot, glyph_id, rarity)
+		if not _orb.apply_glyph_at(_held_orb_slot, glyph_id, rarity):
+			_orb.apply_glyph(glyph_id, rarity)
 	_held_inv_index = -1
 	_held_orb_slot = -1
 	_held_entry = {}
@@ -716,20 +720,91 @@ func _apply_focus_visuals() -> void:
 
 
 func _move_drop_target(delta: int) -> void:
+	var prev_index: int = _target_index
 	var max_target: int = DROP_INV_2
 	_target_index = clampi(_target_index + delta, DROP_RECYCLE, max_target)
+	if not _dragging_mouse:
+		if _held_orb_slot >= 0 and _is_orb_drop_index(_target_index):
+			_try_live_orb_swap(_target_index - DROP_SLOT_0)
+		elif _held_inv_index >= 0 and _is_orb_drop_index(_target_index):
+			if not _is_orb_drop_index(prev_index) and _first_empty_orb_slot() >= 0:
+				# Entering the orb row: prefer an empty slot.
+				_target_index = DROP_SLOT_0 + _first_empty_orb_slot()
+			elif _is_orb_drop_index(prev_index):
+				# Within orb slots: push the occupied glyph into the empty hole we left.
+				_try_live_inv_orb_swap(prev_index - DROP_SLOT_0, _target_index - DROP_SLOT_0)
 	_place_preview_on_target()
 	_refresh_drop_target_outline()
 
 
+func _is_orb_drop_index(index: int) -> bool:
+	return index >= DROP_SLOT_0 and index <= DROP_SLOT_2
+
+
+func _first_empty_orb_slot() -> int:
+	if _orb == null:
+		return -1
+	for i in _orb.socketed_glyphs.size():
+		if not _orb.has_glyph_at(i):
+			return i
+	return -1
+
+
+func _move_occupied_into_hole(hole_slot: int, occupied_slot: int) -> bool:
+	if _orb == null:
+		return false
+	if hole_slot < 0 or hole_slot >= _orb.socketed_glyphs.size():
+		return false
+	if occupied_slot < 0 or occupied_slot >= _orb.socketed_glyphs.size():
+		return false
+	if hole_slot == occupied_slot:
+		return false
+	if _orb.has_glyph_at(hole_slot):
+		return false
+	if not _orb.has_glyph_at(occupied_slot):
+		return false
+
+	var displaced: Dictionary = _orb.remove_glyph(occupied_slot)
+	if displaced.is_empty():
+		return false
+	var displaced_id: StringName = StringName(String(displaced.get("id", "")))
+	var displaced_rarity: int = int(displaced.get("rarity", Glyph.Rarity.COMMON))
+	if not _orb.apply_glyph_at(hole_slot, displaced_id, displaced_rarity):
+		_orb.apply_glyph_at(occupied_slot, displaced_id, displaced_rarity)
+		return false
+	return true
+
+
+func _try_live_orb_swap(slot_index: int) -> void:
+	if _held_orb_slot < 0 or _held_entry.is_empty():
+		return
+	if not _move_occupied_into_hole(_held_orb_slot, slot_index):
+		return
+	_held_orb_slot = slot_index
+	_refresh_stats()
+	_refresh_orb_slots()
+	_refresh_hints()
+	_refresh_transform()
+	_show_drag_preview(_held_entry)
+
+
+func _try_live_inv_orb_swap(hole_slot: int, occupied_slot: int) -> void:
+	# Inventory-held: only live-swap when leaving an empty slot onto an occupied one.
+	if _held_inv_index < 0 or _held_entry.is_empty():
+		return
+	if not _move_occupied_into_hole(hole_slot, occupied_slot):
+		return
+	_refresh_stats()
+	_refresh_orb_slots()
+	_refresh_hints()
+	_refresh_transform()
+	_show_drag_preview(_held_entry)
+
+
 func _snap_to_first_empty_orb_slot() -> void:
-	var open_index: int = 0
-	if _orb != null:
+	var open_index: int = _first_empty_orb_slot()
+	if open_index < 0:
 		open_index = 2
-		for i in _orb.socketed_glyphs.size():
-			if not _orb.has_glyph_at(i):
-				open_index = i
-				break
 	_target_index = DROP_SLOT_0 + open_index
 	_place_preview_on_target()
 	_refresh_drop_target_outline()

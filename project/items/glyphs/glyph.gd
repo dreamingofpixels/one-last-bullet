@@ -21,11 +21,57 @@ const ELEMENT_TEXTURES: Dictionary = {
 	"Air": preload("res://items/glyphs/air_glyph.png"),
 	"Earth": preload("res://items/glyphs/earth_glyph.png"),
 }
-const RARITY_MODULATE: Dictionary = {
-	Rarity.COMMON: Color.WHITE,
-	Rarity.RARE: Color(0.65, 0.85, 1.0, 1.0),
-	Rarity.UNIQUE: Color(1.0, 0.85, 0.35, 1.0),
-}
+const RARITY_SHADER: Shader = preload("res://items/glyphs/glyph_rarity.gdshader")
+const RARE_GLOW := 1.0
+const UNIQUE_GLOW := 1.15
+
+static var _rarity_material_base: ShaderMaterial
+
+
+static func _get_rarity_material_base() -> ShaderMaterial:
+	if _rarity_material_base == null:
+		_rarity_material_base = ShaderMaterial.new()
+		_rarity_material_base.shader = RARITY_SHADER
+	return _rarity_material_base
+
+
+static func _ensure_rarity_material(item: CanvasItem) -> ShaderMaterial:
+	var existing: ShaderMaterial = item.material as ShaderMaterial
+	if existing != null and existing.shader == RARITY_SHADER:
+		return existing
+	var mat: ShaderMaterial = _get_rarity_material_base().duplicate() as ShaderMaterial
+	item.material = mat
+	return mat
+
+
+## Lights only the dark center rune. Common = off, Rare = hot white, Unique = pulse.
+## Does not introduce a rarity hue — element fill stays as authored.
+static func apply_rarity_visual(item: CanvasItem, rarity_tier: int) -> void:
+	if item == null or not is_instance_valid(item):
+		return
+	var mat: ShaderMaterial = _ensure_rarity_material(item)
+	var glow_amount: float = 0.0
+	var pulse_amount: float = 0.0
+	match rarity_tier:
+		Rarity.RARE:
+			glow_amount = RARE_GLOW
+		Rarity.UNIQUE:
+			glow_amount = UNIQUE_GLOW
+			pulse_amount = 1.0
+		_:
+			pass
+	mat.set_shader_parameter(&"glow", glow_amount)
+	mat.set_shader_parameter(&"pulse", pulse_amount)
+
+
+static func clear_rarity_visual(item: CanvasItem) -> void:
+	if item == null or not is_instance_valid(item):
+		return
+	var mat: ShaderMaterial = _ensure_rarity_material(item)
+	mat.set_shader_parameter(&"glow", 0.0)
+	mat.set_shader_parameter(&"pulse", 0.0)
+	item.modulate = Color.WHITE
+
 
 var COMPONENTS: Dictionary = {}
 
@@ -133,7 +179,8 @@ func _apply_visuals() -> void:
 	var tex: Texture2D = ELEMENT_TEXTURES.get(element, ELEMENT_TEXTURES["Fire"]) as Texture2D
 	if tex:
 		sprite.texture = tex
-	sprite.modulate = RARITY_MODULATE.get(rarity, Color.WHITE) as Color
+	sprite.modulate = Color.WHITE
+	apply_rarity_visual(sprite, rarity)
 
 
 func _on_destroyed(_node: Node = null) -> void:

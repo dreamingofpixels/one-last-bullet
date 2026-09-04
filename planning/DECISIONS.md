@@ -91,7 +91,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — replaced by circle random launch (see above)
 
 ### Glyphs replace mana crystals; carry, throw, circle inventory
-- **Decision**: Enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity tint (white / blue / gold). `ManaCrystal` retired.
+- **Decision**: Enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity shown by **center-rune glow** (Common off, Rare hot white rune, Unique hotter + pulse — no whole-sprite tint). `ManaCrystal` retired.
 - **Why**: Glyphs are the upgrade vector for the ritual menu; mana comes from discard/overflow rather than every pickup.
 - **Alternatives**: Keep crystals as mana and add separate glyph drops — two loot types to juggle; auto-socket on deposit — removes ritual menu choice.
 - **Status**: decided (in-codebase)
@@ -106,6 +106,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Each `glyphs` row names an **`attribute`** (`damage`, `burn`, `glyph_drop`, etc.). Socketing adds **`rarity_common` / `rarity_rare` / `rarity_unique`** flat to that stat. `splash`, `crit_chance`, `glyph_drop` clamp to **0–1**; `damage`, `self_damage`, `speed`, `weight` floor at **0**. Negative values in data (e.g. `soft`, `drag`) reduce stats as authored.
 - **Why**: Matches spreadsheet authoring; one code path for all 12 glyphs.
 - **Alternatives**: Percent-of-base multiplier — rejected after data moved to absolute adds for core stats.
+- **Status**: decided (in-codebase)
+
+### Glyph rarity: center-rune glow (no whole-sprite tint)
+- **Decision**: Rare / Unique glyphs light only the dark center rune via `glyph_rarity.gdshader` (center + low-luma mask; no `return` in `fragment`). Common has no glow; Rare mixes the rune toward white; Unique is hotter and pulses with shader `TIME`. `Glyph.apply_rarity_visual` duplicates a `ShaderMaterial` per CanvasItem and sets `glow` / `pulse` uniforms (world sprites, ritual slots, inventory icons, drag preview). Element fill is never rarity-modulated.
+- **Why**: Whole-sprite blue/gold tint fought element color (especially Air and Water) and would collide with future yellow/purple elements. Rune-only hot white keeps rarity readable without claiming a hue. Shared instance uniforms failed to compile / apply; per-item material duplicates are reliable on Sprite2D and TextureRect.
+- **Alternatives**: Whole-sprite rarity modulate (previous) — muddy element reads; rarity rim overlays (gold/violet) — deferred; separate rune-mask PNGs — deferred for shader heuristic first; shared material + instance uniforms — previous, shader `return` broke compile and params did not stick.
 - **Status**: decided (in-codebase)
 
 ### Mana crystals: carry, throw, deposit into summoning circle

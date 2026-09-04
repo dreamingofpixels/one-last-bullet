@@ -79,7 +79,7 @@ func set_glyphs(entries: Array, hide_index: int = -1) -> void:
 			# Source socket shows empty while that glyph is being dragged.
 			icon.visible = false
 			icon.texture = null
-			icon.modulate = Color.WHITE
+			Glyph.clear_rarity_visual(icon)
 			continue
 		if i < entries.size() and typeof(entries[i]) == TYPE_DICTIONARY:
 			var entry: Dictionary = entries[i]
@@ -87,11 +87,12 @@ func set_glyphs(entries: Array, hide_index: int = -1) -> void:
 			var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
 			icon.visible = true
 			icon.texture = _texture_for_glyph_id(glyph_id)
-			icon.modulate = Glyph.RARITY_MODULATE.get(rarity, Color.WHITE) as Color
+			icon.modulate = Color.WHITE
+			Glyph.apply_rarity_visual(icon, rarity)
 		else:
 			icon.visible = false
 			icon.texture = null
-			icon.modulate = Color.WHITE
+			Glyph.clear_rarity_visual(icon)
 	_refresh_glyph_outlines()
 
 

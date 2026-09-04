@@ -239,6 +239,9 @@ source_geometry_group_name = &"navigation_source"
 script = ExtResource("2_level")
 level_music = ExtResource("2_ynou2")
 glyph_drop_chance = 0.5
+glyph_rarity_weight_common = 0.0
+glyph_rarity_weight_rare = 50.0
+glyph_rarity_weight_unique = 50.0
 bounce_orbs_off_entities = true
 run_start = ExtResource("17_runstart")
 

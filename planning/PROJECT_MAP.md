@@ -92,8 +92,8 @@ A Final Spell/
     │       └── brute/
     │           └── brute.tscn / .gd / .png
 │   ├── items/
-│   │   ├── glyph/glyph.tscn / .gd          Carry/throw/deposit glyph drop (12 ids, 4 element textures)
-│   │   ├── glyphs/                         fire/water/air/earth_glyph.png
+│   │   ├── glyphs/glyph.tscn / .gd / glyph_rarity.gdshader  Carry/throw/deposit + center-rune rarity glow
+│   │   ├── glyphs/                         fire/water/air/earth_glyph.png + glyph_socket.png
 │   │   ├── item_picked_up.ogg / .tres      Shared item pickup SoundEvent
 │   │   └── mana_crystal_deposited.ogg / .tres  Glyph deposit SoundEvent (legacy name)
 │   ├── ui/
@@ -206,7 +206,8 @@ A Final Spell/
 - `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; single variant (`big_rock.tres`); scene remains, not currently placed in `desert.tscn`
 - `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; single variant (`animal_skull_variant.tres`); scene remains, not currently placed in `desert.tscn`
 - `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`**; `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`add_inventory_entry`** / **`insert_inventory_entry`** / **`apply_start_config`** / **`capture_orb`** / **`release_orb`** / **`swap_captured_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
-- `project/items/glyph/glyph.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `glyph_id` + **Rarity**; element texture + rarity tint; tether pickup, carry, Attack throw, deposit → circle inventory or overflow mana; group **`glyphs`**
+- `project/items/glyphs/glyph.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `glyph_id` + **Rarity**; element texture + **center-rune rarity glow** (`glyph_rarity.gdshader` via `Glyph.apply_rarity_visual`); tether pickup, carry, Attack throw, deposit → circle inventory or overflow mana; group **`glyphs`**
+- `project/items/glyphs/glyph_rarity.gdshader` — canvas_item: lights dark center-rune pixels toward white (Common off / Rare hot / Unique TIME pulse); per-item duplicated ShaderMaterial + glow/pulse uniforms
 - `project/ui/attributes/attribute_box.tscn` + `.gd` — **`AttributeBox`** (`@tool` `HBoxContainer`); `@export icon_id` dropdown scans `res://ui/attributes/*.png` and applies to `%Icon`; `@export value` + `value_format` (`DECIMAL` / `PERCENT`, fraction × 100 for %) + `decimal_places` (`0` / `1` / `2`) drive `%Value`; `@export unknown` shows `"?"` instead of a formatted number (ritual ??? hint preview)
 - `project/ui/inventory/orb_inventory.tscn` + `.gd` — **`OrbInventoryBar`**: 3 orb sockets + mana label + 3 glyph sockets; outline only on the ritual-captured orb (inventory orbs not focusable); emits `glyph_grab_requested`
 - `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); focused orb stats/effect, sparse-slot drag-and-drop socket/recycle with swap; **2-glyph** four hints + **3-glyph** single centered larger result hint when a recipe exists (controller-focusable / mouse-hoverable; white outline; preview name/effect/stats in the main panel, `???` placeholders; uppercase hint + orb names); no Transform side info panel; Transform, Buy, Done; controller confirm picks socketed glyphs back up

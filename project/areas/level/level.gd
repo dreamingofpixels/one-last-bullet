@@ -3,7 +3,7 @@ extends Node2D
 const GHOST_ORB_SCENE := preload("res://entities/orbs/ghost/ghost_orb.tscn")
 const ROT_ORB_SCENE := preload("res://entities/orbs/rot/rot_orb.tscn")
 const CONDUIT_ORB_SCENE := preload("res://entities/orbs/conduit/conduit_orb.tscn")
-const GLYPH_SCENE := preload("res://items/glyph/glyph.tscn")
+const GLYPH_SCENE := preload("res://items/glyphs/glyph.tscn")
 const BLANK_ORB_SCENE := preload("res://entities/orbs/blank/blank_orb.tscn")
 const PLAYER_SCENE := preload("res://entities/player/player.tscn")
 const MAX_PLAYERS := 2

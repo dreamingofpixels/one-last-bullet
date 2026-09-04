@@ -15,7 +15,7 @@ const DROP_INV_1 := 5
 const DROP_INV_2 := 6
 ## Stick must pass this strength to take one menu step, then return below it for the next.
 const ANALOG_NAV_DEADZONE := 0.55
-## Held drag preview is darkened vs focus outline / rarity tint.
+## Held drag preview is darkened vs focus outline / rune glow.
 const HELD_PREVIEW_DARKEN := Color(0.65, 0.65, 0.65, 1.0)
 
 enum FocusZone {
@@ -409,6 +409,7 @@ func _refresh_orb_slots() -> void:
 		if i == _held_orb_slot:
 			icon.visible = false
 			icon.texture = null
+			Glyph.clear_rarity_visual(icon)
 			continue
 		if _orb.has_glyph_at(i):
 			var entry: Dictionary = _orb.socketed_glyphs[i]
@@ -416,10 +417,12 @@ func _refresh_orb_slots() -> void:
 			var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
 			icon.visible = true
 			icon.texture = _texture_for_glyph_id(glyph_id)
-			icon.modulate = Glyph.RARITY_MODULATE.get(rarity, Color.WHITE) as Color
+			icon.modulate = Color.WHITE
+			Glyph.apply_rarity_visual(icon, rarity)
 		else:
 			icon.visible = false
 			icon.texture = null
+			Glyph.clear_rarity_visual(icon)
 	_refresh_drop_target_outline()
 
 
@@ -605,8 +608,8 @@ func _show_drag_preview(entry: Dictionary) -> void:
 	var glyph_id: StringName = StringName(String(entry.get("id", "")))
 	var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
 	drag_icon.texture = _texture_for_glyph_id(glyph_id)
-	var rarity_color: Color = Glyph.RARITY_MODULATE.get(rarity, Color.WHITE) as Color
-	drag_icon.modulate = rarity_color * HELD_PREVIEW_DARKEN
+	Glyph.apply_rarity_visual(drag_icon, rarity)
+	drag_icon.modulate = HELD_PREVIEW_DARKEN
 	drag_preview.visible = true
 
 

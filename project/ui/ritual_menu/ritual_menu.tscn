@@ -143,7 +143,7 @@ size_flags_horizontal = 0
 [node name="SelfDamageBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1/SelfDamageContainer" unique_id=806489742 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "self_damage_icon"
 value = 8.4
 value_format = 0
 decimal_places = 2
@@ -155,6 +155,7 @@ size_flags_horizontal = 0
 [node name="CritChanceBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1/CritChanceContainer" unique_id=2021668239 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
+icon_id = "crit_chance_icon"
 value = 0.01
 decimal_places = 2
 
@@ -165,7 +166,7 @@ size_flags_horizontal = 0
 [node name="CritDamageBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column1/CritDamageContainer" unique_id=392529802 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "crit_damage_icon"
 value = 2.0
 decimal_places = 0
 
@@ -192,7 +193,7 @@ size_flags_horizontal = 0
 [node name="WeightBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2/WeightContainer" unique_id=1814324174 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "weight_icon"
 value = 5.0
 value_format = 0
 decimal_places = 0
@@ -215,7 +216,7 @@ size_flags_horizontal = 0
 [node name="GlyphDropBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column2/GlyphDropContainer" unique_id=1457411998 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "glyph_drop_icon"
 value = 0.05
 decimal_places = 0
 
@@ -230,7 +231,7 @@ size_flags_horizontal = 0
 [node name="BurnBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/BurnContainer" unique_id=724637918 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "burn_icon"
 value = 0.0
 value_format = 0
 decimal_places = 0
@@ -242,7 +243,7 @@ size_flags_horizontal = 0
 [node name="ChillBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/ChillContainer" unique_id=1506827149 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "chill_icon"
 value = 1.0
 value_format = 0
 decimal_places = 0
@@ -254,7 +255,7 @@ size_flags_horizontal = 0
 [node name="ShockBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/ShockContainer" unique_id=454117186 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "shock_icon"
 value = 0.0
 value_format = 0
 decimal_places = 0
@@ -266,7 +267,7 @@ size_flags_horizontal = 0
 [node name="PoisonBox" parent="Panel/Margin/VBox/Body/OrbInFocus/StatsContainer/Column3/PoisonContainer" unique_id=1368872427 instance=ExtResource("3_rni76")]
 unique_name_in_owner = true
 layout_mode = 2
-icon_id = "damage_icon"
+icon_id = "poison_icon"
 value = 0.0
 value_format = 0
 decimal_places = 0

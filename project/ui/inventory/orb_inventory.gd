@@ -236,11 +236,7 @@ func _refresh_orb_controller_outline() -> void:
 
 
 func _texture_for_glyph_id(glyph_id: StringName) -> Texture2D:
-	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
-	if row == null or typeof(row) != TYPE_DICTIONARY:
-		return Glyph.ELEMENT_TEXTURES["Fire"] as Texture2D
-	var element: String = String((row as Dictionary).get("element", "Fire"))
-	return Glyph.ELEMENT_TEXTURES.get(element, Glyph.ELEMENT_TEXTURES["Fire"]) as Texture2D
+	return Glyph.texture_for_id(glyph_id)
 
 
 func _on_orb_socket_gui_input(event: InputEvent, index: int) -> void:

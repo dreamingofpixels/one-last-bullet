@@ -60,7 +60,8 @@
 	  "attribute": "burn",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0
+	  "rarity_unique": 3.0,
+	  "scene_path": "res://items/glyphs/coal_glyph.png"
 	},
 	{
 	  "id": "fury",
@@ -70,7 +71,8 @@
 	  "attribute": "damage",
 	  "rarity_common": 5.0,
 	  "rarity_rare": 10.0,
-	  "rarity_unique": 15.0
+	  "rarity_unique": 15.0,
+	  "scene_path": "res://items/glyphs/fury_glyph.png"
 	},
 	{
 	  "id": "blast",
@@ -80,7 +82,8 @@
 	  "attribute": "splash",
 	  "rarity_common": 0.05,
 	  "rarity_rare": 0.1,
-	  "rarity_unique": 0.15
+	  "rarity_unique": 0.15,
+	  "scene_path": "res://items/glyphs/blast_glyph.png"
 	},
 	{
 	  "id": "rime",
@@ -90,17 +93,19 @@
 	  "attribute": "chill",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0
+	  "rarity_unique": 3.0,
+	  "scene_path": "res://items/glyphs/rime_glyph.png"
 	},
 	{
-	  "id": "soft",
-	  "name": "Soft",
+	  "id": "sooth",
+	  "name": "Sooth",
 	  "desc": "This orb deals less damage to players",
 	  "element": "Water",
 	  "attribute": "self_damage",
 	  "rarity_common": -10.0,
 	  "rarity_rare": -20.0,
-	  "rarity_unique": -30.0
+	  "rarity_unique": -30.0,
+	  "scene_path": "res://items/glyphs/sooth_glyph.png"
 	},
 	{
 	  "id": "bounty",
@@ -110,7 +115,8 @@
 	  "attribute": "glyph_drop",
 	  "rarity_common": 0.01,
 	  "rarity_rare": 0.02,
-	  "rarity_unique": 0.03
+	  "rarity_unique": 0.03,
+	  "scene_path": "res://items/glyphs/bounty_glyph.png"
 	},
 	{
 	  "id": "static",
@@ -120,7 +126,8 @@
 	  "attribute": "shock",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0
+	  "rarity_unique": 3.0,
+	  "scene_path": "res://items/glyphs/static_glyph.png"
 	},
 	{
 	  "id": "shear",
@@ -130,7 +137,8 @@
 	  "attribute": "crit_chance",
 	  "rarity_common": 0.01,
 	  "rarity_rare": 0.02,
-	  "rarity_unique": 0.03
+	  "rarity_unique": 0.03,
+	  "scene_path": "res://items/glyphs/shear_glyph.png"
 	},
 	{
 	  "id": "drag",
@@ -140,7 +148,8 @@
 	  "attribute": "speed",
 	  "rarity_common": -10.0,
 	  "rarity_rare": -20.0,
-	  "rarity_unique": -30.0
+	  "rarity_unique": -30.0,
+	  "scene_path": "res://items/glyphs/drag_glyph.png"
 	},
 	{
 	  "id": "blight",
@@ -150,7 +159,8 @@
 	  "attribute": "poison",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0
+	  "rarity_unique": 3.0,
+	  "scene_path": "res://items/glyphs/blight_glyph.png"
 	},
 	{
 	  "id": "dense",
@@ -160,7 +170,8 @@
 	  "attribute": "weight",
 	  "rarity_common": 1.0,
 	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0
+	  "rarity_unique": 3.0,
+	  "scene_path": "res://items/glyphs/dense_glyph.png"
 	},
 	{
 	  "id": "crush",
@@ -170,7 +181,8 @@
 	  "attribute": "crit_damage",
 	  "rarity_common": 0.1,
 	  "rarity_rare": 0.2,
-	  "rarity_unique": 0.3
+	  "rarity_unique": 0.3,
+	  "scene_path": "res://items/glyphs/crush_glyph.png"
 	}
   ],
   "motion": [

@@ -97,7 +97,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — replaced by circle random launch (see above)
 
 ### Glyphs replace mana crystals; carry, throw, circle inventory
-- **Decision**: Enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Element icon from four PNGs (`fire/water/air/earth_glyph.png`); rarity shown by **unison center-rune blink** (Common white, Rare jade + rising motes, Unique gold + denser motes). `ManaCrystal` retired.
+- **Decision**: Enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (GameData `orbs` row; level fallback export). On success, spawn a **`Glyph`** (one of 12 ids from GameData `glyphs`, weighted **Common 70% / Rare 25% / Unique 5%**). Same carry/throw/deposit flow as crystals: tether pickup in focus, Attack throw, dash blocked while carried, **20 HP** orb-destroyable. Deposit into `SummoningCircle`: suck to center → **`receive_glyph`** stores `{id, rarity}` in a **3-slot** inventory; overflow credits mana (**5 / 10 / 20**). Each glyph uses its own PNG from GameData `glyphs.scene_path` (e.g. `sooth` → `sooth_glyph.png`); rarity shown by **unison center-rune blink** (Common white, Rare jade + rising motes, Unique gold + denser motes). `ManaCrystal` retired.
 - **Why**: Glyphs are the upgrade vector for the ritual menu; mana comes from discard/overflow rather than every pickup.
 - **Alternatives**: Keep crystals as mana and add separate glyph drops — two loot types to juggle; auto-socket on deposit — removes ritual menu choice.
 - **Status**: decided (in-codebase)
@@ -109,7 +109,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase); +10 buy scaling still planned
 
 ### Glyph stat upgrades: flat-add from GameData `attribute`
-- **Decision**: Each `glyphs` row names an **`attribute`** (`damage`, `burn`, `glyph_drop`, etc.). Socketing adds **`rarity_common` / `rarity_rare` / `rarity_unique`** flat to that stat. `splash`, `crit_chance`, `glyph_drop` clamp to **0–1**; `damage`, `self_damage`, `speed`, `weight` floor at **0**. Negative values in data (e.g. `soft`, `drag`) reduce stats as authored.
+- **Decision**: Each `glyphs` row names an **`attribute`** (`damage`, `burn`, `glyph_drop`, etc.). Socketing adds **`rarity_common` / `rarity_rare` / `rarity_unique`** flat to that stat. `splash`, `crit_chance`, `glyph_drop` clamp to **0–1**; `damage`, `self_damage`, `speed`, `weight` floor at **0**. Negative values in data (e.g. `sooth`, `drag`) reduce stats as authored.
 - **Why**: Matches spreadsheet authoring; one code path for all 12 glyphs.
 - **Alternatives**: Percent-of-base multiplier — rejected after data moved to absolute adds for core stats.
 - **Status**: decided (in-codebase)

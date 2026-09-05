@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://x0dd0g70hab5"]
 
 [ext_resource type="Script" uid="uid://cy8ydoya7icaq" path="res://items/glyphs/glyph.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cotnh3jgklq5p" path="res://items/glyphs/fire_glyph.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://d3j5dd818skwc" path="res://items/glyphs/coal_glyph.png" id="2_tex"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="3_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="4_health"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_destroy"]

@@ -15,12 +15,6 @@ const MANA_BY_RARITY: Dictionary = {
 	Rarity.RARE: 10.0,
 	Rarity.UNIQUE: 20.0,
 }
-const ELEMENT_TEXTURES: Dictionary = {
-	"Fire": preload("res://items/glyphs/fire_glyph.png"),
-	"Water": preload("res://items/glyphs/water_glyph.png"),
-	"Air": preload("res://items/glyphs/air_glyph.png"),
-	"Earth": preload("res://items/glyphs/earth_glyph.png"),
-}
 const RARITY_SHADER: Shader = preload("res://items/glyphs/glyph_rarity.gdshader")
 const RARITY_PARTICLES_SCENE: PackedScene = preload("res://items/glyphs/glyph_rarity_particles.tscn")
 const RARITY_PARTICLES_NODE := &"RarityParticles"
@@ -38,6 +32,7 @@ const TINT_UNIQUE := Color(0.578, 0.166, 0.984, 1.0)
 const TINT_UNIQUE_DARK := Color(0.292, 0.125, 0.534, 1.0)
 
 static var _rarity_material_base: ShaderMaterial
+static var _texture_cache: Dictionary = {}
 
 
 static func _get_rarity_material_base() -> ShaderMaterial:
@@ -151,6 +146,28 @@ static func clear_rarity_visual(item: CanvasItem) -> void:
 		(existing as GPUParticles2D).emitting = false
 
 
+## Per-glyph PNG from GameData `glyphs.scene_path` (cached).
+static func texture_for_id(glyph_id: StringName) -> Texture2D:
+	var id_key: String = String(glyph_id)
+	if _texture_cache.has(id_key):
+		return _texture_cache[id_key] as Texture2D
+	var row: Variant = GameData.get_row(&"glyphs", glyph_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		push_warning("Glyph: unknown id '%s'" % id_key)
+		_texture_cache[id_key] = null
+		return null
+	var path: String = String((row as Dictionary).get("scene_path", "")).strip_edges()
+	if path.is_empty():
+		push_warning("Glyph: missing scene_path for '%s'" % id_key)
+		_texture_cache[id_key] = null
+		return null
+	var tex: Texture2D = load(path) as Texture2D
+	if tex == null:
+		push_warning("Glyph: failed to load texture at %s" % path)
+	_texture_cache[id_key] = tex
+	return tex
+
+
 var COMPONENTS: Dictionary = {}
 
 @export var glyph_id: StringName = &"coal"
@@ -253,8 +270,7 @@ static func rarity_to_string(r: Rarity) -> String:
 func _apply_visuals() -> void:
 	if not is_instance_valid(sprite):
 		return
-	var element: String = get_element()
-	var tex: Texture2D = ELEMENT_TEXTURES.get(element, ELEMENT_TEXTURES["Fire"]) as Texture2D
+	var tex: Texture2D = texture_for_id(glyph_id)
 	if tex:
 		sprite.texture = tex
 	sprite.modulate = Color.WHITE

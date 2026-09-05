@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bhrs7mxeheir"
-path="res://.godot/imported/air_glyph.png-0b3b5f18fe1cc390e879b7ec0d78aee3.ctex"
+uid="uid://dl5ao2ju1qino"
+path="res://.godot/imported/blight_glyph.png-cfec9b2e93da77c1a233184d0564b553.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://items/glyphs/air_glyph.png"
-dest_files=["res://.godot/imported/air_glyph.png-0b3b5f18fe1cc390e879b7ec0d78aee3.ctex"]
+source_file="res://items/glyphs/blight_glyph.png"
+dest_files=["res://.godot/imported/blight_glyph.png-cfec9b2e93da77c1a233184d0564b553.ctex"]
 
 [params]
 

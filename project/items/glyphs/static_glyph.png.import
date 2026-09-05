@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cotnh3jgklq5p"
-path="res://.godot/imported/fire_glyph.png-ac88608c8000d447773fbf59b17d5303.ctex"
+uid="uid://dfe2sh6hf41qn"
+path="res://.godot/imported/static_glyph.png-3d0c130a6c82bf2e49210aee2820ef4c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://items/glyphs/fire_glyph.png"
-dest_files=["res://.godot/imported/fire_glyph.png-ac88608c8000d447773fbf59b17d5303.ctex"]
+source_file="res://items/glyphs/static_glyph.png"
+dest_files=["res://.godot/imported/static_glyph.png-3d0c130a6c82bf2e49210aee2820ef4c.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dgimsx1tixjkx"
-path="res://.godot/imported/water_glyph.png-2845338f42c425b36aaad9bf57da62e2.ctex"
+uid="uid://d3j5dd818skwc"
+path="res://.godot/imported/coal_glyph.png-33460afa1aedf335cde9fbcc91724c6b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://items/glyphs/water_glyph.png"
-dest_files=["res://.godot/imported/water_glyph.png-2845338f42c425b36aaad9bf57da62e2.ctex"]
+source_file="res://items/glyphs/coal_glyph.png"
+dest_files=["res://.godot/imported/coal_glyph.png-33460afa1aedf335cde9fbcc91724c6b.ctex"]
 
 [params]
 

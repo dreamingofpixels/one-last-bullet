@@ -35,6 +35,8 @@ texture = ExtResource("2_tex")
 
 [node name="RarityParticles" parent="Sprite2D" unique_id=1762908896 instance=ExtResource("8_particles")]
 unique_name_in_owner = true
+lifetime = 0.8
+visibility_rect = Rect2(-24, -48, 48, 56)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1928380237]
 unique_name_in_owner = true

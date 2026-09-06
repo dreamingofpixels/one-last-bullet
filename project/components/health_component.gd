@@ -20,6 +20,8 @@ enum DamageKind { STANDARD, POISON, SHADOW, CRIT, BURN }
 var health: float = 1.0
 ## Last attacker node passed to take_damage (e.g. orb for glyph_drop rolls).
 var last_damage_source: Node = null
+## Rest sprite modulate after flash/blink (e.g. Disease tint).
+var rest_modulate: Color = Color.WHITE
 var _flash_tween: Tween
 var _invulnerable_until_msec: int = 0
 
@@ -41,6 +43,13 @@ func start_invulnerability(seconds: float) -> void:
 		_invulnerable_until_msec,
 		Time.get_ticks_msec() + int(seconds * 1000.0)
 	)
+
+
+func set_rest_modulate(color: Color) -> void:
+	rest_modulate = color
+	var target := _resolve_sprite()
+	if target and not (_flash_tween and _flash_tween.is_valid()):
+		target.modulate = rest_modulate
 
 
 func take_damage(
@@ -94,7 +103,7 @@ func _flash_damage() -> void:
 		return
 
 	_flash_tween = create_tween()
-	_flash_tween.tween_property(target, "modulate", Color.WHITE, damage_flash_seconds)
+	_flash_tween.tween_property(target, "modulate", rest_modulate, damage_flash_seconds)
 
 	if invulnerable_seconds <= damage_flash_seconds:
 		return
@@ -103,7 +112,7 @@ func _flash_damage() -> void:
 	var blink_period: float = 1.0 / maxf(invulnerable_blink_hz, 1.0)
 	var half_period: float = blink_period * 0.5
 	var cycles: int = maxi(1, int(ceil(blink_duration / blink_period)))
-	var dim := Color(1.0, 1.0, 1.0, invulnerable_blink_alpha)
+	var dim := Color(rest_modulate.r, rest_modulate.g, rest_modulate.b, invulnerable_blink_alpha)
 	for _i in cycles:
 		_flash_tween.tween_property(target, "modulate", dim, half_period)
-		_flash_tween.tween_property(target, "modulate", Color.WHITE, half_period)
+		_flash_tween.tween_property(target, "modulate", rest_modulate, half_period)

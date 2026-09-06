@@ -23,7 +23,7 @@ No install or server required.
    - **3 / new** — Air+Air+Water (Haunt path in data); Transmorph on; hover shows `???`
    - **3 / Ghost** — Air+Air+Earth; hover shows Ghost stats if discovered
    - **Poor** — 5 mana; Buy Blank Orb disabled
-4. **Discovered checkboxes** — toggle Ghost / Conduit / Rot / Inferno to see named vs `???` in the outcome list and Transmorph tooltip.
+4. **Discovered checkboxes** — toggle Ghost / Conduit / Contagion / Inferno to see named vs `???` in the outcome list and Transmorph tooltip.
 5. **Interact** — click inventory glyphs to socket; click socketed glyphs to return; **Transmorph** when 3 slots full; **Recycle** / **Buy Blank Orb** / **Close**.
 
 Viewport is **640×360** (game resolution), scaled up in the page for readability.
@@ -36,7 +36,7 @@ Viewport is **640×360** (game resolution), scaled up in the page for readabilit
 | 2 | Four possible third-element orbs listed (`???` if undiscovered) |
 | 3 | Transmorph enabled (blank orb only); hover reveals stats only if discovered; bonuses persist after transform |
 
-**20 orb recipes** = every 3-element combination of Fire / Water / Air / Earth (order ignored). Game data defines Ghost, Conduit, Rot, and Inferno; the rest use placeholder names in the mock.
+**20 orb recipes** = every 3-element combination of Fire / Water / Air / Earth (order ignored). Game data defines Ghost, Conduit, Contagion, and Inferno; the rest use placeholder names in the mock.
 
 ## Layout guide
 

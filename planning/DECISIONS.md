@@ -21,14 +21,14 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Opening launch: one Blank Orb from the summoning circle
 - **Decision (design)**: Each level starts with the **summoning circle** shooting **one Blank Orb** in a **random direction**. The player starts with that single orb and can **acquire more** later (buy from the ritual menu). Mid-combat steer is **proximity redirect** — each redirect raises that orb's speed and damage (to enemies and the player).
 - **Why**: Source doc (`A Final Spell.txt`) dropped player free-aim and the between-level shop; the circle is both the opening beat and the upgrade station. One orb at start preserves the dodge-your-weapon hook; extra orbs are a purchased escalation.
-- **Alternatives**: Player free-aim from center-bottom — previous source doc; three typed orbs at start (Ghost / Rot / Conduit) — current prototype, more room pressure but skips the Blank→specialist upgrade fantasy; tether-orbit then release — previous source steer; keep a between-level shop as a second upgrade layer — no longer in the source doc.
-- **Status**: decided (design); prototype still launches Ghost / Rot / Conduit (see "Opening typed orb volley")
+- **Alternatives**: Player free-aim from center-bottom — previous source doc; three typed orbs at start (Ghost / Contagion / Conduit) — current prototype, more room pressure but skips the Blank→specialist upgrade fantasy; tether-orbit then release — previous source steer; keep a between-level shop as a second upgrade layer — no longer in the source doc.
+- **Status**: decided (design); prototype still launches Ghost / Contagion / Conduit (see "Opening typed orb volley")
 
 ### Blank Orb → 20 specialist orbs; Attunement as a second upgrade
 - **Decision (design)**: Socketing glyphs boosts one of the orb's 12 attributes (Common / Rare / Unique values). **Three glyphs on a Blank Orb** can upgrade it into one of **20** specialist orbs with special effects. **Three glyphs on a non-Blank orb** can, with the right combination, trigger **Attunement**. After **two** glyphs are socketed, the ritual menu shows hints of the **four possible** results: recipe **name** if the row exists (prototype always "discovered"), `???` if no matching row. After **three** glyphs, a single centered larger result hint appears when a recipe row exists (hidden otherwise). Focusing or hovering a hint previews that recipe in the main orb panel.
 - **Why**: Gives Blank Orbs a craft identity and specialist orbs a further chase; the two-glyph hint teaches recipes without inventing names for missing data; the three-glyph hint confirms the locked-in result.
 - **Alternatives**: Glyphs only ever flat-add stats — no orb identity change; auto-upgrade on any three glyphs without recipes — less discovery; show all recipe names immediately without a discovery seam — harder to add meta later.
-- **Status**: decided (in-codebase) for Blank→specialist Transform when `scene_path` exists (Ghost/Rot/Conduit); Attunement Transform not playable yet (no scenes); full 20-orb table still incomplete; hint inspect preview + 3-glyph single hint in-codebase
+- **Status**: decided (in-codebase) for Blank→specialist Transform when `scene_path` exists (Ghost/Contagion/Conduit); Attunement Transform not playable yet (no scenes); full 20-orb table still incomplete; hint inspect preview + 3-glyph single hint in-codebase
 
 ### Ritual menu: all-orb inventory; Blank Orb buy scales
 - **Decision (design)**: The ritual menu shows info about the captured orb **and** an **inventory of all current orbs** at the bottom of the screen. **Buy a new Blank Orb** starts at **20 mana** and **goes up by 10** each purchase. Recycle is **5 / 10 / 20** mana for Common / Rare / Unique (already in prototype). Circle activation is first-use free, then **+5 mana** per use (already in prototype). Cap **3 orbs** in play.
@@ -49,7 +49,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### RunStartConfig: editor-authored starting mana / orbs / glyphs
-- **Decision**: Level root exports a `RunStartConfig` Resource (`run_start_default.tres`) with `starting_mana`, `starting_orbs` (PackedScene array), and `starting_glyphs` (`GlyphEntryConfig` rows with glyph-id dropdown + rarity). `level.gd` applies mana/glyphs via `SummoningCircle.apply_start_config` in `_ready` and launches `starting_orbs` (fallback Ghost/Rot/Conduit if empty). Circle no longer hardcodes the Common Air seed.
+- **Decision**: Level root exports a `RunStartConfig` Resource (`run_start_default.tres`) with `starting_mana`, `starting_orbs` (PackedScene array), and `starting_glyphs` (`GlyphEntryConfig` rows with glyph-id dropdown + rarity). `level.gd` applies mana/glyphs via `SummoningCircle.apply_start_config` in `_ready` and launches `starting_orbs` (fallback Ghost/Contagion/Conduit if empty). Circle no longer hardcodes the Common Air seed.
 - **Why**: One inspector panel for playtest tuning without editing scripts; shareable `.tres` between scenes later.
 - **Alternatives**: Split exports (mana/glyphs on circle, orbs on level) — two inspector places; plain exports only on `level.gd` — works but weaker reuse; keep hardcoded seeds — harder to A/B.
 - **Status**: decided (in-codebase)
@@ -72,16 +72,22 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Opening tether + ±20° volley-on-release — previous; player free-aim from center-bottom — previous source doc, no longer current; single orb from circle — now the source design; shared random angle + spread — more readable but less chaotic.
 - **Status**: superseded — replaced by typed Shadow/Poison/Electric opening volley (see below)
 
-### Opening typed orb volley (Ghost / Rot / Conduit)
-- **Decision**: Level start launches **one Ghost**, **one Rot**, and **one Conduit** orb from the summoning circle in independent random directions (`begin_flight`, player grace). No plain blank orb is spawned. `blank_orb.gd` / `.tscn` remain the shared `BlankOrb` base (`class_name`, `FLYING` / `TETHERED` / `POSSESSED`). Typed scenes tint `blank_orb.png` and override hit hooks where needed (Ghost possession). Each orb loads **12 core stats** from GameData via `orb_id`. Enemies own a `StatusComponent` for Poison, Shock, Burn, and Chill. Ghost follows its host in world space (not reparented) so enemy `queue_free` cannot free the orb. Conduit current is a `Line2D` + enemy-mask capsule `Area2D` while the closest player is within 130 px.
+### Opening typed orb volley (Ghost / Contagion / Conduit)
+- **Decision**: Level start launches **one Ghost**, **one Contagion**, and **one Conduit** orb from the summoning circle in independent random directions (`begin_flight`, player grace). No plain blank orb is spawned. `blank_orb.gd` / `.tscn` remain the shared `BlankOrb` base (`class_name`, `FLYING` / `TETHERED` / `POSSESSED`). Typed scenes use per-orb art and override hit hooks where needed (Ghost possession; Contagion Disease roll). Each orb loads **12 core stats** from GameData via `orb_id`. Enemies own a `StatusComponent` for Poison, Shock, Burn, Chill, and Disease. Ghost follows its host in world space (not reparented) so enemy `queue_free` cannot free the orb. Conduit current is a `Line2D` + enemy-mask capsule `Area2D` while the closest player is within 130 px.
 - **Why**: Same 3-orb room pressure with readable elemental fantasies; shared bounce/tether/redirect code stays on BlankOrb; status lives on victims so multiple sources can stack later.
 - **Alternatives**: Keep three identical chaos orbs — no type fantasy; add three typed orbs on top of chaos (6 total) — too dense for the arena; per-orb timers instead of StatusComponent — duplicates DoT/stun logic; parent Shadow into the enemy — orb dies with host teardown; raycast-only current without Area2D — harder to tick continuous overlap cleanly; **one Blank Orb at start** — current source design (see "Opening launch: one Blank Orb").
-- **Status**: decided (in-codebase); playtest — source design now wants one Blank Orb at start
+- **Status**: decided (in-codebase); playtest — source design now wants one Blank Orb at start; Contagion renamed from Rot
 
 ### Orb folder layout and class rename (`entities/orbs/`)
-- **Decision**: Orbs live under `project/entities/orbs/` with one subfolder per type: `blank/` (shared `BlankOrb` base), `ghost/`, `rot/`, `conduit/`. Shared SFX in `orb_sfx/`. Typed `class_name`s are `GhostOrb`, `RotOrb`, `ConduitOrb` (all extend `BlankOrb`). The old `ChaosOrb` class name and `entities/chaos_orb/` path are retired.
-- **Why**: Clearer per-type organization as more orb variants are added; `BlankOrb` matches the neutral base scene; Ghost/Rot/Conduit names match the current design vocabulary.
-- **Alternatives**: Keep flat `chaos_orb/` with Shadow/Poison/Electric names — mismatched with current art/naming; rename only paths but keep `ChaosOrb` class — conflicts with blank-base fantasy.
+- **Decision**: Orbs live under `project/entities/orbs/` with one subfolder per type: `blank/` (shared `BlankOrb` base), `ghost/`, `contagion/`, `conduit/`. Shared SFX in `orb_sfx/`. Typed `class_name`s are `GhostOrb`, `ContagionOrb`, `ConduitOrb` (all extend `BlankOrb`). The old `ChaosOrb` class name and `entities/chaos_orb/` path are retired; `RotOrb` / `rot/` are renamed to Contagion.
+- **Why**: Clearer per-type organization as more orb variants are added; `BlankOrb` matches the neutral base scene; Ghost/Contagion/Conduit names match the current design vocabulary.
+- **Alternatives**: Keep flat `chaos_orb/` with Shadow/Poison/Electric names — mismatched with current art/naming; rename only paths but keep `ChaosOrb` class — conflicts with blank-base fantasy; keep the Rot name — superseded by Contagion branding + Disease fantasy.
+- **Status**: decided (in-codebase)
+
+### Contagion Disease status (half-poison spread on death)
+- **Decision**: Contagion's special effect is a **20%** chance on enemy hit to apply **Disease** (permanent flag until death; sickly-green sprite tint via `HealthComponent.rest_modulate`). Poison still comes from the orb's GameData `poison` attribute (currently **3**) through the shared `BlankOrb` status path — Disease is additive, not a replacement for poison application. On death of a Diseased enemy, every other enemy within **100 px** gains `floor(poison_stacks / 2)` Poison stacks. Recipients do **not** become Diseased (no chain reaction). Spread uses the same shape-query helper as Burn explosions.
+- **Why**: Moves Contagion past "just applies poison" into a pack-contagion fantasy while keeping poison readable as a base stat; no chaining keeps room clears from runaway Disease cascades; a rest-modulate tint survives damage flashes and poison ticks so Disease stays readable.
+- **Alternatives**: Chaining Disease on recipients — runaway clears in packs; fresh 20% Disease roll on spread recipients — still chains sometimes and hard to read; no visual tell — Disease is invisible until death; expire Disease on a timer — fights the "permanent curse until death" status model; keep Rot as poison-only special effect — superseded.
 - **Status**: decided (in-codebase)
 
 ### Poison stacks persist (no decay)
@@ -282,13 +288,13 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ## Open design tensions
 
-- **Opening volley**: source design starts with **one Blank Orb** from the circle; prototype launches Ghost / Rot / Conduit. Reconcile after playtest.
+- **Opening volley**: source design starts with **one Blank Orb** from the circle; prototype launches Ghost / Contagion / Conduit. Reconcile after playtest.
 - **Tether feel**: source design now specifies proximity **redirect** (matches Attack-only playtest). Orbit capture remains parked (`capture_enabled`); entity punch-through is the default (desert export can enable bounce).
 - **Attack cooldown / charges**: redirect cooldown 0.35s; tether post-release cooldown 0.25s; melee parked.
 - **Mana vs glyphs as floor loot**: source overview still says enemies drop vanishing **mana**; Glyphs / Progression sections make **glyphs** the drop and mana the recycle/overflow currency.
 - **Glyph vanish duration**: glyphs currently persist until deposited or orb-destroyed; should grounded glyphs still time out?
 - **Attunement discovery**: prototype treats authored recipe names as discovered (`OrbRecipes.is_discovered` always true). Persistent / per-run registry still TBD.
-- **20 specialist orbs / Attunement recipes**: `orbs` / `attunements` sheets hold element combos; only Ghost / Rot / Conduit are playable (`scene_path`). Missing combos show `???` and cannot Transform.
+- **20 specialist orbs / Attunement recipes**: `orbs` / `attunements` sheets hold element combos; only Ghost / Contagion / Conduit are playable (`scene_path`). Missing combos show `???` and cannot Transform.
 - **Camera / view perspective**: player uses 4-direction diagonal sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena. Confirm long-term camera for larger stages.
 - **Arc deflect / melee rollback**: flip `deflect_orb_enabled` / `melee_enabled` if proximity Attack redirect needs the old swing again.
 - **Entity bounce default**: keep punch-through or ship bounce-off-entities after desert export playtests.
@@ -324,7 +330,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Floating damage labels by DamageKind
-- **Decision**: Every successful `HealthComponent.take_damage` spawns a detached world-space number (`DamageLabelEffect` → `damage_label.tscn`) at the owner, parented to `current_scene` so killing blows still show after `queue_free`. Uses `pixel_medium.fnt` at size 8; rises ~20 px over 1 s and fades in the last 0.3 s (`ignore_time_scale`). `DamageKind` selects color: **STANDARD** white (default), **POISON** green (poison DoT ticks only), **SHADOW** black (Ghost possession DPS + Ghost `DamageComponent`). Black numbers use a light outline for readability on dark possessed sprites; white/green use a dark outline. Callers pass the kind (`StatusComponent` → POISON, `GhostOrb` possession → SHADOW, `DamageComponent.damage_kind` on hitbox/orb breakable paths); Rot orb impact stays STANDARD so hit vs tick stay distinct.
+- **Decision**: Every successful `HealthComponent.take_damage` spawns a detached world-space number (`DamageLabelEffect` → `damage_label.tscn`) at the owner, parented to `current_scene` so killing blows still show after `queue_free`. Uses `pixel_medium.fnt` at size 8; rises ~20 px over 1 s and fades in the last 0.3 s (`ignore_time_scale`). `DamageKind` selects color: **STANDARD** white (default), **POISON** green (poison DoT ticks only), **SHADOW** black (Ghost possession DPS + Ghost `DamageComponent`). Black numbers use a light outline for readability on dark possessed sprites; white/green use a dark outline. Callers pass the kind (`StatusComponent` → POISON, `GhostOrb` possession → SHADOW, `DamageComponent.damage_kind` on hitbox/orb breakable paths); Contagion orb impact stays STANDARD so hit vs tick stay distinct.
 - **Why**: Instant readable confirmation of chip amounts and elemental source without cluttering permanent HUD; shared HealthComponent path covers player, enemies, breakables, and mana crystals for free.
 - **Alternatives**: Always-white numbers — loses poison/shadow readability; color by attacker type at the label only — duplicates kind logic outside HP; parent labels to the entity — vanish on death before the float finishes; screen-space HUD popups — harder to attribute in a crowded arena.
 - **Status**: decided (in-codebase)
@@ -490,4 +496,4 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 ### Orb core stats and status effects
 - **Decision**: All orbs share 12 core stats on `BlankOrb`, loaded from GameData (`glyph_drop` replaces `crystal_drop`). Per-hit resolution uses `damage` vs `self_damage`, optional crit roll (`crit_chance` × `crit_damage`), splash AOE (50 px), weight knockback + bowling (`weight` collision damage), weight bonus to breakables (`+5% per weight`), and status stacks on enemy hit (`burn` / `chill` / `shock` / `poison`). `HealthComponent.take_damage` accepts an optional `source` node; `last_damage_source` drives per-orb `glyph_drop` on enemy/breakable death. **Glyph slots**: fixed sparse array of 3 (`apply_glyph_at` / `has_glyph_at` / `socketed_count`); socketing flat-adds from GameData `glyphs.attribute` by rarity.
 - **Why**: Centralizes orb tuning in data; one combat path for typed orbs via `BlankOrb` hooks; statuses live on victims for multi-source stacking later.
-- **Status**: decided (in-codebase); statuses: Poison 1 dmg/stack/s; Chill 5% move+attack slow/stack (max 90%); Burn explodes on death; Shock stuns at 10 stacks for 2 s after 50 burst damage. All stacks persist until death.
+- **Status**: decided (in-codebase); statuses: Poison 1 dmg/stack/s; Chill 5% move+attack slow/stack (max 90%); Burn explodes on death; Shock stuns at 10 stacks for 2 s after 50 burst damage; Disease permanent flag, on death spreads floor(poison/2) within 100 px (no chaining). All stacks persist until death.

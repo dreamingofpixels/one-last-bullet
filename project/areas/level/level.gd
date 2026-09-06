@@ -1,7 +1,7 @@
 extends Node2D
 
 const GHOST_ORB_SCENE := preload("res://entities/orbs/ghost/ghost_orb.tscn")
-const ROT_ORB_SCENE := preload("res://entities/orbs/rot/rot_orb.tscn")
+const CONTAGION_ORB_SCENE := preload("res://entities/orbs/contagion/contagion_orb.tscn")
 const CONDUIT_ORB_SCENE := preload("res://entities/orbs/conduit/conduit_orb.tscn")
 const GLYPH_SCENE := preload("res://items/glyphs/glyph.tscn")
 const BLANK_ORB_SCENE := preload("res://entities/orbs/blank/blank_orb.tscn")
@@ -280,8 +280,8 @@ func _opening_orb_scenes() -> Array[PackedScene]:
 			if packed != null:
 				scenes.append(packed)
 		return scenes
-	# Fallback matches the previous hardcoded Ghost / Rot / Conduit volley.
-	return [GHOST_ORB_SCENE, ROT_ORB_SCENE, CONDUIT_ORB_SCENE]
+	# Fallback matches the previous hardcoded Ghost / Contagion / Conduit volley.
+	return [GHOST_ORB_SCENE, CONTAGION_ORB_SCENE, CONDUIT_ORB_SCENE]
 
 
 func _grant_opening_invulnerability() -> void:

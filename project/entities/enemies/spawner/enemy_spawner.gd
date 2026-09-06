@@ -9,9 +9,6 @@ signal all_cleared
 const SPAWN_NAV_TOLERANCE := 8.0
 const PHYSICS_LAYER_WORLD := 1
 const SPAWN_PHYSICS_MARGIN := 2.0
-const SEPARATE_STEP_PX := 2.0
-const SEPARATE_MAX_PUSH_PX := 16.0
-const SEPARATE_MAX_ITERS := 8
 
 @export var waves: Array[EnemyWave] = []
 @export var assemble_duration: float = 2.0
@@ -266,40 +263,12 @@ func _depenetrate_enemy_from_world(enemy: CharacterBody2D) -> void:
 	var collision_shape := _get_body_collision_shape(enemy)
 	if collision_shape == null or collision_shape.shape == null:
 		return
-	var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
-	var pushed: float = 0.0
-
-	for _i in SEPARATE_MAX_ITERS:
-		if pushed >= SEPARATE_MAX_PUSH_PX:
-			return
-		var params := PhysicsShapeQueryParameters2D.new()
-		params.shape = collision_shape.shape
-		params.transform = Transform2D(0.0, enemy.global_position + collision_shape.position)
-		params.collision_mask = PHYSICS_LAYER_WORLD
-		params.collide_with_bodies = true
-		params.collide_with_areas = false
-		params.exclude = [enemy.get_rid()]
-		var overlaps: Array[Dictionary] = space.intersect_shape(params, 4)
-		if overlaps.is_empty():
-			return
-
-		var escape: Vector2 = Vector2.ZERO
-		var rest: Dictionary = space.get_rest_info(params)
-		if not rest.is_empty():
-			escape = rest.get("normal", Vector2.ZERO)
-		if escape.length_squared() < 0.0001:
-			var collider: Object = overlaps[0].get("collider")
-			if collider is Node2D:
-				var from_collider: Vector2 = enemy.global_position - (collider as Node2D).global_position
-				if from_collider.length_squared() > 0.0001:
-					escape = from_collider.normalized()
-		if escape.length_squared() < 0.0001:
-			escape = Vector2.UP
-		escape = escape.normalized()
-
-		var step_px: float = minf(SEPARATE_STEP_PX, SEPARATE_MAX_PUSH_PX - pushed)
-		enemy.global_position += escape * step_px
-		pushed += step_px
+	CollisionSeparation.separate(
+		enemy,
+		collision_shape,
+		PHYSICS_LAYER_WORLD,
+		CollisionSeparation.MAX_PUSH_PX
+	)
 
 
 func _closest_nav_point(point: Vector2) -> Vector2:

@@ -9,8 +9,11 @@ const PHYSICS_LAYER_WALL := 16
 @export var dash_distance: float = 50.0
 @export var dash_speed: float = 400.0
 @export var dash_cooldown: float = 4.0
+## Enough to clear a typical prop (~28 px rock + capsule radius); cliffs fall through to the backward scan.
+@export var unstick_forward_distance: float = 24.0
 @export var animated_sprite: AnimatedSprite2D
 @export var hitbox_component: HitboxComponent
+@export var body_collision_shape: CollisionShape2D
 @export var dash_sound: SoundEvent = preload("res://entities/player/dash.tres")
 @export var dash_alpha: float = 0.55
 @export var afterimage_enabled: bool = true
@@ -114,6 +117,7 @@ func _end_dash() -> void:
 	_remaining_distance = 0.0
 	var body := owner as CharacterBody2D
 	body.velocity = Vector2.ZERO
+	_resolve_end_position(body)
 	_end_phase()
 	if hitbox_component:
 		hitbox_component.set_invulnerable(false)
@@ -124,6 +128,26 @@ func _end_dash() -> void:
 	if indicator_enabled:
 		set_process(true)
 		queue_redraw()
+
+
+func _resolve_end_position(body: CharacterBody2D) -> void:
+	if body_collision_shape == null or body_collision_shape.shape == null:
+		return
+	var mask: int = _saved_collision_mask | PHYSICS_LAYER_WALL
+	var resolved: Vector2 = CollisionSeparation.resolve_along(
+		body,
+		body_collision_shape,
+		body.global_position,
+		_direction,
+		unstick_forward_distance,
+		dash_distance,
+		mask,
+		PHYSICS_LAYER_WALL
+	)
+	if resolved != body.global_position:
+		body.global_position = resolved
+	elif not CollisionSeparation.is_clear(body, body_collision_shape, body.global_position, mask):
+		CollisionSeparation.separate(body, body_collision_shape, mask, CollisionSeparation.MAX_PUSH_PX)
 
 
 func _begin_phase() -> void:

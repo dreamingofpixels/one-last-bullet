@@ -2,8 +2,9 @@
 
 [ext_resource type="Script" uid="uid://cvhq56d5emxov" path="res://areas/level/run_start_config.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://cdq7ikjwt54nh" path="res://areas/level/glyph_entry_config.gd" id="2_glyph_script"]
+[ext_resource type="PackedScene" uid="uid://bpoisonorb001" path="res://entities/orbs/contagion/contagion_orb.tscn" id="3_5akwq"]
 [ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/orbs/blank/blank_orb.tscn" id="4_pk5o5"]
-[ext_resource type="PackedScene" uid="uid://bpoisonorb001" path="res://entities/orbs/rot/rot_orb.tscn" id="4_rot"]
+[ext_resource type="PackedScene" uid="uid://bshadoworb001" path="res://entities/orbs/ghost/ghost_orb.tscn" id="5_nghkr"]
 
 [sub_resource type="Resource" id="GlyphEntry_static"]
 script = ExtResource("2_glyph_script")
@@ -19,5 +20,5 @@ rarity = 1
 
 [resource]
 script = ExtResource("1_script")
-starting_orbs = Array[PackedScene]([ExtResource("4_rot"), ExtResource("4_pk5o5")])
+starting_orbs = Array[PackedScene]([ExtResource("3_5akwq"), ExtResource("4_pk5o5"), ExtResource("5_nghkr")])
 starting_glyphs = Array[ExtResource("2_glyph_script")]([SubResource("GlyphEntry_static"), SubResource("Resource_m82ne"), SubResource("Resource_aajd0")])

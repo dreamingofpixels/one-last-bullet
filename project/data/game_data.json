@@ -1,397 +1,667 @@
 {
   "attunements": [
-	{
-	  "id": "haunt",
-	  "name": "Haunt",
-	  "orb_id": "ghost",
-	  "desc": "Changes Motion to Attracted",
-	  "element_1": "Air",
-	  "element_2": "Air",
-	  "element_3": "Water",
-	  "active": false
-	},
-	{
-	  "id": "possesion",
-	  "name": "Possesion",
-	  "orb_id": "ghost",
-	  "desc": "Makes haunted enemy attack other enemies",
-	  "element_1": "Fire",
-	  "element_2": "Fire",
-	  "element_3": "Air",
-	  "active": false
-	},
-	{
-	  "id": "trail",
-	  "name": "Trail",
-	  "orb_id": "inferno",
-	  "desc": "Fire trail lasts 4 seconds",
-	  "element_1": "Fire",
-	  "element_2": "Fire",
-	  "element_3": "Earth",
-	  "active": false
-	},
-	{
-	  "id": "kindling",
-	  "name": "Kindling",
-	  "orb_id": "inferno",
-	  "desc": "Dashing through a fire trail extends it",
-	  "element_1": "Air",
-	  "element_2": "Air",
-	  "element_3": "Fire",
-	  "active": false
-	},
-	{
-	  "id": "spark",
-	  "name": "Spark",
-	  "orb_id": "inferno",
-	  "desc": "When colliding with another orb, a fire trail is made",
-	  "element_1": "Fire",
-	  "element_2": "Fire",
-	  "element_3": "Fire",
-	  "active": false
-	}
+    {
+      "id": "haunt",
+      "name": "Haunt",
+      "orb_id": "ghost",
+      "desc": "Changes Motion to Attracted",
+      "element_1": "Air",
+      "element_2": "Air",
+      "element_3": "Water",
+      "active": false
+    },
+    {
+      "id": "possesion",
+      "name": "Possesion",
+      "orb_id": "ghost",
+      "desc": "Makes haunted enemy attack other enemies",
+      "element_1": "Fire",
+      "element_2": "Fire",
+      "element_3": "Air",
+      "active": false
+    },
+    {
+      "id": "trail",
+      "name": "Trail",
+      "orb_id": "inferno",
+      "desc": "Fire trail lasts 4 seconds",
+      "element_1": "Fire",
+      "element_2": "Fire",
+      "element_3": "Earth",
+      "active": false
+    },
+    {
+      "id": "kindling",
+      "name": "Kindling",
+      "orb_id": "inferno",
+      "desc": "Dashing through a fire trail extends it",
+      "element_1": "Air",
+      "element_2": "Air",
+      "element_3": "Fire",
+      "active": false
+    },
+    {
+      "id": "spark",
+      "name": "Spark",
+      "orb_id": "inferno",
+      "desc": "When colliding with another orb, a fire trail is made",
+      "element_1": "Fire",
+      "element_2": "Fire",
+      "element_3": "Fire",
+      "active": false
+    },
+    {
+      "id": "chain",
+      "name": "Chain",
+      "orb_id": "conduit",
+      "desc": "Beam now chains to enemies between you and the orb",
+      "element_1": "Water",
+      "element_2": "Air",
+      "element_3": "Fire",
+      "active": null
+    },
+    {
+      "id": "conductor",
+      "name": "Conductor",
+      "orb_id": "conduit",
+      "desc": "More beams connect to other orbs and players",
+      "element_1": "Air",
+      "element_2": "Water",
+      "element_3": "Water",
+      "active": null
+    },
+    {
+      "id": "reach",
+      "name": "Reach",
+      "orb_id": "conduit",
+      "desc": "Range of the tether greatly increases",
+      "element_1": "Air",
+      "element_2": "Earth",
+      "element_3": "Earth",
+      "active": null
+    },
+    {
+      "id": "splinter",
+      "name": "Splinter",
+      "orb_id": "shard",
+      "desc": "When a shard breaks, two smaller shards shoot out dealing 10 damage and inflicting 1 Chill",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "active": null
+    },
+    {
+      "id": "lethal",
+      "name": "Lethal",
+      "orb_id": "shard",
+      "desc": "Shoots twice as many shards",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "active": null
+    },
+    {
+      "id": "shatter",
+      "name": "Shatter",
+      "orb_id": "shard",
+      "desc": "If orb hits an enemy with 10 or more chill, kill it instantly",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "active": null
+    },
+    {
+      "id": "carrion",
+      "name": "Carrion",
+      "orb_id": "contagion",
+      "desc": "On enemy death, a putrid cloud is left inflicting 1 poison on passing enemies",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "active": null
+    },
+    {
+      "id": "outbreak",
+      "name": "Outbreak",
+      "orb_id": "contagion",
+      "desc": "Nearby enemies also get Disease status along with the poison",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "active": null
+    },
+    {
+      "id": "virulence",
+      "name": "Virulence",
+      "orb_id": "contagion",
+      "desc": "All poison stacks spread on death",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "active": null
+    },
+    {
+      "id": "improve",
+      "name": "Improve",
+      "orb_id": "runic",
+      "desc": "Any picked up glyph goes up in rarity",
+      "element_1": "Water",
+      "element_2": "Water",
+      "element_3": "Earth",
+      "active": null
+    },
+    {
+      "id": "hoarder",
+      "name": "Hoarder",
+      "orb_id": "runic",
+      "desc": "Gets 5% damage increase for each deposited glyph",
+      "element_1": "Fire",
+      "element_2": "Fire",
+      "element_3": "Fire",
+      "active": null
+    },
+    {
+      "id": "affinity",
+      "name": "Affinity",
+      "orb_id": "runic",
+      "desc": "While holding a glyph, inflict 5 of that glyphs corresponding elemental status to any hit enemies (burn, chill, shock or poison)",
+      "element_1": "Earth",
+      "element_2": "Earth",
+      "element_3": "Fire",
+      "active": null
+    },
+    {
+      "id": "retribution",
+      "name": "Retribution",
+      "orb_id": "guardian",
+      "desc": "Shield reflects enemy projectiles back at them",
+      "element_1": "Fire",
+      "element_2": "Fire",
+      "element_3": "Earth",
+      "active": null
+    },
+    {
+      "id": "flexible",
+      "name": "Flexible",
+      "orb_id": "guardian",
+      "desc": "While in the shield, players can dash with no cooldown",
+      "element_1": "Air",
+      "element_2": "Air",
+      "element_3": "Water",
+      "active": null
+    },
+    {
+      "id": "shield",
+      "name": null,
+      "orb_id": "guardian",
+      "desc": "Greatly extends the shields area",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "active": null
+    }
   ],
   "glyphs": [
-	{
-	  "id": "coal",
-	  "name": "Coal",
-	  "desc": "Burn on enemy hit",
-	  "element": "Fire",
-	  "attribute": "burn",
-	  "rarity_common": 1.0,
-	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0,
-	  "scene_path": "res://items/glyphs/coal_glyph.png"
-	},
-	{
-	  "id": "fury",
-	  "name": "Fury",
-	  "desc": "Damage",
-	  "element": "Fire",
-	  "attribute": "damage",
-	  "rarity_common": 5.0,
-	  "rarity_rare": 10.0,
-	  "rarity_unique": 15.0,
-	  "scene_path": "res://items/glyphs/fury_glyph.png"
-	},
-	{
-	  "id": "blast",
-	  "name": "Blast",
-	  "desc": "On hit, that % of the damage also hits nearby enemies",
-	  "element": "Fire",
-	  "attribute": "splash",
-	  "rarity_common": 0.05,
-	  "rarity_rare": 0.1,
-	  "rarity_unique": 0.15,
-	  "scene_path": "res://items/glyphs/blast_glyph.png"
-	},
-	{
-	  "id": "rime",
-	  "name": "Rime",
-	  "desc": "Chill enemy on hit",
-	  "element": "Water",
-	  "attribute": "chill",
-	  "rarity_common": 1.0,
-	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0,
-	  "scene_path": "res://items/glyphs/rime_glyph.png"
-	},
-	{
-	  "id": "sooth",
-	  "name": "Sooth",
-	  "desc": "This orb deals less damage to players",
-	  "element": "Water",
-	  "attribute": "self_damage",
-	  "rarity_common": -10.0,
-	  "rarity_rare": -20.0,
-	  "rarity_unique": -30.0,
-	  "scene_path": "res://items/glyphs/sooth_glyph.png"
-	},
-	{
-	  "id": "bounty",
-	  "name": "Bounty",
-	  "desc": "Glyph drop chance from enemies",
-	  "element": "Water",
-	  "attribute": "glyph_drop",
-	  "rarity_common": 0.01,
-	  "rarity_rare": 0.02,
-	  "rarity_unique": 0.03,
-	  "scene_path": "res://items/glyphs/bounty_glyph.png"
-	},
-	{
-	  "id": "static",
-	  "name": "Static",
-	  "desc": "Shock on enemy hit",
-	  "element": "Air",
-	  "attribute": "shock",
-	  "rarity_common": 1.0,
-	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0,
-	  "scene_path": "res://items/glyphs/static_glyph.png"
-	},
-	{
-	  "id": "shear",
-	  "name": "Shear",
-	  "desc": "Critical chance",
-	  "element": "Air",
-	  "attribute": "crit_chance",
-	  "rarity_common": 0.01,
-	  "rarity_rare": 0.02,
-	  "rarity_unique": 0.03,
-	  "scene_path": "res://items/glyphs/shear_glyph.png"
-	},
-	{
-	  "id": "drag",
-	  "name": "Drag",
-	  "desc": "Decreases speed",
-	  "element": "Air",
-	  "attribute": "speed",
-	  "rarity_common": -10.0,
-	  "rarity_rare": -20.0,
-	  "rarity_unique": -30.0,
-	  "scene_path": "res://items/glyphs/drag_glyph.png"
-	},
-	{
-	  "id": "blight",
-	  "name": "Blight",
-	  "desc": "Poison on enemy hit",
-	  "element": "Earth",
-	  "attribute": "poison",
-	  "rarity_common": 1.0,
-	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0,
-	  "scene_path": "res://items/glyphs/blight_glyph.png"
-	},
-	{
-	  "id": "dense",
-	  "name": "Dense",
-	  "desc": "Increases weight",
-	  "element": "Earth",
-	  "attribute": "weight",
-	  "rarity_common": 1.0,
-	  "rarity_rare": 2.0,
-	  "rarity_unique": 3.0,
-	  "scene_path": "res://items/glyphs/dense_glyph.png"
-	},
-	{
-	  "id": "crush",
-	  "name": "Crush",
-	  "desc": "Critical damage",
-	  "element": "Earth",
-	  "attribute": "crit_damage",
-	  "rarity_common": 0.1,
-	  "rarity_rare": 0.2,
-	  "rarity_unique": 0.3,
-	  "scene_path": "res://items/glyphs/crush_glyph.png"
-	}
+    {
+      "id": "coal",
+      "name": "Coal",
+      "desc": "Burn on enemy hit",
+      "element": "Fire",
+      "attribute": "burn",
+      "rarity_common": 1.0,
+      "rarity_rare": 2.0,
+      "rarity_unique": 3.0,
+      "scene_path": "res://items/glyphs/coal_glyph.png"
+    },
+    {
+      "id": "fury",
+      "name": "Fury",
+      "desc": "Damage",
+      "element": "Fire",
+      "attribute": "damage",
+      "rarity_common": 5.0,
+      "rarity_rare": 10.0,
+      "rarity_unique": 15.0,
+      "scene_path": "res://items/glyphs/fury_glyph.png"
+    },
+    {
+      "id": "blast",
+      "name": "Blast",
+      "desc": "On hit, that % of the damage also hits nearby enemies",
+      "element": "Fire",
+      "attribute": "splash",
+      "rarity_common": 0.05,
+      "rarity_rare": 0.1,
+      "rarity_unique": 0.15,
+      "scene_path": "res://items/glyphs/blast_glyph.png"
+    },
+    {
+      "id": "rime",
+      "name": "Rime",
+      "desc": "Chill enemy on hit",
+      "element": "Water",
+      "attribute": "chill",
+      "rarity_common": 1.0,
+      "rarity_rare": 2.0,
+      "rarity_unique": 3.0,
+      "scene_path": "res://items/glyphs/rime_glyph.png"
+    },
+    {
+      "id": "sooth",
+      "name": "Sooth",
+      "desc": "This orb deals less damage to players",
+      "element": "Water",
+      "attribute": "self_damage",
+      "rarity_common": -10.0,
+      "rarity_rare": -20.0,
+      "rarity_unique": -30.0,
+      "scene_path": "res://items/glyphs/sooth_glyph.png"
+    },
+    {
+      "id": "bounty",
+      "name": "Bounty",
+      "desc": "Glyph drop chance from enemies",
+      "element": "Water",
+      "attribute": "glyph_drop",
+      "rarity_common": 0.01,
+      "rarity_rare": 0.02,
+      "rarity_unique": 0.03,
+      "scene_path": "res://items/glyphs/bounty_glyph.png"
+    },
+    {
+      "id": "static",
+      "name": "Static",
+      "desc": "Shock on enemy hit",
+      "element": "Air",
+      "attribute": "shock",
+      "rarity_common": 1.0,
+      "rarity_rare": 2.0,
+      "rarity_unique": 3.0,
+      "scene_path": "res://items/glyphs/static_glyph.png"
+    },
+    {
+      "id": "shear",
+      "name": "Shear",
+      "desc": "Critical chance",
+      "element": "Air",
+      "attribute": "crit_chance",
+      "rarity_common": 0.01,
+      "rarity_rare": 0.02,
+      "rarity_unique": 0.03,
+      "scene_path": "res://items/glyphs/shear_glyph.png"
+    },
+    {
+      "id": "drag",
+      "name": "Drag",
+      "desc": "Decreases speed",
+      "element": "Air",
+      "attribute": "speed",
+      "rarity_common": -10.0,
+      "rarity_rare": -20.0,
+      "rarity_unique": -30.0,
+      "scene_path": "res://items/glyphs/drag_glyph.png"
+    },
+    {
+      "id": "blight",
+      "name": "Blight",
+      "desc": "Poison on enemy hit",
+      "element": "Earth",
+      "attribute": "poison",
+      "rarity_common": 1.0,
+      "rarity_rare": 2.0,
+      "rarity_unique": 3.0,
+      "scene_path": "res://items/glyphs/blight_glyph.png"
+    },
+    {
+      "id": "dense",
+      "name": "Dense",
+      "desc": "Increases weight",
+      "element": "Earth",
+      "attribute": "weight",
+      "rarity_common": 1.0,
+      "rarity_rare": 2.0,
+      "rarity_unique": 3.0,
+      "scene_path": "res://items/glyphs/dense_glyph.png"
+    },
+    {
+      "id": "crush",
+      "name": "Crush",
+      "desc": "Critical damage",
+      "element": "Earth",
+      "attribute": "crit_damage",
+      "rarity_common": 0.1,
+      "rarity_rare": 0.2,
+      "rarity_unique": 0.3,
+      "scene_path": "res://items/glyphs/crush_glyph.png"
+    }
   ],
   "motion": [
-	{
-	  "id": "wayward",
-	  "name": "Wayward",
-	  "desc": "Straight flight, bounce off solids"
-	},
-	{
-	  "id": "attracted",
-	  "name": "Attracted",
-	  "desc": "Steer toward nearest enemy"
-	},
-	{
-	  "id": "spite",
-	  "name": "Spite",
-	  "desc": "Steer toward the player"
-	},
-	{
-	  "id": "rooted",
-	  "name": "Rooted",
-	  "desc": "Stops in place"
-	},
-	{
-	  "id": "patrol",
-	  "name": "Patrol",
-	  "desc": "Travels in a circle"
-	},
-	{
-	  "id": "familiar",
-	  "name": "Familiar",
-	  "desc": "Orbit the player"
-	},
-	{
-	  "id": "rail",
-	  "name": "Rail",
-	  "desc": "Slides along walls. Goes opposite way on impact."
-	},
-	{
-	  "id": "tide",
-	  "name": "Tide",
-	  "desc": "Ping-pong between last redirect and last bounce"
-	},
-	{
-	  "id": "blink",
-	  "name": "Blink",
-	  "desc": "Teleport a short hop on a timer or on wall hit"
-	},
-	{
-	  "id": "loyal",
-	  "name": "Loyal",
-	  "desc": "Match the player’s move vector, offset"
-	},
-	{
-	  "id": "hexed",
-	  "name": "Hexed",
-	  "desc": "Flee the player"
-	},
-	{
-	  "id": "stalker",
-	  "name": "Stalker",
-	  "desc": "Idle until an enemy or player enters range, then lunge"
-	},
-	{
-	  "id": "herd",
-	  "name": "Herd",
-	  "desc": "Steer towards other orbs"
-	},
-	{
-	  "id": "greedy",
-	  "name": "Greedy",
-	  "desc": "Steers towards mana crystals"
-	},
-	{
-	  "id": "oathbound",
-	  "name": "Oathbound",
-	  "desc": "Orbits the summoning circle"
-	},
-	{
-	  "id": "echo",
-	  "name": "Echo",
-	  "desc": "Replay a nearby players path on a 1 s delay"
-	},
-	{
-	  "id": "phasing",
-	  "name": "Phasing",
-	  "desc": "Go through entities and obstacles"
-	}
+    {
+      "id": "wayward",
+      "name": "Wayward",
+      "desc": "Straight flight, bounce off solids"
+    },
+    {
+      "id": "attracted",
+      "name": "Attracted",
+      "desc": "Steer toward nearest enemy"
+    },
+    {
+      "id": "spite",
+      "name": "Spite",
+      "desc": "Steer toward the player"
+    },
+    {
+      "id": "rooted",
+      "name": "Rooted",
+      "desc": "Stops in place"
+    },
+    {
+      "id": "patrol",
+      "name": "Patrol",
+      "desc": "Travels in a circle"
+    },
+    {
+      "id": "familiar",
+      "name": "Familiar",
+      "desc": "Orbit the player"
+    },
+    {
+      "id": "rail",
+      "name": "Rail",
+      "desc": "Slides along walls. Goes opposite way on impact."
+    },
+    {
+      "id": "tide",
+      "name": "Tide",
+      "desc": "Ping-pong between last redirect and last bounce"
+    },
+    {
+      "id": "blink",
+      "name": "Blink",
+      "desc": "Teleport a short hop on a timer or on wall hit"
+    },
+    {
+      "id": "loyal",
+      "name": "Loyal",
+      "desc": "Match the player’s move vector, offset"
+    },
+    {
+      "id": "hexed",
+      "name": "Hexed",
+      "desc": "Flee the player"
+    },
+    {
+      "id": "stalker",
+      "name": "Stalker",
+      "desc": "Idle until an enemy or player enters range, then lunge"
+    },
+    {
+      "id": "herd",
+      "name": "Herd",
+      "desc": "Steer towards other orbs"
+    },
+    {
+      "id": "greedy",
+      "name": "Greedy",
+      "desc": "Steers towards glyphs"
+    },
+    {
+      "id": "oathbound",
+      "name": "Oathbound",
+      "desc": "Orbits the summoning circle"
+    },
+    {
+      "id": "echo",
+      "name": "Echo",
+      "desc": "Replay a nearby players path on a 1 s delay"
+    },
+    {
+      "id": "phasing",
+      "name": "Phasing",
+      "desc": "Go through entities and obstacles"
+    }
   ],
   "orbs": [
-	{
-	  "id": "blank",
-	  "name": "Blank",
-	  "effect": "No effect",
-	  "element_1": null,
-	  "element_2": null,
-	  "element_3": null,
-	  "unique?": null,
-	  "motion": "wayward",
-	  "damage": 10.0,
-	  "self_damage": 10.0,
-	  "crit_chance": 0.05,
-	  "crit_damage": 2.0,
-	  "speed": 100.0,
-	  "weight": 5.0,
-	  "splash": 0.0,
-	  "glyph_drop": 0.2,
-	  "burn": 0,
-	  "chill": 0,
-	  "shock": 0,
-	  "poison": 0,
-	  "scene_path": "res://entities/orbs/blank/blank_orb.tscn",
-	  "active": true
-	},
-	{
-	  "id": "conduit",
-	  "name": "Conduit",
-	  "effect": "When you are within 120 meters of the orb, create a tether between you dealing 3 DPS to enemies touching it",
-	  "element_1": "Air",
-	  "element_2": "Air",
-	  "element_3": "Fire",
-	  "unique?": "Yes",
-	  "motion": "wayward",
-	  "damage": 10.0,
-	  "self_damage": 10.0,
-	  "crit_chance": 0.05,
-	  "crit_damage": 2.0,
-	  "speed": 130.0,
-	  "weight": 5.0,
-	  "splash": 0.0,
-	  "glyph_drop": 0.2,
-	  "burn": 0,
-	  "chill": 0,
-	  "shock": 3,
-	  "poison": 0,
-	  "scene_path": "res://entities/orbs/conduit/conduit_orb.tscn",
-	  "active": true
-	},
-	{
-	  "id": "rot",
-	  "name": "Rot",
-	  "effect": "Inflict poison on hit",
-	  "element_1": "Earth",
-	  "element_2": "Earth",
-	  "element_3": "Water",
-	  "unique?": "Yes",
-	  "motion": "wayward",
-	  "damage": 5.0,
-	  "self_damage": 10.0,
-	  "crit_chance": 0.05,
-	  "crit_damage": 2.0,
-	  "speed": 80.0,
-	  "weight": 7.0,
-	  "splash": 0.01,
-	  "glyph_drop": 0.2,
-	  "burn": 0,
-	  "chill": 0,
-	  "shock": 0,
-	  "poison": 3,
-	  "scene_path": "res://entities/orbs/rot/rot_orb.tscn",
-	  "active": true
-	},
-	{
-	  "id": "ghost",
-	  "name": "Ghost",
-	  "effect": "Enters and haunts enemies and deal its impact damage per second to them. Once dead, exits in a random direction.",
-	  "element_1": "Air",
-	  "element_2": "Air",
-	  "element_3": "Earth",
-	  "unique?": "Yes",
-	  "motion": "wayward",
-	  "damage": 10.0,
-	  "self_damage": 10.0,
-	  "crit_chance": 0.05,
-	  "crit_damage": 2.0,
-	  "speed": 110.0,
-	  "weight": 2.0,
-	  "splash": 0.0,
-	  "glyph_drop": 0.2,
-	  "burn": 0,
-	  "chill": 0,
-	  "shock": 0,
-	  "poison": 0,
-	  "scene_path": "res://entities/orbs/ghost/ghost_orb.tscn",
-	  "active": true
-	},
-	{
-	  "id": "inferno",
-	  "name": "Inferno",
-	  "effect": "Leaves a trail of fire after the orb for 2 seconds, inflicting 1 Burn on enemies",
-	  "element_1": "Fire",
-	  "element_2": "Fire",
-	  "element_3": "Fire",
-	  "unique?": "Yes",
-	  "motion": "wayward",
-	  "damage": 10.0,
-	  "self_damage": 15.0,
-	  "crit_chance": 0.05,
-	  "crit_damage": 2.0,
-	  "speed": 90.0,
-	  "weight": 3.0,
-	  "splash": 0.05,
-	  "glyph_drop": 0.2,
-	  "burn": 3,
-	  "chill": 0,
-	  "shock": 0,
-	  "poison": 0,
-	  "scene_path": null,
-	  "active": false
-	}
+    {
+      "id": "blank",
+      "name": "Blank",
+      "effect": "No effect",
+      "element_1": null,
+      "element_2": null,
+      "element_3": null,
+      "unique?": null,
+      "motion": "wayward",
+      "damage": 10.0,
+      "self_damage": 10.0,
+      "crit_chance": 0.05,
+      "crit_damage": 2.0,
+      "speed": 100.0,
+      "weight": 5.0,
+      "splash": 0.0,
+      "glyph_drop": 0.2,
+      "burn": 0,
+      "chill": 0,
+      "shock": 0,
+      "poison": 0,
+      "scene_path": "res://entities/orbs/blank/blank_orb.tscn",
+      "active": true
+    },
+    {
+      "id": "conduit",
+      "name": "Conduit",
+      "effect": "When you are within 120 meters of the orb, create a tether between you dealing 3 DPS to enemies touching it",
+      "element_1": "Air",
+      "element_2": "Air",
+      "element_3": "Fire",
+      "unique?": "Yes",
+      "motion": "wayward",
+      "damage": 10.0,
+      "self_damage": 10.0,
+      "crit_chance": 0.05,
+      "crit_damage": 2.0,
+      "speed": 130.0,
+      "weight": 5.0,
+      "splash": 0.0,
+      "glyph_drop": 0.2,
+      "burn": 0,
+      "chill": 0,
+      "shock": 3,
+      "poison": 0,
+      "scene_path": "res://entities/orbs/conduit/conduit_orb.tscn",
+      "active": true
+    },
+    {
+      "id": "contagion",
+      "name": "Contagion",
+      "effect": "20% chance of adding Disease status to enemies. On death half their poison spreads to other nearby enemies",
+      "element_1": "Earth",
+      "element_2": "Earth",
+      "element_3": "Air",
+      "unique?": "Yes",
+      "motion": "wayward",
+      "damage": 5.0,
+      "self_damage": 10.0,
+      "crit_chance": 0.05,
+      "crit_damage": 2.0,
+      "speed": 80.0,
+      "weight": 7.0,
+      "splash": 0.01,
+      "glyph_drop": 0.2,
+      "burn": 0,
+      "chill": 0,
+      "shock": 0,
+      "poison": 3,
+      "scene_path": "res://entities/orbs/rot/rot_orb.tscn",
+      "active": true
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost",
+      "effect": "Enters and haunts enemies and deal its impact damage per second to them. Once dead, exits in a random direction.",
+      "element_1": "Air",
+      "element_2": "Air",
+      "element_3": "Earth",
+      "unique?": "Yes",
+      "motion": "wayward",
+      "damage": 10.0,
+      "self_damage": 10.0,
+      "crit_chance": 0.05,
+      "crit_damage": 2.0,
+      "speed": 110.0,
+      "weight": 2.0,
+      "splash": 0.0,
+      "glyph_drop": 0.2,
+      "burn": 0,
+      "chill": 0,
+      "shock": 0,
+      "poison": 0,
+      "scene_path": "res://entities/orbs/ghost/ghost_orb.tscn",
+      "active": true
+    },
+    {
+      "id": "inferno",
+      "name": "Inferno",
+      "effect": "Leaves a trail of fire after the orb for 2 seconds, inflicting 1 Burn on enemies",
+      "element_1": "Fire",
+      "element_2": "Fire",
+      "element_3": "Fire",
+      "unique?": "Yes",
+      "motion": "wayward",
+      "damage": 10.0,
+      "self_damage": 15.0,
+      "crit_chance": 0.05,
+      "crit_damage": 2.0,
+      "speed": 90.0,
+      "weight": 3.0,
+      "splash": 0.05,
+      "glyph_drop": 0.2,
+      "burn": 3,
+      "chill": 0,
+      "shock": 0,
+      "poison": 0,
+      "scene_path": null,
+      "active": false
+    },
+    {
+      "id": "shard",
+      "name": "Shard",
+      "effect": "Shoots ice chards around every 3 seconds, doing 30 damage and inflicting 2 Frost",
+      "element_1": "Water",
+      "element_2": "Water",
+      "element_3": "Air",
+      "unique?": "Yes",
+      "motion": null,
+      "damage": null,
+      "self_damage": null,
+      "crit_chance": null,
+      "crit_damage": null,
+      "speed": null,
+      "weight": null,
+      "splash": null,
+      "glyph_drop": null,
+      "burn": null,
+      "chill": null,
+      "shock": null,
+      "poison": null,
+      "scene_path": null,
+      "active": null
+    },
+    {
+      "id": "runic",
+      "name": "Runic",
+      "effect": "Picks up glyphs instead of damaging them. Gets 5% damage increase for each deposited.",
+      "element_1": "Water",
+      "element_2": "Water",
+      "element_3": "Water",
+      "unique?": "Yes",
+      "motion": null,
+      "damage": null,
+      "self_damage": null,
+      "crit_chance": null,
+      "crit_damage": null,
+      "speed": null,
+      "weight": null,
+      "splash": null,
+      "glyph_drop": null,
+      "burn": null,
+      "chill": null,
+      "shock": null,
+      "poison": null,
+      "scene_path": null,
+      "active": null
+    },
+    {
+      "id": "guardian",
+      "name": "Guardian",
+      "effect": "Creates a shield around the orb. Any players within it take 50% less damage.",
+      "element_1": "Water",
+      "element_2": "Water",
+      "element_3": "Earth",
+      "unique?": "Yes",
+      "motion": null,
+      "damage": null,
+      "self_damage": null,
+      "crit_chance": null,
+      "crit_damage": null,
+      "speed": null,
+      "weight": null,
+      "splash": null,
+      "glyph_drop": null,
+      "burn": null,
+      "chill": null,
+      "shock": null,
+      "poison": null,
+      "scene_path": null,
+      "active": null
+    },
+    {
+      "id": "mend",
+      "name": "Mend",
+      "effect": "Does no self-damage. Players hit heal 10 hp instead",
+      "element_1": "Earth",
+      "element_2": "Earth",
+      "element_3": "Water",
+      "unique?": "Yes",
+      "motion": "wayward",
+      "damage": null,
+      "self_damage": null,
+      "crit_chance": null,
+      "crit_damage": null,
+      "speed": null,
+      "weight": null,
+      "splash": null,
+      "glyph_drop": null,
+      "burn": null,
+      "chill": null,
+      "shock": null,
+      "poison": null,
+      "scene_path": null,
+      "active": null
+    },
+    {
+      "id": "destroyer",
+      "name": "Destroyer",
+      "effect": "High damage. Inflicts Burn, Frost and Poison. Chases the nearest player",
+      "element_1": "Fire",
+      "element_2": "Air",
+      "element_3": "Earth",
+      "unique?": "Yes",
+      "motion": "spite",
+      "damage": 50.0,
+      "self_damage": 50.0,
+      "crit_chance": null,
+      "crit_damage": null,
+      "speed": null,
+      "weight": null,
+      "splash": null,
+      "glyph_drop": null,
+      "burn": null,
+      "chill": null,
+      "shock": null,
+      "poison": null,
+      "scene_path": null,
+      "active": null
+    }
   ]
 }

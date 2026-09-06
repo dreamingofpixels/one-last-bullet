@@ -41,6 +41,7 @@ animation = &"idle_se"
 autoplay = "idle_se"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=565534729]
+unique_name_in_owner = true
 shape = SubResource("CapsuleShape2D_body")
 
 [node name="Components" type="Node2D" parent="." unique_id=101523298]
@@ -75,11 +76,12 @@ move_speed = 110.0
 unique_name_in_owner = true
 visible = false
 
-[node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("animated_sprite", "hitbox_component") instance=ExtResource("8_dash")]
+[node name="DashComponent" parent="Components" unique_id=644149699 node_paths=PackedStringArray("animated_sprite", "hitbox_component", "body_collision_shape") instance=ExtResource("8_dash")]
 unique_name_in_owner = true
 dash_cooldown = 1.5
 animated_sprite = NodePath("../../PlayerSprite")
 hitbox_component = NodePath("../HitboxComponent")
+body_collision_shape = NodePath("../../CollisionShape2D")
 
 [node name="OrbTetherComponent" parent="Components" unique_id=1870992403 instance=ExtResource("8_tether")]
 unique_name_in_owner = true

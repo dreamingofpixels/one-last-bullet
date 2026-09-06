@@ -1,16 +1,16 @@
 [gd_scene format=3 uid="uid://bpoisonorb001"]
 
-[ext_resource type="Script" uid="uid://pka4q35y7hhl" path="res://entities/orbs/rot/rot_orb.gd" id="1_w5os6"]
-[ext_resource type="Resource" path="res://entities/orbs/orb_sfx/orb_bounce.tres" id="2_t02mf"]
-[ext_resource type="AudioStream" uid="uid://c26wf2fl3uwof" path="res://entities/orbs/orb_sfx/begin_tether.wav" id="3_rf56w"]
-[ext_resource type="AudioStream" uid="uid://deyfsy266xuhn" path="res://entities/orbs/orb_sfx/release_tether.wav" id="4_ut4ag"]
-[ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/orbs/aim_arrow.gd" id="5_ttttj"]
-[ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="6_qd600"]
-[ext_resource type="Texture2D" uid="uid://bo1vvlewgnv41" path="res://entities/orbs/blank/blank_orb.png" id="7_buuwo"]
-[ext_resource type="Texture2D" uid="uid://d3k3j8jrv1xkj" path="res://entities/orbs/orb_in_focus.png" id="8_bkrph"]
-[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="9_sl1od"]
-[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="10_gv36r"]
-[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="11_x1wem"]
+[ext_resource type="Script" uid="uid://pka4q35y7hhl" path="res://entities/orbs/contagion/contagion_orb.gd" id="1_uyq3v"]
+[ext_resource type="Resource" path="res://entities/orbs/orb_sfx/orb_bounce.tres" id="2_m3c0r"]
+[ext_resource type="AudioStream" uid="uid://c26wf2fl3uwof" path="res://entities/orbs/orb_sfx/begin_tether.wav" id="3_wnq4v"]
+[ext_resource type="AudioStream" uid="uid://deyfsy266xuhn" path="res://entities/orbs/orb_sfx/release_tether.wav" id="4_wf64h"]
+[ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/orbs/aim_arrow.gd" id="5_wg6ml"]
+[ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="6_b3rc4"]
+[ext_resource type="Texture2D" uid="uid://dql8p1iynlviq" path="res://entities/orbs/contagion/contagion.png" id="7_uyq3v"]
+[ext_resource type="Texture2D" uid="uid://d3k3j8jrv1xkj" path="res://entities/orbs/orb_in_focus.png" id="8_6eru4"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="9_16wdj"]
+[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="10_c0cpo"]
+[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="11_ch63h"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
 friction = 0.0
@@ -48,14 +48,14 @@ gravity_scale = 0.0
 lock_rotation = true
 continuous_cd = 2
 linear_damp_mode = 1
-script = ExtResource("1_w5os6")
+script = ExtResource("1_uyq3v")
 orb_id = &"rot"
 speed = 100.0
 base_modulate = Color(0.4, 0.95, 0.35, 1)
 rotate_heading = false
-bounce_sound = ExtResource("2_t02mf")
-begin_tether_sound = ExtResource("3_rf56w")
-release_tether_sound = ExtResource("4_ut4ag")
+bounce_sound = ExtResource("2_m3c0r")
+begin_tether_sound = ExtResource("3_wnq4v")
+release_tether_sound = ExtResource("4_wf64h")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=888365087]
 unique_name_in_owner = true
@@ -68,42 +68,41 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 visible = false
 z_index = 20
-script = ExtResource("5_ttttj")
+script = ExtResource("5_wg6ml")
 
 [node name="TrailParticles" type="GPUParticles2D" parent="." unique_id=615959214]
 unique_name_in_owner = true
 texture_filter = 1
 amount = 48
-texture = ExtResource("6_qd600")
+texture = ExtResource("6_b3rc4")
 lifetime = 0.45
 visibility_rect = Rect2(-400, -400, 800, 800)
 process_material = SubResource("ParticleProcessMaterial_trail")
 
 [node name="OrbSprite" type="Sprite2D" parent="." unique_id=972815732]
 unique_name_in_owner = true
-modulate = Color(0.4, 0.95, 0.35, 1)
 texture_filter = 1
-texture = ExtResource("7_buuwo")
+texture = ExtResource("7_uyq3v")
 
 [node name="OrbInFocus" type="Sprite2D" parent="." unique_id=947802802]
 unique_name_in_owner = true
 visible = false
 texture_filter = 1
-texture = ExtResource("8_bkrph")
+texture = ExtResource("8_6eru4")
 
 [node name="Components" type="Node2D" parent="." unique_id=228053340]
-script = ExtResource("9_sl1od")
+script = ExtResource("9_16wdj")
 
 [node name="DamageComponent" type="Node2D" parent="Components" unique_id=289938369]
 unique_name_in_owner = true
-script = ExtResource("10_gv36r")
+script = ExtResource("10_c0cpo")
 damage = 3.0
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1205372731]
 unique_name_in_owner = true
 collision_layer = 8
 collision_mask = 6
-script = ExtResource("11_x1wem")
+script = ExtResource("11_ch63h")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=2039667969]
 shape = SubResource("CircleShape2D_hit")

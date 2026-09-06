@@ -6,7 +6,7 @@
 [ext_resource type="AudioStream" uid="uid://deyfsy266xuhn" path="res://entities/orbs/orb_sfx/release_tether.wav" id="4_yumb5"]
 [ext_resource type="Script" uid="uid://iq540kuvp8b1" path="res://entities/orbs/aim_arrow.gd" id="5_2lbar"]
 [ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="6_x1krp"]
-[ext_resource type="Texture2D" uid="uid://bo1vvlewgnv41" path="res://entities/orbs/blank/blank_orb.png" id="7_uqwtq"]
+[ext_resource type="Texture2D" uid="uid://bclmjpl3y8sf6" path="res://entities/orbs/ghost/ghost.png" id="7_0vugj"]
 [ext_resource type="Texture2D" uid="uid://d3k3j8jrv1xkj" path="res://entities/orbs/orb_in_focus.png" id="8_712oo"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="9_megfk"]
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="10_fng8m"]
@@ -81,9 +81,8 @@ process_material = SubResource("ParticleProcessMaterial_trail")
 
 [node name="OrbSprite" type="Sprite2D" parent="." unique_id=538763818]
 unique_name_in_owner = true
-modulate = Color(0.55, 0.3, 0.85, 1)
 texture_filter = 1
-texture = ExtResource("7_uqwtq")
+texture = ExtResource("7_0vugj")
 
 [node name="OrbInFocus" type="Sprite2D" parent="." unique_id=434055334]
 unique_name_in_owner = true

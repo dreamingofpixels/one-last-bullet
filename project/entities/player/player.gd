@@ -4,6 +4,8 @@ extends CharacterBody2D
 ## 2 = gamepad device 1. Set this before adding to the scene tree.
 @export var player_index: int = 1
 
+const STUCK_FRAMES_BEFORE_UNSTICK := 6
+
 var COMPONENTS: Dictionary = {}
 
 @onready var movement_component: MovementComponent = %MovementComponent
@@ -15,9 +17,11 @@ var COMPONENTS: Dictionary = {}
 @onready var player_sprite: AnimatedSprite2D = %PlayerSprite
 @onready var controls: Controls = %Controls
 @onready var state_machine: StateMachine = %StateMachine
+@onready var body_collision_shape: CollisionShape2D = %CollisionShape2D
 
 var _assembling: bool = true
 var _carried_item: Glyph = null
+var _stuck_frames: int = 0
 
 
 func _ready() -> void:
@@ -25,6 +29,24 @@ func _ready() -> void:
 	controls.apply_player_index(player_index)
 	player_sprite.visible = false
 	_set_spawn_inert(true)
+
+
+func _physics_process(_delta: float) -> void:
+	if _assembling or dash_component.is_dashing():
+		_stuck_frames = 0
+		return
+	if CollisionSeparation.is_clear(self, body_collision_shape, global_position, collision_mask):
+		_stuck_frames = 0
+		return
+	_stuck_frames += 1
+	if _stuck_frames >= STUCK_FRAMES_BEFORE_UNSTICK:
+		_stuck_frames = 0
+		CollisionSeparation.separate(
+			self,
+			body_collision_shape,
+			collision_mask,
+			CollisionSeparation.MAX_PUSH_PX
+		)
 
 
 # ── Public API (called from level.gd) ─────────────────────────────────────────

@@ -36,7 +36,8 @@ A Final Spell/
     │   ├── status_component.gd / .tscn   Enemy Poison (1 dmg/stack/s, persistent) + Shock (stun + 50 burst at 10 stacks) + Burn (death explosion) + Chill (move/attack slow)
 │   ├── attack_component.gd / .tscn   Player arc swing (parked behind melee_enabled); knocks enemies when melee on; orb deflect gated by flag; proximity redirect consumes cooldown without swing
 │   ├── orb_tether_component.gd / .tscn  Focus + Attack redirect; capture/channel gated by capture_enabled; crystal pickup + circle activate; redirect particle preview on closest orb
-│   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames, ghost alpha, afterimages, dash SFX, + 4s cooldown ring (reset on Attack redirect)
+│   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames, ghost alpha, afterimages, dash SFX, + 4s cooldown ring (reset on Attack redirect); end-of-dash CollisionSeparation so phase-through never restores inside world geometry
+│   ├── collision_separation.gd      Static shape-query helpers: is_clear / resolve_along / separate (dash unstick, player watchdog, enemy spawn depenetration)
     │   └── directional_sprite_component.gd / .tscn  8-way logical facing (4-way visual) via AnimatedSprite2D
     ├── audio/
     │   ├── audio_manager.gd / .tscn   Autoload: Music/SFX pools + bus helpers
@@ -172,7 +173,8 @@ A Final Spell/
 - `project/components/status_component.gd` — enemy statuses: **Poison** (every 1 s deal `stacks` HP; stacks persist until death; ticks call `take_damage(..., POISON)` for green labels) and **Shock** (at 10 stacks deal 50 HP + stun 2 s via `NavigationComponent.set_chasing(false)` + `MovementComponent.stop()`, then clear Shock; no Shock while stunned) and **Burn** (on `DestroyComponent.destroyed`, explode for `5 * stacks` in `50 * (1 + 5% * stacks)` px; enemies only; BURN labels) and **Chill** (`5% * stacks` move + attack-speed slow, max 90%); `add_stacks(id, amount, source)` tracks per-status source for drops/explosions; instanced on grunt/brute with health/nav/movement/destroy/damage wired
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent` when `melee_enabled` (default false on player — parked); orb deflect behind `deflect_orb_enabled` (default false); `consume_cooldown()` for proximity redirect without a swing; hides `%AttackSpriteHint` while a redirect target exists or melee is off; optional `swing_sound` (unassigned)
 - `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), … **`capture_enabled`** (false on player) gates tap capture + remote channel; tether press order: release owned tether → **summoning circle `try_activate()`** if in `DepositArea` → **glyph** pickup → orb capture (if capture on); …
-- `project/components/dash_component.gd` — … **`can_dash()`** (false while carrying a **glyph**) …
+- `project/components/dash_component.gd` — … **`can_dash()`** (false while carrying a **glyph**); before restoring collision, resolves end position via `CollisionSeparation` (forward out the far side within 24 px if wall-safe, else back along dash path, else rest-normal push) …
+- `project/components/collision_separation.gd` — static `is_clear` / `resolve_along` / `separate` shape-query helpers used by dash end placement, player stuck watchdog, and enemy spawn depenetration
 - `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
 
 ### State machine base
@@ -180,7 +182,7 @@ A Final Spell/
 - `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — … carry API for **glyphs** (`pick_up_item` / `try_throw_item` / `is_carrying_item`); …
+- `project/entities/player/player.tscn` + `player.gd` — … carry API for **glyphs** (`pick_up_item` / `try_throw_item` / `is_carrying_item`); stuck watchdog (`CollisionSeparation`) unsticks after 6 consecutive world-overlap frames while not assembling/dashing; …
 - `project/entities/player/players.gd` — `class_name Players`; static roster helpers over the `player` group (`all` / `closest_to` / `count`); used by level lose, electric current, and any co-op nearest-player query
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `uses_mouse()` (P1 only); `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
@@ -195,7 +197,7 @@ A Final Spell/
 - `project/entities/orbs/aim_arrow.gd` — three pulsing chevrons outside the orb along player aim (`set_redirect_preview`)
 - `project/entities/enemies/grunt/grunt_knife.tscn` + `grunt_knife.gd` — component-driven chaser; Health max 20 / HealthBar / Damage with 0.75s contact tick / Destroy / Movement / Knockback / Navigation / Status / HitboxComponent
 - `project/entities/enemies/brute/brute.tscn` + `brute.gd` — same path/avoidance stack as grunt; left-facing sprite via `MovementComponent.sprite_flip_inverted`; larger collision (r=15); Health max 50 / HealthBar / Damage 3.0 with 0.75s contact tick / Navigation / Status
-- `project/entities/enemies/spawner/enemy_spawner.tscn` + `enemy_spawner.gd` — wave director; inspector `waves` (`EnemyWave` / `EnemySpawnEntry`); nav-valid **and physics-clear** spawn points that stay `min_spawn_distance` from **any** living player and path to at least one; pack separation (enemy body overlap vs `world` colliders rejected at spawn-time); telegraph then reverse pixel-fall assemble; assembling enemies keep physics layers but disable shapes/hitbox/chase until assemble finishes; a short depenetration pass runs when collision is re-enabled before chase resumes; `all_cleared` when every wave is issued and every instanced enemy is dead; desert default: 3 grunts, then 1 brute after 6s
+- `project/entities/enemies/spawner/enemy_spawner.tscn` + `enemy_spawner.gd` — wave director; inspector `waves` (`EnemyWave` / `EnemySpawnEntry`); nav-valid **and physics-clear** spawn points that stay `min_spawn_distance` from **any** living player and path to at least one; pack separation (enemy body overlap vs `world` colliders rejected at spawn-time); telegraph then reverse pixel-fall assemble; assembling enemies keep physics layers but disable shapes/hitbox/chase until assemble finishes; a short depenetration pass via `CollisionSeparation.separate` runs when collision is re-enabled before chase resumes; `all_cleared` when every wave is issued and every instanced enemy is dead; desert default: 3 grunts, then 1 brute after 6s
 
 ### Objects
 - `project/objects/_base/level_object.gd` — solid prop base (`StaticBody2D` on world layer; random variant; bounce material)

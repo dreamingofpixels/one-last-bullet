@@ -1,0 +1,22 @@
+---
+description: Never modify game_data files; only read game_data.json
+alwaysApply: true
+---
+
+# Game data files: JSON read-only, never touch Excel
+
+`project/data/game_data.xlsx` and `project/data/game_data.json` are owned by the user. Do **not** create, edit, delete, overwrite, or regenerate either file.
+
+- **`project/data/game_data.json`** — read-only. You may inspect it to look up values (orbs, glyphs, motion, etc.). Never write it back, even to "fix" a value you found there.
+- **`project/data/game_data.xlsx`** — do not read and do not modify. Do not open it, parse it, or use it as a source. If a number lives only in the workbook, ask the user rather than reading the `.xlsx`.
+
+If a change needs a data-sheet update, tell the user what to change and leave both files untouched. Do not run `export_game_data.py` / `.bat` unless the user explicitly asks.
+
+```gdscript
+# ❌ BAD: edit JSON / Excel, or read the workbook
+# Write / StrReplace / export on project/data/game_data.json
+# Read / open project/data/game_data.xlsx
+
+# ✅ GOOD: read JSON only; leave data edits to the user
+# Read project/data/game_data.json
+```

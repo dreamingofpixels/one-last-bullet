@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://doagtfaw80f82"]
 
-[ext_resource type="Script" uid="uid://pstg026o8wof" path="res://entities/enemies/grunt/grunt_knife.gd" id="1_ntsep"]
+[ext_resource type="Script" uid="uid://pstg026o8wof" path="res://entities/enemies/goblin/grunt_knife.gd" id="1_ntsep"]
 [ext_resource type="Texture2D" uid="uid://wcun7ki1apo7" path="res://entities/enemies/grunt/grunt_knife.png" id="1_plv27"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="2_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="3_health"]

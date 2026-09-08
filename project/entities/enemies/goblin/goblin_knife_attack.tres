@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://blpxat464k04y"]
+
+[ext_resource type="Script" uid="uid://bbadqc3a5sd8v" path="res://audio/sound_event.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+pitch_min = 0.95
+pitch_max = 1.05

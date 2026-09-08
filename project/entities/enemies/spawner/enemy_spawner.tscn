@@ -1,10 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://entities/enemies/spawner/enemy_spawner.gd" id="1_spawner"]
-[ext_resource type="Script" path="res://entities/enemies/spawner/enemy_wave.gd" id="2_wave"]
-[ext_resource type="Script" path="res://entities/enemies/spawner/enemy_spawn_entry.gd" id="3_entry"]
+[ext_resource type="Script" uid="uid://ckx6qj1w2ne10" path="res://entities/enemies/spawner/enemy_spawner.gd" id="1_spawner"]
+[ext_resource type="Script" uid="uid://b51sqf0cf8bcy" path="res://entities/enemies/spawner/enemy_wave.gd" id="2_wave"]
+[ext_resource type="Script" uid="uid://b68fxg5v7nmgm" path="res://entities/enemies/spawner/enemy_spawn_entry.gd" id="3_entry"]
 [ext_resource type="PackedScene" uid="uid://dktjay6ddgeo5" path="res://entities/enemies/goblin/goblin_knife.tscn" id="4_grunt"]
-[ext_resource type="PackedScene" uid="uid://bq7w3m5k8tn2r" path="res://entities/enemies/brute/brute.tscn" id="5_brute"]
+[ext_resource type="PackedScene" uid="uid://bq7w3m5k8tn2r" path="res://entities/enemies/ogre/ogre.tscn" id="5_brute"]
 
 [sub_resource type="Resource" id="EnemySpawnEntry_grunts"]
 script = ExtResource("3_entry")

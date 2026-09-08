@@ -20,6 +20,7 @@ const PHYSICS_LAYER_ENEMY := 4
 @export var movement_component: MovementComponent
 @export var damage_component: DamageComponent
 @export var destroy_component: DestroyComponent
+@export var attack_component: EnemyAttackComponent
 
 var _poison_stacks: int = 0
 var _poison_tick_remaining: float = 0.0
@@ -144,6 +145,8 @@ func _begin_stun() -> void:
 		health_component.take_damage(SHOCK_BURST_DAMAGE, HealthComponent.DamageKind.STANDARD, source)
 	_shock_stacks = 0
 	_stun_remaining = STUN_DURATION
+	if attack_component:
+		attack_component.cancel()
 	if navigation_component:
 		_was_chasing_before_stun = true
 		navigation_component.set_chasing(false)
@@ -161,6 +164,8 @@ func _apply_chill_slow() -> void:
 	if damage_component and _base_contact_interval > 0.0:
 		var attack_mult: float = maxf(speed_mult, 0.1)
 		damage_component.contact_damage_interval = _base_contact_interval / attack_mult
+	if attack_component:
+		attack_component.speed_multiplier = maxf(speed_mult, 0.1)
 
 
 func _apply_disease_tint() -> void:

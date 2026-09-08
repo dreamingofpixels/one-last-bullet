@@ -34,6 +34,13 @@ func stop() -> void:
 	body.move_and_slide()
 
 
+## Face left/right from a world-space X delta (honours sprite_flip_inverted).
+func face_horizontal(x: float) -> void:
+	if absf(x) < 0.0001:
+		return
+	_apply_flip(x < 0.0)
+
+
 func _apply_flip(flip: bool) -> void:
 	if sprite_flip_inverted:
 		flip = not flip

@@ -143,6 +143,10 @@ func _set_spawn_inert(enemy: CharacterBody2D, inert: bool) -> void:
 	if navigation:
 		navigation.set_chasing(not inert)
 
+	var attack: EnemyAttackComponent = enemy.COMPONENTS.get(EnemyAttackComponent)
+	if attack:
+		attack.set_active(not inert)
+
 
 func _pick_spawn_position(collision_shape: CollisionShape2D) -> Vector2:
 	var players := Players.all(get_tree())

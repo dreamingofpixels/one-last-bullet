@@ -5,13 +5,14 @@
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="2_0bdiv"]
 [ext_resource type="Texture2D" uid="uid://dcuodcjg40lcu" path="res://entities/enemies/goblin/goblin_knife.png" id="2_rnks7"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="3_quulo"]
-[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="4_rnks7"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_3qshg"]
 [ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="6_x7idi"]
 [ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="7_wgcjf"]
 [ext_resource type="PackedScene" path="res://components/navigation_component.tscn" id="8_dkubi"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="9_f468r"]
 [ext_resource type="PackedScene" uid="uid://doae1sw0x8emo" path="res://components/status_component.tscn" id="10_vhd37"]
+[ext_resource type="PackedScene" path="res://components/enemy_attack_component.tscn" id="11_eattack"]
+[ext_resource type="Resource" path="res://entities/enemies/goblin/goblin_knife_attack.tres" id="12_asfx"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0
@@ -198,11 +199,6 @@ destroy_component = NodePath("../DestroyComponent")
 health_component = NodePath("../HealthComponent")
 offset = Vector2(0, -16)
 
-[node name="DamageComponent" type="Node2D" parent="Components" unique_id=1772677854]
-script = ExtResource("4_rnks7")
-damage = 5.0
-contact_damage_interval = 0.75
-
 [node name="DestroyComponent" type="Node2D" parent="Components" unique_id=415019116 node_paths=PackedStringArray("sprite")]
 unique_name_in_owner = true
 script = ExtResource("5_3qshg")
@@ -242,10 +238,22 @@ health_component = NodePath("../HealthComponent")
 position = Vector2(0, -1)
 shape = SubResource("CircleShape2D_hitbox")
 
-[node name="StatusComponent" parent="Components" unique_id=882341001 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component", "damage_component", "destroy_component") instance=ExtResource("10_vhd37")]
+[node name="EnemyAttackComponent" parent="Components" unique_id=2048123456 node_paths=PackedStringArray("animated_sprite", "movement_component", "navigation_component", "knockback_component", "status_component") instance=ExtResource("11_eattack")]
+unique_name_in_owner = true
+position = Vector2(-12, 1)
+lunge_distance = 30.0
+hitbox_size = Vector2(24, 24)
+attack_sound = ExtResource("12_asfx")
+animated_sprite = NodePath("../../Sprite2D")
+movement_component = NodePath("../MovementComponent")
+navigation_component = NodePath("../NavigationComponent")
+knockback_component = NodePath("../KnockbackComponent")
+status_component = NodePath("../StatusComponent")
+
+[node name="StatusComponent" parent="Components" unique_id=882341001 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component", "destroy_component", "attack_component") instance=ExtResource("10_vhd37")]
 unique_name_in_owner = true
 health_component = NodePath("../HealthComponent")
 navigation_component = NodePath("../NavigationComponent")
 movement_component = NodePath("../MovementComponent")
-damage_component = NodePath("../DamageComponent")
 destroy_component = NodePath("../DestroyComponent")
+attack_component = NodePath("../EnemyAttackComponent")

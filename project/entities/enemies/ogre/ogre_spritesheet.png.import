@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bctcvmp2ph7a4"
-path="res://.godot/imported/ogre.png-40ada3ed000798b833b12ac3fde30ed1.ctex"
+uid="uid://dhr3c2vvuxkb4"
+path="res://.godot/imported/ogre_spritesheet.png-3b68bdfae532bc889f7d8fcf9067e9a7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://entities/enemies/ogre/ogre.png"
-dest_files=["res://.godot/imported/ogre.png-40ada3ed000798b833b12ac3fde30ed1.ctex"]
+source_file="res://entities/enemies/ogre/ogre_spritesheet.png"
+dest_files=["res://.godot/imported/ogre_spritesheet.png-3b68bdfae532bc889f7d8fcf9067e9a7.ctex"]
 
 [params]
 

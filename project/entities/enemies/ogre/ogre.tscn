@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://bq7w3m5k8tn2r"]
 
-[ext_resource type="Script" uid="uid://c8v4n2hxpq1km" path="res://entities/enemies/brute/brute.gd" id="1_brute"]
-[ext_resource type="Texture2D" uid="uid://c0cgp4q0208em" path="res://entities/enemies/brute/brute.png" id="2_sprite"]
+[ext_resource type="Script" uid="uid://c8v4n2hxpq1km" path="res://entities/enemies/ogre/ogre.gd" id="1_brute"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="3_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="4_health"]
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="5_damage"]
@@ -16,10 +15,12 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 15.0
 
+[sub_resource type="SpriteFrames" id="SpriteFrames_6pmnr"]
+
 [sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
 radius = 15.0
 
-[node name="Brute" type="CharacterBody2D" unique_id=539860681 groups=["enemies"]]
+[node name="Ogre" type="CharacterBody2D" unique_id=539860681 groups=["enemies"]]
 collision_layer = 4
 collision_mask = 5
 script = ExtResource("1_brute")
@@ -28,10 +29,10 @@ script = ExtResource("1_brute")
 position = Vector2(0, -1)
 shape = SubResource("CircleShape2D_body")
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=921487892]
+[node name="Sprite2D" type="AnimatedSprite2D" parent="." unique_id=1672423630]
 unique_name_in_owner = true
 texture_filter = 1
-texture = ExtResource("2_sprite")
+sprite_frames = SubResource("SpriteFrames_6pmnr")
 
 [node name="Components" type="Node2D" parent="." unique_id=550465024]
 script = ExtResource("3_handler")
@@ -50,10 +51,9 @@ script = ExtResource("5_damage")
 damage = 10.0
 contact_damage_interval = 0.75
 
-[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=156210785 node_paths=PackedStringArray("sprite")]
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=156210785]
 unique_name_in_owner = true
 script = ExtResource("6_destroy")
-sprite = NodePath("../../Sprite2D")
 
 [node name="MovementComponent" type="Node2D" parent="Components" unique_id=1827114338]
 unique_name_in_owner = true

@@ -133,7 +133,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — replaced by glyph drops + circle inventory (see "Glyphs replace mana crystals")
 
 ### Orb damages enemies; hurts player on contact
-- **Decision**: The same projectile is a weapon against enemies and a hazard for the player. HP and orb damage are authored in scene `HealthComponent` / `DamageComponent` values (currently player **30 HP**, grunt **20 HP**, orb damage **10**). Player gets brief i-frames after a non-fatal hit.
+- **Decision**: The same projectile is a weapon against enemies and a hazard for the player. HP and orb damage are authored in scene `HealthComponent` / `DamageComponent` values (currently player **30 HP**, goblin **25 HP**, orb damage **10**). Player gets brief i-frames after a non-fatal hit.
 - **Why**: Forces constant spatial awareness; multi-hit HP lets the dodge fantasy breathe without making every graze an instant run-ender.
 - **Alternatives**: Instant-kill on player contact — previous design; too punishing once tether proximity is required; orb only hurts enemies — loses the dodge fantasy.
 - **Status**: decided (in-codebase)
@@ -225,9 +225,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: superseded — opening launch is now from the summoning circle (see "Opening 3-orb launch from summoning circle")
 
 ### Single basic enemy: chase + contact kill
-- **Decision**: First enemy type is a chaser (`grunt_knife`) that kills the player on contact. A second chaser (`brute`) uses the same chase/contact-damage model. Desert delivers them as waves (3 grunts, then 1 brute) rather than all at once.
-- **Why**: Simple pressure while the orb/attack loop is proven. Brute is a size/art variant of that loop, not a new AI.
-- **Alternatives**: Ranged enemies first — more systems before the core loop is solid; brute as unique club-melee AI — not needed yet (contact hitbox matches grunt).
+- **Decision**: First enemy type is an animated chaser (`goblin_knife`) that damages the player on contact (`idle` / `running` / cosmetic `attacking` while overlapping). A second chaser (`brute`) uses the same chase/contact-damage model (static sprite). Desert delivers them as waves (3 goblins, then 1 brute) rather than all at once. The old static `grunt_knife` is retired.
+- **Why**: Simple pressure while the orb/attack loop is proven. Goblin art + flip covers left/right without a second sheet; attack clip sells contact without a real attack state. Brute is a size/art variant of that loop, not a new AI.
+- **Alternatives**: Keep static grunt PNG — superseded by goblin spritesheet; ranged enemies first — more systems before the core loop is solid; brute as unique club-melee AI — not needed yet (contact hitbox matches goblin); real attack hitbox/state — deferred (damage stays on 0.75s contact tick).
 - **Status**: decided (in-codebase)
 
 ### Timed overlapping enemy waves
@@ -316,9 +316,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Inheritance (`Enemy extends Character`) — becomes flag soup for diverse entities; NodePath exports without dict — O(n) get_node calls; signal bus — more indirection than needed for a small game.
 - **Status**: decided (in-codebase)
 
-### Health: multi-hit via max_health (player/grunt = 3; multi-hit breakables = 3)
+### Health: multi-hit via max_health (player/goblin multi-hit; multi-hit breakables)
 
-- **Decision**: `HealthComponent.max_health` defaults to `1.0`, while concrete HP values are authored per scene/entity. Current examples: player `30`, grunt `20`, brute `50`, cactus `5`, `big_rock` `60`, `animal_skull` `20`. Orb damage to **entities** comes from the orb `DamageComponent.damage` (currently `10`) via victim `HitboxComponent` overlap polls; orb damage to **breakables** still uses `_try_apply_orb_damage` on flying `body_entered` / tether world-probe contact. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`. Non-fatal hits can start gameplay i-frames (see below).
+- **Decision**: `HealthComponent.max_health` defaults to `1.0`, while concrete HP values are authored per scene/entity. Current examples: player `30`, goblin `25`, brute `50`, cactus `5`, `big_rock` `60`, `animal_skull` `20`. Orb damage to **entities** comes from the orb `DamageComponent.damage` (currently `10`) via victim `HitboxComponent` overlap polls; orb damage to **breakables** still uses `_try_apply_orb_damage` on flying `body_entered` / tether world-probe contact. On any `take_damage`, the entity sprite modulates to red (`damage_flash_color`) then tweens back (non-fatal) or stays red into the destruction FX (fatal). Sprite comes from an optional `HealthComponent.sprite` export, else `DestroyComponent.sprite`. Non-fatal hits can start gameplay i-frames (see below).
 - **Why**: Keeps rules in data; multi-hit is a slider per entity, not special-case code. Shared flash covers entities and breakables without per-scene VFX scripts. Multi-hit props give the orb a reason to revisit the same obstacle and create longer spatial fights around tougher terrain.
 - **Alternatives**: One-hit-kill for everyone (`max_health = 1.0`) — previous design; too harsh with tether proximity; a bool `is_one_shot` — extra flag for something already handled by the value; shader hit flash — heavier for a short modulate.
 - **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"; `big_rock` / `animal_skull` multi-hit breakable scenes remain (not currently placed in `desert.tscn`)
@@ -344,7 +344,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Contact damage interval on DamageComponent
 
-- **Decision**: `DamageComponent.contact_damage_interval` (seconds). `0` = one hit per continuous overlap (orb). Grunt uses `~0.75s` so a chase that sticks keeps dealing damage.
+- **Decision**: `DamageComponent.contact_damage_interval` (seconds). `0` = one hit per continuous overlap (orb). Goblin uses `~0.75s` so a chase that sticks keeps dealing damage.
 - **Why**: Chasers overlap continuously; without a tick they deal damage once and then never again.
 - **Alternatives**: Always re-hit every frame — melts the player; rely only on player i-frames — couples chase DPS to hit-react length; put the interval on the victim — wrong ownership for an attacker property.
 - **Status**: decided (in-codebase)

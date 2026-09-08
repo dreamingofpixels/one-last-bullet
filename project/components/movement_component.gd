@@ -4,8 +4,8 @@ class_name MovementComponent extends Node2D
 ## 1.0 = instant direction change (matches original CharacterBody2D behaviour).
 @export var acceleration: float = 1.0
 @export var friction: float = 1.0
-## Optional: flips the sprite when moving left/right.
-@export var sprite: Sprite2D
+## Optional: flips the sprite when moving left/right (Sprite2D or AnimatedSprite2D).
+@export var sprite: Node2D
 @export var sprite_flip_inverted: bool = false
 
 
@@ -22,9 +22,7 @@ func move_velocity(target_velocity: Vector2) -> void:
 		return
 	body.velocity = body.velocity.lerp(target_velocity, acceleration)
 	if sprite and target_velocity.x != 0.0:
-		sprite.flip_h = target_velocity.x < 0.0
-		if sprite_flip_inverted:
-			sprite.flip_h = not sprite.flip_h
+		_apply_flip(target_velocity.x < 0.0)
 	body.move_and_slide()
 
 
@@ -34,6 +32,15 @@ func stop() -> void:
 		return
 	body.velocity = body.velocity.lerp(Vector2.ZERO, friction)
 	body.move_and_slide()
+
+
+func _apply_flip(flip: bool) -> void:
+	if sprite_flip_inverted:
+		flip = not flip
+	if sprite is Sprite2D:
+		(sprite as Sprite2D).flip_h = flip
+	elif sprite is AnimatedSprite2D:
+		(sprite as AnimatedSprite2D).flip_h = flip
 
 
 func _can_slide(body: CharacterBody2D) -> bool:

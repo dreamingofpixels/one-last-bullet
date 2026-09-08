@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://wcun7ki1apo7"
-path="res://.godot/imported/grunt_knife.png-23704ead73c1d17d76dce9605a0681fa.ctex"
+uid="uid://bctcvmp2ph7a4"
+path="res://.godot/imported/ogre.png-40ada3ed000798b833b12ac3fde30ed1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://entities/enemies/grunt/grunt_knife.png"
-dest_files=["res://.godot/imported/grunt_knife.png-23704ead73c1d17d76dce9605a0681fa.ctex"]
+source_file="res://entities/enemies/ogre/ogre.png"
+dest_files=["res://.godot/imported/ogre.png-40ada3ed000798b833b12ac3fde30ed1.ctex"]
 
 [params]
 

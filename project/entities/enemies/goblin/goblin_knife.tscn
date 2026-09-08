@@ -183,10 +183,8 @@ shape = SubResource("CircleShape2D_body")
 unique_name_in_owner = true
 texture_filter = 1
 sprite_frames = SubResource("SpriteFrames_6pmnr")
-animation = &"running"
+animation = &"idle"
 autoplay = "idle"
-frame = 4
-frame_progress = 0.002340142
 
 [node name="Components" type="Node2D" parent="." unique_id=1708509998]
 script = ExtResource("1_ou6hp")
@@ -205,14 +203,17 @@ script = ExtResource("4_rnks7")
 damage = 5.0
 contact_damage_interval = 0.75
 
-[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=415019116]
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=415019116 node_paths=PackedStringArray("sprite")]
 unique_name_in_owner = true
 script = ExtResource("5_3qshg")
+sprite = NodePath("../../Sprite2D")
 
-[node name="MovementComponent" type="Node2D" parent="Components" unique_id=62013091]
+[node name="MovementComponent" type="Node2D" parent="Components" unique_id=62013091 node_paths=PackedStringArray("sprite")]
 unique_name_in_owner = true
 script = ExtResource("6_x7idi")
 move_speed = 70.0
+sprite = NodePath("../../Sprite2D")
+sprite_flip_inverted = true
 
 [node name="KnockbackComponent" parent="Components" unique_id=567020924 instance=ExtResource("7_wgcjf")]
 unique_name_in_owner = true

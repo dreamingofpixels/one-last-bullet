@@ -67,9 +67,9 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - Starting mana, opening orbs, and circle glyph inventory are authored on the level via **`RunStartConfig`** (`run_start_default.tres`: 0 mana, Ghost/Contagion/Conduit, one Common Air `static`). Mana label in the inventory bar updates live on deposit/spend.
 
 ## Enemies
-- Two chaser enemies (`grunt_knife`, `brute`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking, while still dealing **1 contact damage** on a ~0.75s tick once overlapping.
-- Grunts and brutes use scene-authored HP (`grunt` **20 HP**, `brute` **50 HP**); orb hits chip them. Melee knockback is parked (`melee_enabled = false`). Brute HP/damage can be tuned on the scene.
-- Enemies arrive in **authored waves** (`EnemySpawner`: count, types, delay between waves). Desert prototype: **3 grunts**, then **1 brute** after **6s** (waves can overlap if the first is not cleared in time). Each spawn telegraphs with a pulsing ground ring, then assembles over **~2s** by playing the destruction pixel-fall in reverse.
+- Two chaser enemies (`goblin_knife`, `brute`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking, while still dealing **1 contact damage** on a ~0.75s tick once overlapping.
+- Goblins and brutes use scene-authored HP (`goblin` **25 HP**, `brute` **50 HP**); orb hits chip them. Melee knockback is parked (`melee_enabled = false`). Brute HP/damage can be tuned on the scene. The goblin plays `idle` / `running` / `attacking` clips (`attacking` is cosmetic while overlapping a player).
+- Enemies arrive in **authored waves** (`EnemySpawner`: count, types, delay between waves). Desert prototype: **3 goblins**, then **1 brute** after **6s** (waves can overlap if the first is not cleared in time). Each spawn telegraphs with a pulsing ground ring, then assembles over **~2s** by playing the destruction pixel-fall in reverse.
 - Player attack does not knock enemies (melee dormant); Attack redirects orbs only.
 - More enemy types planned later.
 

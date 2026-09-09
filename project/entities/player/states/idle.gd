@@ -2,7 +2,8 @@ extends State
 
 
 func enter() -> void:
-	pass
+	if not owner.directional_sprite.is_playing_action(&"attacking"):
+		owner.directional_sprite.play(&"idle")
 
 
 func exit() -> void:
@@ -26,6 +27,9 @@ func update(_delta: float) -> void:
 	# here after attack while still holding WASD would otherwise soft-lock movement.
 	if controls.get_move_vector() != Vector2.ZERO:
 		emit_signal("finished", "walk")
+		return
+	if not owner.directional_sprite.is_playing_action(&"attacking"):
+		owner.directional_sprite.play(&"idle")
 
 
 func handle_input(event: InputEvent) -> void:

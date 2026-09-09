@@ -110,7 +110,21 @@ func try_throw_item() -> bool:
 		return false
 
 	attack_component.consume_cooldown()
+	play_attack_visual(aim)
 	return true
+
+
+## Face aim and play the body attacking clip (redirect / glyph throw / future melee).
+func play_attack_visual(aim: Vector2 = Vector2.ZERO) -> void:
+	var dir: Vector2 = aim
+	if dir.length_squared() < 0.0001:
+		dir = controls.get_aim_vector(global_position)
+	if dir.length_squared() < 0.0001:
+		dir = directional_sprite.facing_vector()
+	if dir.length_squared() < 0.0001:
+		dir = Vector2.RIGHT
+	directional_sprite.face(dir)
+	directional_sprite.play(&"attacking", true)
 
 
 func _set_spawn_inert(inert: bool) -> void:

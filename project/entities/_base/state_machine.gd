@@ -14,12 +14,19 @@ var _active: bool = false
 
 
 func _ready() -> void:
+	# Overriding _input / _physics_process auto-enables processing; keep off until
+	# deferred _initialize assigns current_state.
+	set_process_input(false)
+	set_physics_process(false)
+
 	for child in get_children():
 		if child is State:
 			_states_map[child.name.to_lower()] = child
 			child.finished.connect(_on_state_finished)
 
-	_initialize(start_state)
+	# Deferred so owner @onready refs (e.g. player.directional_sprite) exist
+	# before the start state's enter() runs. Children _ready before parents.
+	call_deferred("_initialize", start_state)
 
 
 func _initialize(initial_state: NodePath) -> void:
@@ -47,10 +54,14 @@ func set_active(value: bool) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if not _active or current_state == null:
+		return
 	current_state.update(delta)
 
 
 func _input(event: InputEvent) -> void:
+	if not _active or current_state == null:
+		return
 	current_state.handle_input(event)
 
 

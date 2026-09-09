@@ -38,9 +38,7 @@ script = ExtResource("1_abrql")
 unique_name_in_owner = true
 texture_filter = 1
 sprite_frames = ExtResource("1_frames")
-animation = &"attacking_nw"
-frame = 1
-frame_progress = 0.5381014
+animation = &"idle_sw"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=565534729]
 unique_name_in_owner = true

@@ -168,6 +168,8 @@ func try_redirect_attack() -> bool:
 
 	owner.dash_component.reset_cooldown()
 	owner.attack_component.consume_cooldown()
+	if owner.has_method("play_attack_visual"):
+		owner.play_attack_visual(aim)
 
 	return true
 

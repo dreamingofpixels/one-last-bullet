@@ -1,8 +1,8 @@
 class_name DirectionalSpriteComponent extends Node2D
 
 ## Tracks 8-way logical facing (N/S/E/W + diagonals) and plays
-## "<action>_<visual>" on an AnimatedSprite2D. Visual art is 4-way
-## diagonal only (sw/se/ne/nw); cardinals map to the nearest diagonal.
+## "<action>_<west>" on an AnimatedSprite2D. Authored art is SW/NW only;
+## SE/NE reuse those clips with flip_h. Cardinals map to the nearest diagonal.
 
 enum Facing { N, S, E, W, NE, NW, SE, SW }
 
@@ -29,6 +29,7 @@ var facing: Facing
 var _action: StringName = &"idle"
 var _current_anim: StringName = &""
 var _visual_suffix: String = "se"
+var _flip_h: bool = true
 
 
 func _ready() -> void:
@@ -51,12 +52,24 @@ func face(direction: Vector2) -> void:
 	_refresh()
 
 
-## Switch action (idle / walk / attack). Facing suffix is applied automatically.
-func play(action: StringName) -> void:
-	if action == _action:
+## Switch action (idle / moving / attacking). Facing suffix + flip applied automatically.
+## Pass restart=true to replay the same action from frame 0 (e.g. a second redirect).
+func play(action: StringName, restart: bool = false) -> void:
+	if action == _action and not restart:
 		return
 	_action = action
+	if restart:
+		_current_anim = &""
 	_refresh()
+
+
+## True while the given action clip is the current one and still playing.
+func is_playing_action(action: StringName) -> bool:
+	if _action != action:
+		return false
+	if animated_sprite == null:
+		return false
+	return animated_sprite.is_playing()
 
 
 ## Unit vector for the current 8-way facing (dash direction).
@@ -98,6 +111,7 @@ func _sync_visual() -> void:
 			_visual_suffix = "se" if _is_south_visual() else "ne"
 		Facing.W:
 			_visual_suffix = "sw" if _is_south_visual() else "nw"
+	_flip_h = _is_east_visual()
 
 
 func _is_east_visual() -> bool:
@@ -108,10 +122,15 @@ func _is_south_visual() -> bool:
 	return _visual_suffix == "se" or _visual_suffix == "sw"
 
 
+func _west_suffix() -> String:
+	return "sw" if _is_south_visual() else "nw"
+
+
 func _refresh() -> void:
 	if animated_sprite == null:
 		return
-	var anim: StringName = StringName("%s_%s" % [_action, _visual_suffix])
+	animated_sprite.flip_h = _flip_h
+	var anim: StringName = StringName("%s_%s" % [_action, _west_suffix()])
 	if anim == _current_anim:
 		return
 	_current_anim = anim

@@ -59,8 +59,6 @@ func start(direction: Vector2) -> void:
 		var dash_modulate := _saved_modulate
 		dash_modulate.a = alpha
 		animated_sprite.modulate = dash_modulate
-		if _direction.x != 0.0:
-			animated_sprite.flip_h = _direction.x < 0.0
 	if hitbox_component:
 		hitbox_component.set_invulnerable(true)
 	if dash_sound and owner is Node2D:

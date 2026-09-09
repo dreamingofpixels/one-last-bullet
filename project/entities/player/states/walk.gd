@@ -2,7 +2,8 @@ extends State
 
 
 func enter() -> void:
-	pass
+	if not owner.directional_sprite.is_playing_action(&"attacking"):
+		owner.directional_sprite.play(&"moving")
 
 
 func exit() -> void:
@@ -25,7 +26,11 @@ func update(_delta: float) -> void:
 
 	var dir := controls.get_move_vector()
 	owner.movement_component.move(dir)
-	owner.directional_sprite.face(dir)
+
+	var attacking: bool = owner.directional_sprite.is_playing_action(&"attacking")
+	if not attacking:
+		owner.directional_sprite.face(dir)
+		owner.directional_sprite.play(&"moving")
 
 	if dir == Vector2.ZERO:
 		emit_signal("finished", "idle")

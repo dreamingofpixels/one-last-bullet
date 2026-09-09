@@ -7,6 +7,7 @@ func enter() -> void:
 	if aim.length_squared() < 0.0001:
 		aim = Vector2.RIGHT
 	owner.directional_sprite.face(aim)
+	owner.directional_sprite.play(&"attacking", true)
 	owner.attack_component.start(aim)
 
 

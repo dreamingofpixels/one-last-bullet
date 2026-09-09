@@ -39,7 +39,7 @@ A Final Spell/
 │   ├── orb_tether_component.gd / .tscn  Focus + Attack redirect; capture/channel gated by capture_enabled; crystal pickup + circle activate; redirect particle preview on closest orb
 │   ├── dash_component.gd / .tscn     Fixed-distance dash with i-frames, ghost alpha, afterimages, dash SFX, + 4s cooldown ring (reset on Attack redirect); end-of-dash CollisionSeparation so phase-through never restores inside world geometry
 │   ├── collision_separation.gd      Static shape-query helpers: is_clear / resolve_along / separate (dash unstick, player watchdog, enemy spawn depenetration)
-    │   └── directional_sprite_component.gd / .tscn  8-way logical facing (4-way visual) via AnimatedSprite2D
+    │   └── directional_sprite_component.gd / .tscn  8-way logical facing; SW/NW clips + flip_h for SE/NE
     ├── audio/
     │   ├── audio_manager.gd / .tscn   Autoload: Music/SFX pools + bus helpers
     │   ├── sound_event.gd             SoundEvent Resource (streams, pitch, cooldown)
@@ -72,7 +72,7 @@ A Final Spell/
     │   │   ├── orb_in_focus.png / aim_arrow.gd
     │   │   └── orb_sfx/         bounce / begin_tether / release_tether clips + SoundEvents
     │   ├── player/
-    │   │   ├── player.tscn / .gd / player_spritesheet.png / player_frames.tres
+    │   │   ├── player.tscn / .gd / player_frames.tres / player_spritesheet_SW.png / player_spritesheet_NW.png
     │   │   ├── players.gd          Static roster helpers over the `player` group
     │   │   ├── player.png / player.aseprite / player_2.aseprite  (legacy single-frame art)
     │   │   ├── attack_texture.png / .aseprite  6-frame 16x16 arc (96x16 sheet)
@@ -179,21 +179,21 @@ A Final Spell/
 - `project/components/orb_tether_component.gd` — focus radius (48 px on player scene), … **`capture_enabled`** (false on player) gates tap capture + remote channel; tether press order: release owned tether → **summoning circle `try_activate()`** if in `DepositArea` → **glyph** pickup → orb capture (if capture on); …
 - `project/components/dash_component.gd` — … **`can_dash()`** (false while carrying a **glyph**); before restoring collision, resolves end position via `CollisionSeparation` (forward out the far side within 24 px if wall-safe, else back along dash path, else rest-normal push) …
 - `project/components/collision_separation.gd` — static `is_clear` / `resolve_along` / `separate` shape-query helpers used by dash end placement, player stuck watchdog, and enemy spawn depenetration
-- `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D` with 4-way diagonal visuals; `face(dir)` / `play(action)` / `facing_vector()`; animations named `<action>_<visual>` (`idle_sw`, later `walk_ne`, etc.); cardinals map to nearest diagonal suffix
+- `project/components/directional_sprite_component.gd` — 8-way logical facing on an `AnimatedSprite2D`; authored `idle` / `moving` / `attacking` **SW+NW** clips; SE/NE via `flip_h`; `face(dir)` / `play(action, restart)` / `is_playing_action` / `facing_vector()`; cardinals map to nearest diagonal then west clip ± flip
 
 ### State machine base
 - `project/entities/_base/state.gd` — `class_name State extends Node`; `signal finished(next_state_name)`; virtual `enter/exit/update/handle_input`
-- `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label
+- `project/entities/_base/state_machine.gd` — `@export start_state: NodePath`; `states_map` (lowercase child names); 2-deep stack; `force_state(name)`; optional debug label; start-state `enter()` is `call_deferred` so owner `@onready` refs are ready
 
 ### Entities
-- `project/entities/player/player.tscn` + `player.gd` — … carry API for **glyphs** (`pick_up_item` / `try_throw_item` / `is_carrying_item`); **KnockbackComponent** for enemy slam shove; stuck watchdog (`CollisionSeparation`) unsticks after 6 consecutive world-overlap frames while not assembling/dashing; …
+- `project/entities/player/player.tscn` + `player.gd` — … carry API for **glyphs** (`pick_up_item` / `try_throw_item` / `is_carrying_item`); **`play_attack_visual(aim)`** faces aim and restarts body `attacking` (used by redirect + glyph throw); **KnockbackComponent** for enemy slam shove; stuck watchdog (`CollisionSeparation`) unsticks after 6 consecutive world-overlap frames while not assembling/dashing; …
 - `project/entities/player/players.gd` — `class_name Players`; static roster helpers over the `player` group (`all` / `closest_to` / `count`); used by level lose, electric current, and any co-op nearest-player query
 - `project/entities/player/player_action.gd` — `class_name PlayerAction`; `@export action: String`; suffixed at runtime
 - `project/entities/player/controls.gd` — `class_name Controls`; `apply_player_index(index)`; `uses_mouse()` (P1 only); `get_move_vector()`, `get_aim_vector(origin)`, `is_attack_just_pressed()`, `is_tether_just_pressed()`, `is_dash_just_pressed()`
-- `project/entities/player/states/idle.gd` — stops movement (yields while knockback active); transitions to walk, dash; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays idle on success); out-of-range Attack does nothing while melee parked; mouse GUI gate only when `controls.uses_mouse()`; attack blocked while tethering; walk/dash blocked while tethering
-- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()` (yields while knockback active); transitions to idle, dash; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays walk on success); out-of-range Attack does nothing while melee parked; mouse GUI gate only when `controls.uses_mouse()`; attack blocked while tethering; forces idle while tethering
-- `project/entities/player/states/attack.gd` — snapshots aim, starts `AttackComponent`; returns to idle when swing ends (reachable only if `melee_enabled`)
-- `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk
+- `project/entities/player/states/idle.gd` — stops movement (yields while knockback active); plays `idle` when not mid-`attacking`; transitions to walk, dash; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays idle on success); out-of-range Attack does nothing while melee parked; mouse GUI gate only when `controls.uses_mouse()`; attack blocked while tethering; walk/dash blocked while tethering
+- `project/entities/player/states/walk.gd` — moves from `controls.get_move_vector()` (yields while knockback active); plays `moving` and `face(dir)` when not mid-`attacking`; transitions to idle, dash; attack throws a carried crystal first, else tries `try_redirect_attack()` (stays walk on success); out-of-range Attack does nothing while melee parked; mouse GUI gate only when `controls.uses_mouse()`; attack blocked while tethering; forces idle while tethering
+- `project/entities/player/states/attack.gd` — snapshots aim, `play("attacking")` + starts `AttackComponent`; returns to idle when swing ends (reachable only if `melee_enabled`)
+- `project/entities/player/states/dash.gd` — dashes along `directional_sprite.facing_vector()`; locked input until dash ends, then idle/walk; does not retarget facing or flip the sprite
 - `project/entities/orbs/blank/blank_orb.tscn` + `blank_orb.gd` (`class_name BlankOrb`) — … **`glyph_drop`** + **3 sparse glyph slots** (`apply_glyph` / `apply_glyph_at` / `has_glyph_at` / `socketed_count` / `remove_glyph`, `get_stat_snapshot`); **`begin_circle_capture`** / **`release_from_circle`** / **`assume_circle_capture`** for summoning ritual; weight knockback gated to `enemies` group; …
 - `project/entities/orbs/ghost/ghost_orb.tscn` + `ghost_orb.gd` (`class_name GhostOrb`) — dark-purple tint; skips enemy impact HP; on hit enters `POSSESSED` (hide, follow host in world space, 3 DPS via `take_damage(..., SHADOW)`, dark `damage_flash_color`); calls `super.on_hitbox_hit` for weight/splash/status; `DamageComponent.damage_kind = SHADOW` for player/breakable contact labels; emerges on `DestroyComponent.destroyed` with random `begin_flight` (no grace)
 - `project/entities/orbs/contagion/contagion_orb.tscn` + `contagion_orb.gd` (`class_name ContagionOrb`) — green tint; poison stacks from GameData `poison` via base `on_hitbox_hit`; **20%** chance to apply Disease; Disease death spread handled by `StatusComponent`
@@ -290,7 +290,7 @@ P1 keyboard/mouse actions use `device: -1` (any keyboard/mouse). P2 is gamepad-o
 - Player input always goes through the `Controls` node's `PlayerAction` children; never hardcode action strings in state or component scripts. `apply_player_index(n)` appends `""` / `"_2"` / `"_3"` / `"_4"` suffix at `_ready` time.
 - Prefer `%UniqueName` for required node references; fail fast on missing required nodes (see `.cursor/rules/godot-node-references.mdc`).
 - Audio: define sounds as `SoundEvent` Resources colocated with their clips; play through `AudioManager.play` / `play_at` (pooled players, not per-entity `AudioStreamPlayer` nodes). Buses: Master / Music / SFX via `default_bus_layout.tres`.
-- Player facing: 8-way logical facing; visuals use `<action>_<visual>` names (`idle_sw`, `walk_ne`, …) on a shared `SpriteFrames` resource; `DirectionalSpriteComponent` owns octant snap and cardinal→diagonal visual mapping.
+- Player facing: 8-way logical facing; visuals use authored `<action>_sw` / `<action>_nw` (`idle` / `moving` / `attacking`) with `flip_h` for SE/NE; `DirectionalSpriteComponent` owns octant snap, cardinal→diagonal mapping, and east flip; redirect/throw call `Player.play_attack_visual()`.
 - Do not hunt for an exported `.exe` to test; use in-editor play (see `.cursor/rules/godot-testing.mdc`).
 - UI text uses `res://ui/fonts/pixel_medium.fnt` (project `gui/theme/custom_font`). Keep the `.fnt` next to `pixel_medium.png`; import the PNG as Skip so only the BMFont importer consumes the atlas. Use font size 16 or integer multiples.
 - Level objects: origin is **bottom-center** of the art; collision size/offset lives in a per-variant `LevelObjectVariant` Resource; shapes are built in code so instances do not share a mutated sub-resource.

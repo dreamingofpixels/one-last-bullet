@@ -178,9 +178,14 @@ script = ExtResource("9_v5loy")
 enemy_scene = ExtResource("10_4ykq2")
 count = 3
 
+[sub_resource type="Resource" id="Resource_ynou2"]
+script = ExtResource("9_v5loy")
+enemy_scene = ExtResource("11_mc6if")
+metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
+
 [sub_resource type="Resource" id="EnemyWave_1"]
 script = ExtResource("8_igk5d")
-entries = Array[ExtResource("9_v5loy")]([SubResource("EnemySpawnEntry_grunts")])
+entries = Array[ExtResource("9_v5loy")]([SubResource("EnemySpawnEntry_grunts"), SubResource("Resource_ynou2")])
 
 [sub_resource type="Resource" id="EnemySpawnEntry_brute"]
 script = ExtResource("9_v5loy")
@@ -223,6 +228,16 @@ metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 script = ExtResource("8_igk5d")
 delay_before = 12.0
 entries = Array[ExtResource("9_v5loy")]([SubResource("Resource_ti24f")])
+metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
+
+[sub_resource type="Resource" id="Resource_3qshg"]
+script = ExtResource("9_v5loy")
+enemy_scene = ExtResource("11_mc6if")
+metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
+
+[sub_resource type="Resource" id="Resource_rnks7"]
+script = ExtResource("8_igk5d")
+entries = Array[ExtResource("9_v5loy")]([SubResource("Resource_3qshg")])
 metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_arena"]
@@ -398,7 +413,7 @@ unique_name_in_owner = true
 
 [node name="EnemySpawner" parent="." unique_id=127933936 instance=ExtResource("7_spawner")]
 unique_name_in_owner = true
-waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw"), SubResource("Resource_glss5")])
+waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw"), SubResource("Resource_glss5"), SubResource("Resource_rnks7")])
 assemble_duration = 1.5
 telegraph_duration = 0.3
 

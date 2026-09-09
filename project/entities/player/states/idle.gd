@@ -11,6 +11,9 @@ func exit() -> void:
 
 func update(_delta: float) -> void:
 	var controls: Controls = owner.controls
+	# Yield while enemy slam / other shove owns velocity.
+	if owner.knockback_component.is_active():
+		return
 	owner.movement_component.stop()
 	# Locked in place while tethering or channeling the orb.
 	if (

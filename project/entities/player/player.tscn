@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://components/directional_sprite_component.tscn" id="8_dir"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="8_hbar"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
+[ext_resource type="PackedScene" path="res://components/knockback_component.tscn" id="8_knockback"]
 [ext_resource type="PackedScene" uid="uid://o4pbxn2a23t6" path="res://components/orb_tether_component.tscn" id="8_tether"]
 [ext_resource type="Script" uid="uid://ckyag5seiljcb" path="res://entities/player/controls.gd" id="9_controls"]
 [ext_resource type="Script" uid="uid://di63cvw2wmcm0" path="res://entities/player/player_action.gd" id="10_action"]
@@ -37,8 +38,9 @@ script = ExtResource("1_abrql")
 unique_name_in_owner = true
 texture_filter = 1
 sprite_frames = ExtResource("1_frames")
-animation = &"idle_se"
-autoplay = "idle_se"
+animation = &"attacking_nw"
+frame = 1
+frame_progress = 0.5381014
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=565534729]
 unique_name_in_owner = true
@@ -71,6 +73,9 @@ sprite = NodePath("../../PlayerSprite")
 unique_name_in_owner = true
 script = ExtResource("6_movement")
 move_speed = 110.0
+
+[node name="KnockbackComponent" parent="Components" unique_id=1847201932 instance=ExtResource("8_knockback")]
+unique_name_in_owner = true
 
 [node name="AttackComponent" parent="Components" unique_id=2121984031 instance=ExtResource("8_attack")]
 unique_name_in_owner = true

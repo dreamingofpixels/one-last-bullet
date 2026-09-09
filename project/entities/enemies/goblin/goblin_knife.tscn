@@ -12,7 +12,7 @@
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="9_f468r"]
 [ext_resource type="PackedScene" uid="uid://doae1sw0x8emo" path="res://components/status_component.tscn" id="10_vhd37"]
 [ext_resource type="PackedScene" path="res://components/enemy_attack_component.tscn" id="11_eattack"]
-[ext_resource type="Resource" path="res://entities/enemies/goblin/goblin_knife_attack.tres" id="12_asfx"]
+[ext_resource type="Resource" uid="uid://blpxat464k04y" path="res://entities/enemies/goblin/goblin_knife_attack.tres" id="12_asfx"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 11.0
@@ -241,7 +241,9 @@ shape = SubResource("CircleShape2D_hitbox")
 [node name="EnemyAttackComponent" parent="Components" unique_id=2048123456 node_paths=PackedStringArray("animated_sprite", "movement_component", "navigation_component", "knockback_component", "status_component") instance=ExtResource("11_eattack")]
 unique_name_in_owner = true
 position = Vector2(-12, 1)
+hold_duration = 0.2
 lunge_distance = 30.0
+hit_knockback_distance = null
 hitbox_size = Vector2(24, 24)
 attack_sound = ExtResource("12_asfx")
 animated_sprite = NodePath("../../Sprite2D")

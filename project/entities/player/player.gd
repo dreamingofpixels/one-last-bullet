@@ -9,6 +9,7 @@ const STUCK_FRAMES_BEFORE_UNSTICK := 6
 var COMPONENTS: Dictionary = {}
 
 @onready var movement_component: MovementComponent = %MovementComponent
+@onready var knockback_component: KnockbackComponent = %KnockbackComponent
 @onready var attack_component: AttackComponent = %AttackComponent
 @onready var dash_component: DashComponent = %DashComponent
 @onready var orb_tether_component: OrbTetherComponent = %OrbTetherComponent

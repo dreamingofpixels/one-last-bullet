@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://bq7w3m5k8tn2r"]
 
-[ext_resource type="Script" uid="uid://c8v4n2hxpq1km" path="res://entities/enemies/ogre/ogre.gd" id="1_brute"]
+[ext_resource type="Script" uid="uid://c8v4n2hxpq1km" path="res://entities/enemies/ogre/ogre.gd" id="1_ogre"]
+[ext_resource type="Texture2D" uid="uid://dhr3c2vvuxkb4" path="res://entities/enemies/ogre/ogre_spritesheet.png" id="2_sheet"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="3_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="4_health"]
-[ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="5_damage"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="6_destroy"]
 [ext_resource type="Script" uid="uid://bbo8mjhn3vxi7" path="res://components/movement_component.gd" id="7_movement"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="8_hitbox"]
@@ -11,11 +11,210 @@
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="10_hbar"]
 [ext_resource type="PackedScene" path="res://components/navigation_component.tscn" id="11_navigation"]
 [ext_resource type="PackedScene" uid="uid://doae1sw0x8emo" path="res://components/status_component.tscn" id="12_status"]
+[ext_resource type="PackedScene" path="res://components/enemy_attack_component.tscn" id="13_eattack"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 15.0
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_6pmnr"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_f14"]
+atlas = ExtResource("2_sheet")
+region = Rect2(896, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f15"]
+atlas = ExtResource("2_sheet")
+region = Rect2(960, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f16"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1024, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f17"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1088, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f18"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1152, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f19"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1216, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f20"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1280, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f21"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1344, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f22"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1408, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f23"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1472, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f24"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1536, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f25"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1600, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f00"]
+atlas = ExtResource("2_sheet")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f01"]
+atlas = ExtResource("2_sheet")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f02"]
+atlas = ExtResource("2_sheet")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f03"]
+atlas = ExtResource("2_sheet")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f04"]
+atlas = ExtResource("2_sheet")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f05"]
+atlas = ExtResource("2_sheet")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f06"]
+atlas = ExtResource("2_sheet")
+region = Rect2(384, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f07"]
+atlas = ExtResource("2_sheet")
+region = Rect2(448, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f08"]
+atlas = ExtResource("2_sheet")
+region = Rect2(512, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f09"]
+atlas = ExtResource("2_sheet")
+region = Rect2(576, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f10"]
+atlas = ExtResource("2_sheet")
+region = Rect2(640, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f11"]
+atlas = ExtResource("2_sheet")
+region = Rect2(704, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f12"]
+atlas = ExtResource("2_sheet")
+region = Rect2(768, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f13"]
+atlas = ExtResource("2_sheet")
+region = Rect2(832, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ogre"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f14")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f15")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f16")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f17")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f18")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f19")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f20")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f21")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f22")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f23")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f24")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f25")
+}],
+"loop": 0,
+"name": &"attacking",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f00")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f01")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f02")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f03")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f04")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f05")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f06")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f07")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f08")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f09")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f10")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f11")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f12")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f13")
+}],
+"loop": 1,
+"name": &"running",
+"speed": 5.0
+}]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
 radius = 15.0
@@ -23,7 +222,7 @@ radius = 15.0
 [node name="Ogre" type="CharacterBody2D" unique_id=539860681 groups=["enemies"]]
 collision_layer = 4
 collision_mask = 5
-script = ExtResource("1_brute")
+script = ExtResource("1_ogre")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=502488451]
 position = Vector2(0, -1)
@@ -32,7 +231,9 @@ shape = SubResource("CircleShape2D_body")
 [node name="Sprite2D" type="AnimatedSprite2D" parent="." unique_id=1672423630]
 unique_name_in_owner = true
 texture_filter = 1
-sprite_frames = SubResource("SpriteFrames_6pmnr")
+sprite_frames = SubResource("SpriteFrames_ogre")
+animation = &"idle"
+autoplay = "idle"
 
 [node name="Components" type="Node2D" parent="." unique_id=550465024]
 script = ExtResource("3_handler")
@@ -44,21 +245,18 @@ destroy_component = NodePath("../DestroyComponent")
 
 [node name="HealthBarComponent" parent="Components" unique_id=1738291046 node_paths=PackedStringArray("health_component") instance=ExtResource("10_hbar")]
 health_component = NodePath("../HealthComponent")
-offset = Vector2(0, -22)
+offset = Vector2(0, -28)
 
-[node name="DamageComponent" type="Node2D" parent="Components" unique_id=621483871]
-script = ExtResource("5_damage")
-damage = 10.0
-contact_damage_interval = 0.75
-
-[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=156210785]
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=156210785 node_paths=PackedStringArray("sprite")]
 unique_name_in_owner = true
 script = ExtResource("6_destroy")
+sprite = NodePath("../../Sprite2D")
 
-[node name="MovementComponent" type="Node2D" parent="Components" unique_id=1827114338]
+[node name="MovementComponent" type="Node2D" parent="Components" unique_id=1827114338 node_paths=PackedStringArray("sprite")]
 unique_name_in_owner = true
 script = ExtResource("7_movement")
 move_speed = 50.0
+sprite = NodePath("../../Sprite2D")
 sprite_flip_inverted = true
 
 [node name="KnockbackComponent" parent="Components" unique_id=645508517 instance=ExtResource("9_knockback")]
@@ -88,10 +286,26 @@ health_component = NodePath("../HealthComponent")
 position = Vector2(0, -1)
 shape = SubResource("CircleShape2D_hitbox")
 
-[node name="StatusComponent" parent="Components" unique_id=773451002 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component", "damage_component", "destroy_component") instance=ExtResource("12_status")]
+[node name="EnemyAttackComponent" parent="Components" unique_id=2048123457 node_paths=PackedStringArray("animated_sprite", "movement_component", "navigation_component", "knockback_component", "status_component") instance=ExtResource("13_eattack")]
+unique_name_in_owner = true
+damage = 10.0
+attack_range = 44.0
+hold_duration = 0.35
+lunge_distance = 0.0
+hit_knockback_distance = 40.0
+hitbox_size = Vector2(56, 36)
+hitbox_offset = Vector2(0, 4)
+animation_speed_scale = 1.5
+animated_sprite = NodePath("../../Sprite2D")
+movement_component = NodePath("../MovementComponent")
+navigation_component = NodePath("../NavigationComponent")
+knockback_component = NodePath("../KnockbackComponent")
+status_component = NodePath("../StatusComponent")
+
+[node name="StatusComponent" parent="Components" unique_id=773451002 node_paths=PackedStringArray("health_component", "navigation_component", "movement_component", "destroy_component", "attack_component") instance=ExtResource("12_status")]
 unique_name_in_owner = true
 health_component = NodePath("../HealthComponent")
 navigation_component = NodePath("../NavigationComponent")
 movement_component = NodePath("../MovementComponent")
-damage_component = NodePath("../DamageComponent")
 destroy_component = NodePath("../DestroyComponent")
+attack_component = NodePath("../EnemyAttackComponent")

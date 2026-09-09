@@ -50,6 +50,9 @@ func start(direction: Vector2) -> void:
 	_remaining_distance = dash_distance
 	_distance_since_last_afterimage = 0.0
 	_dashing = true
+	var owner_comp = owner.get("COMPONENTS") if owner else null
+	if owner_comp != null and owner_comp.has(KnockbackComponent):
+		(owner_comp[KnockbackComponent] as KnockbackComponent).cancel()
 	if animated_sprite:
 		_saved_modulate = animated_sprite.modulate
 		var alpha: float = clampf(dash_alpha, 0.0, 1.0)

@@ -38,6 +38,16 @@ func is_active() -> bool:
 	return _active
 
 
+func cancel() -> void:
+	_velocity = Vector2.ZERO
+	_active = false
+	_collision_damage = 0.0
+	_damaged_this_push.clear()
+	set_physics_process(false)
+	if owner is CharacterBody2D:
+		(owner as CharacterBody2D).velocity = Vector2.ZERO
+
+
 func _ready() -> void:
 	set_physics_process(false)
 

@@ -1319,6 +1319,9 @@ func _apply_splash(direct_victim: Node, resolved: Dictionary) -> void:
 func _apply_weight_knockback(victim: Node) -> void:
 	if weight <= 0.0:
 		return
+	# Players own KnockbackComponent for enemy slam shove; orb weight only bowls enemies.
+	if not victim.is_in_group("enemies"):
+		return
 
 	var comp = victim.get("COMPONENTS")
 	if comp == null or not comp.has(KnockbackComponent):

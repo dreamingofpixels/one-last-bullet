@@ -1,7 +1,8 @@
 @tool
 class_name EnemyAttackComponent extends Area2D
 
-## Committed enemy melee: proximity windup → hold telegraph → lunge strike with an authored rect hitbox.
+## Committed enemy melee: proximity windup → hold telegraph → strike with an authored rect hitbox.
+## Optional self-lunge (`lunge_distance`) and/or victim shove (`hit_knockback_distance`).
 
 enum Phase { READY, WINDUP, HOLD, STRIKE, RECOVER }
 
@@ -13,6 +14,8 @@ const EDITOR_GIZMO_COLOR := Color(1.0, 0.35, 0.2, 0.85)
 @export var attack_cooldown: float = 1.25
 @export var hold_duration: float = 0.25
 @export var lunge_distance: float = 28.0
+## Shove hit players this many px away from the attacker (0 = no victim knockback).
+@export var hit_knockback_distance: float = 0.0
 @export var hitbox_size: Vector2 = Vector2(18.0, 14.0):
 	set(value):
 		hitbox_size = value
@@ -253,6 +256,23 @@ func _poll_hits() -> void:
 			continue
 		_hit_this_swing[id] = true
 		victim.health_component.take_damage(damage, HealthComponent.DamageKind.STANDARD, owner)
+		_apply_hit_knockback(root)
+
+
+func _apply_hit_knockback(victim_root: Node) -> void:
+	if hit_knockback_distance <= 0.0:
+		return
+	var comp = victim_root.get("COMPONENTS")
+	if comp == null or not comp.has(KnockbackComponent):
+		return
+	var origin: Vector2 = (owner as Node2D).global_position
+	var victim_pos: Vector2 = (victim_root as Node2D).global_position
+	var push_dir: Vector2 = victim_pos - origin
+	if push_dir.length_squared() < 0.0001:
+		push_dir = Vector2.RIGHT if _facing_sign >= 0.0 else Vector2.LEFT
+	else:
+		push_dir = push_dir.normalized()
+	(comp[KnockbackComponent] as KnockbackComponent).push_distance(push_dir, hit_knockback_distance)
 
 
 func _find_target_in_range() -> Node2D:

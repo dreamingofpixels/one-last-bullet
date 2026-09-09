@@ -107,6 +107,9 @@ var _resolved_hit_cache: Dictionary = {}
 var _grace_exception_body: CollisionObject2D = null
 var _circle_captured: bool = false
 var _capture_tween: Tween
+## Dash-vault: frozen in place while still FLYING; first holder owns aim chevron.
+var _vault_hold: bool = false
+var _vault_holder: Node2D = null
 
 
 func _ready() -> void:
@@ -164,7 +167,7 @@ static func set_bounce_off_entities(value: bool) -> void:
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
-	if state != OrbState.FLYING or _circle_captured:
+	if state != OrbState.FLYING or _circle_captured or _vault_hold:
 		return
 	if aim_direction.length_squared() < 0.0001:
 		aim_direction = Vector2.RIGHT
@@ -197,7 +200,7 @@ func _physics_process(delta: float) -> void:
 
 	match state:
 		OrbState.FLYING:
-			if _circle_captured:
+			if _circle_captured or _vault_hold:
 				linear_velocity = Vector2.ZERO
 				return
 			# Keep constant speed; direction is owned by aim_direction / _integrate_forces.
@@ -251,6 +254,7 @@ func begin_opening_tether(player: Node2D, radius: float = 32.0) -> void:
 func begin_flight(direction: Vector2, instigator: Node = null) -> void:
 	_opening_tether = false
 	_clear_tether_vars()
+	_clear_vault_hold()
 	if direction.length_squared() > 0.0001:
 		aim_direction = direction.normalized()
 	elif aim_direction.length_squared() < 0.0001:
@@ -279,8 +283,10 @@ func begin_flight(direction: Vector2, instigator: Node = null) -> void:
 
 
 func deflect(new_velocity: Vector2, instigator: Node) -> void:
-	if state != OrbState.FLYING:
+	if state != OrbState.FLYING or _circle_captured:
 		return
+	_clear_vault_hold()
+	freeze = false
 	aim_direction = new_velocity.normalized() if new_velocity.length_squared() > 0.0001 else Vector2.RIGHT
 	_apply_tether_release_boost()
 	linear_velocity = aim_direction * speed
@@ -294,8 +300,48 @@ func deflect(new_velocity: Vector2, instigator: Node) -> void:
 	deflected.emit(instigator)
 
 
+## Freeze in place for dash-vault aim window. Stays FLYING. Returns false if unavailable.
+func begin_vault_hold(player: Node2D) -> bool:
+	if state != OrbState.FLYING or _circle_captured or _vault_hold:
+		return false
+	if not is_instance_valid(player):
+		return false
+
+	_vault_hold = true
+	_vault_holder = player
+	_player = player
+	freeze = true
+	linear_velocity = Vector2.ZERO
+	damage_component.instigator = player
+	_begin_grace()
+	_reset_stall_tracker()
+	_apply_heading()
+	return true
+
+
+func is_vault_held() -> bool:
+	return _vault_hold
+
+
+func get_vault_holder() -> Node2D:
+	if not _vault_hold or not is_instance_valid(_vault_holder):
+		return null
+	return _vault_holder
+
+
+func get_collision_radius() -> float:
+	if body_collision_shape != null and body_collision_shape.shape is CircleShape2D:
+		return (body_collision_shape.shape as CircleShape2D).radius
+	return 8.0
+
+
+func _clear_vault_hold() -> void:
+	_vault_hold = false
+	_vault_holder = null
+
+
 func begin_tether(player: Node2D, radius: float) -> void:
-	if state != OrbState.FLYING:
+	if state != OrbState.FLYING or _vault_hold:
 		return
 	if not is_instance_valid(player):
 		return
@@ -588,6 +634,7 @@ func begin_circle_capture(center: Vector2, suck_speed: float, on_finished: Calla
 	if state != OrbState.FLYING or _circle_captured:
 		return
 
+	_clear_vault_hold()
 	_circle_captured = true
 	linear_velocity = Vector2.ZERO
 	trail_particles.emitting = false
@@ -637,6 +684,7 @@ func release_from_circle(direction: Vector2) -> void:
 
 ## Park this orb at the circle as if it had just finished a capture suck-in (used by Transform swap).
 func assume_circle_capture(center: Vector2) -> void:
+	_clear_vault_hold()
 	_circle_captured = true
 	if _capture_tween != null and _capture_tween.is_valid():
 		_capture_tween.kill()

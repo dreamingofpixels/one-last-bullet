@@ -56,6 +56,7 @@ func _begin_possession(host: Node2D) -> void:
 
 	_opening_tether = false
 	_clear_tether_vars()
+	_clear_vault_hold()
 	clear_redirect_preview()
 	set_in_focus(false)
 	_end_grace_visual()

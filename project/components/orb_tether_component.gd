@@ -3,6 +3,10 @@ class_name OrbTetherComponent extends Node2D
 ## Proximity focus + tether capture/release for orbs in the `orb` group.
 ## Also handles remote tether channeling (hold 2s to snap distant orb).
 ## Opening sling still uses bind_orb(); mid-combat uses closest-in-group targeting.
+## When dash_vault_enabled, mid-combat steer is dash-into-orb vault instead of proximity Attack.
+
+const PHYSICS_LAYER_WORLD := 1
+const PHYSICS_LAYER_WALL := 16
 
 @export var focus_radius: float = 32.0
 @export var min_tether_radius: float = 24.0
@@ -11,6 +15,11 @@ class_name OrbTetherComponent extends Node2D
 ## When false, skip orb capture and remote channel; keep glyph pickup, focus, and Attack redirect.
 @export var capture_enabled: bool = true
 @export var remote_tether_hold_duration: float = 2.0
+## When true, dash-into-orb vault replaces proximity Attack redirect (code for both kept).
+@export var dash_vault_enabled: bool = false
+@export var vault_catch_radius: float = 28.0
+@export var vault_hold_duration: float = 0.5
+@export var vault_landing_gap: float = 2.0
 
 ## Channel visual tuning.
 @export var channel_ring_offset: Vector2 = Vector2(0, -18)
@@ -31,6 +40,10 @@ var _channel_orb: RigidBody2D = null
 var _last_redirect_aim: Vector2 = Vector2.RIGHT
 ## Closest in-range flying orb currently showing the redirect arrow (or null).
 var _redirect_preview_orb: RigidBody2D = null
+## Dash-vault: orb held for aim window (one at a time).
+var _vault_orb: RigidBody2D = null
+var _vault_elapsed: float = 0.0
+var _vaulting: bool = false
 
 
 func _ready() -> void:
@@ -40,6 +53,8 @@ func _ready() -> void:
 
 
 func _on_tree_exiting() -> void:
+	if _vaulting:
+		_fire_vault(false)
 	_clear_redirect_preview()
 	_clear_this_player_focus()
 
@@ -72,6 +87,11 @@ func begin_opening_tether(radius: float = -1.0) -> void:
 
 func _process(delta: float) -> void:
 	var controls: Controls = owner.controls
+
+	# --- Dash-vault aim window ---
+	if _vaulting:
+		_update_vault(delta)
+		return
 
 	# --- Handle channeling state ---
 	if _channeling:
@@ -128,18 +148,24 @@ func is_channeling() -> bool:
 	return _channeling
 
 
+func is_vaulting() -> bool:
+	return _vaulting
+
+
 func get_channel_progress() -> float:
 	if not _channeling or remote_tether_hold_duration <= 0.0:
 		return 0.0
 	return clampf(_channel_elapsed / remote_tether_hold_duration, 0.0, 1.0)
 
 
-## True when the closest flying orb is in focus range (Attack will redirect instead of melee).
+## True when Attack will redirect (proximity target, or vault-held orb).
 func has_redirect_target() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
 		return false
 	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
 		return false
+	if dash_vault_enabled:
+		return _vaulting and is_instance_valid(_vault_orb)
 	return _find_closest_flying_orb(true) != null
 
 
@@ -150,13 +176,16 @@ func try_tether_press() -> bool:
 	return _try_immediate_tether()
 
 
-## Redirect the closest in-range flying orb along player aim. Skips melee; resets dash CD.
+## Redirect: vault early-fire when dash_vault_enabled, else closest in-range flying orb.
 ## Independent of the tether recapture cooldown. Returns true if a redirect happened.
 func try_redirect_attack() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
 		return false
 	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
 		return false
+
+	if dash_vault_enabled:
+		return _fire_vault(true)
 
 	var target := _find_closest_flying_orb(true)
 	if target == null or not target.has_method("deflect"):
@@ -171,6 +200,41 @@ func try_redirect_attack() -> bool:
 	if owner.has_method("play_attack_visual"):
 		owner.play_attack_visual(aim)
 
+	return true
+
+
+## Called each dash physics step. Returns true if a vault catch consumed the dash.
+func try_vault_catch(from: Vector2, to: Vector2, dash_dir: Vector2) -> bool:
+	if not dash_vault_enabled or not tether_enabled or _vaulting or _channeling:
+		return false
+	if is_tethering():
+		return false
+
+	var orb := _find_vault_catch_orb(from, to)
+	if orb == null or not orb.has_method("begin_vault_hold"):
+		return false
+
+	var dir: Vector2 = dash_dir
+	if dir.length_squared() < 0.0001:
+		dir = Vector2.RIGHT
+	else:
+		dir = dir.normalized()
+
+	# End dash + refund before placing so collision is restored for separation.
+	owner.dash_component.end_and_clear_cooldown()
+	_snap_player_opposite(orb, dir)
+
+	if not orb.begin_vault_hold(owner):
+		return true
+
+	_vaulting = true
+	_vault_orb = orb
+	_vault_elapsed = 0.0
+	_last_redirect_aim = dir
+	_redirect_preview_orb = orb
+	if orb.has_method("set_focus_requested_by"):
+		orb.set_focus_requested_by(owner, true)
+	orb.set_redirect_preview(_get_redirect_aim(), owner)
 	return true
 
 
@@ -199,6 +263,127 @@ func _draw() -> void:
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────
+
+func _update_vault(delta: float) -> void:
+	var orb := _get_vault_orb()
+	if orb == null or not orb.has_method("is_vault_held") or not orb.is_vault_held():
+		# Hold already cleared (circle capture / possess) — do not re-deflect.
+		_clear_vault_state()
+		_clear_redirect_preview()
+		return
+	if not is_instance_valid(owner):
+		_fire_vault(false)
+		return
+
+	var holder: Node = null
+	if orb.has_method("get_vault_holder"):
+		holder = orb.get_vault_holder()
+	if holder != owner:
+		_clear_vault_state()
+		_clear_redirect_preview()
+		return
+
+	_vault_elapsed += delta
+	var aim: Vector2 = _get_redirect_aim()
+	orb.set_redirect_preview(aim, owner)
+
+	if _vault_elapsed >= vault_hold_duration:
+		_fire_vault(false)
+
+
+func _fire_vault(consume_attack: bool) -> bool:
+	if not _vaulting:
+		return false
+
+	var orb := _get_vault_orb()
+	var still_held: bool = (
+		orb != null and orb.has_method("is_vault_held") and orb.is_vault_held()
+	)
+	_clear_vault_state()
+
+	if not still_held or orb == null or not orb.has_method("deflect"):
+		_clear_redirect_preview()
+		return false
+
+	var aim: Vector2 = _get_redirect_aim()
+	var instigator: Node = owner if is_instance_valid(owner) else null
+	orb.deflect(aim, instigator)
+	_clear_redirect_preview()
+
+	if consume_attack and is_instance_valid(owner):
+		owner.attack_component.consume_cooldown()
+		if owner.has_method("play_attack_visual"):
+			owner.play_attack_visual(aim)
+
+	return true
+
+
+func _clear_vault_state() -> void:
+	_vaulting = false
+	_vault_orb = null
+	_vault_elapsed = 0.0
+
+
+func _find_vault_catch_orb(from: Vector2, to: Vector2) -> RigidBody2D:
+	var best: RigidBody2D = null
+	var best_dist_sq: float = vault_catch_radius * vault_catch_radius
+	for node in get_tree().get_nodes_in_group("orb"):
+		var orb := node as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			continue
+		if not _is_orb_flying(orb):
+			continue
+		if orb.has_method("is_vault_held") and orb.is_vault_held():
+			continue
+		var orb_pos: Vector2 = (orb as Node2D).global_position
+		var dist_sq: float = _dist_sq_point_to_segment(orb_pos, from, to)
+		if dist_sq <= best_dist_sq:
+			best_dist_sq = dist_sq
+			best = orb
+	return best
+
+
+func _dist_sq_point_to_segment(point: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab: Vector2 = b - a
+	var ab_len_sq: float = ab.length_squared()
+	var t: float = 0.0
+	if ab_len_sq > 0.0001:
+		t = clampf((point - a).dot(ab) / ab_len_sq, 0.0, 1.0)
+	var closest: Vector2 = a + ab * t
+	return point.distance_squared_to(closest)
+
+
+func _snap_player_opposite(orb: RigidBody2D, dash_dir: Vector2) -> void:
+	var body := owner as CharacterBody2D
+	if body == null:
+		return
+
+	var orb_radius: float = 8.0
+	if orb.has_method("get_collision_radius"):
+		orb_radius = orb.get_collision_radius()
+
+	var player_radius: float = _get_player_body_radius()
+	var landing: Vector2 = (
+		(orb as Node2D).global_position + dash_dir * (orb_radius + player_radius + vault_landing_gap)
+	)
+	body.global_position = landing
+
+	var shape: CollisionShape2D = owner.body_collision_shape
+	if shape == null or shape.shape == null:
+		return
+	var mask: int = PHYSICS_LAYER_WORLD | PHYSICS_LAYER_WALL
+	if not CollisionSeparation.is_clear(body, shape, body.global_position, mask):
+		CollisionSeparation.separate(body, shape, mask, CollisionSeparation.MAX_PUSH_PX)
+
+
+func _get_player_body_radius() -> float:
+	var shape: CollisionShape2D = owner.body_collision_shape
+	if shape != null and shape.shape is CapsuleShape2D:
+		return (shape.shape as CapsuleShape2D).radius
+	if shape != null and shape.shape is CircleShape2D:
+		return (shape.shape as CircleShape2D).radius
+	return 6.0
+
 
 func _try_immediate_tether() -> bool:
 	# Release if this player owns a tether (one tether at a time).
@@ -296,6 +481,11 @@ func _update_focus_overlays() -> void:
 
 
 func _update_redirect_preview() -> void:
+	# Vault mode: no proximity chevron; vault window owns its own preview.
+	if dash_vault_enabled:
+		_clear_redirect_preview()
+		return
+
 	# Redirect preview is independent of tether recapture cooldown.
 	if (
 		not tether_enabled
@@ -335,6 +525,8 @@ func _clear_redirect_preview() -> void:
 
 
 func _get_redirect_aim() -> Vector2:
+	if not is_instance_valid(owner):
+		return _last_redirect_aim
 	var controls: Controls = owner.controls
 	var aim: Vector2 = controls.get_aim_vector(owner.global_position)
 	if aim.length_squared() > 0.0001:
@@ -419,3 +611,9 @@ func _get_channel_orb() -> RigidBody2D:
 	if not is_instance_valid(_channel_orb):
 		return null
 	return _channel_orb
+
+
+func _get_vault_orb() -> RigidBody2D:
+	if not is_instance_valid(_vault_orb):
+		return null
+	return _vault_orb

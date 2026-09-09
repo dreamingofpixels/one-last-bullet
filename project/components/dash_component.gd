@@ -86,6 +86,28 @@ func reset_cooldown() -> void:
 		queue_redraw()
 
 
+## End an active dash without starting cooldown (vault catch). Does not resolve end position.
+func end_and_clear_cooldown() -> void:
+	if not _dashing:
+		reset_cooldown()
+		return
+	_dashing = false
+	_remaining_distance = 0.0
+	var body := owner as CharacterBody2D
+	body.velocity = Vector2.ZERO
+	_end_phase()
+	if hitbox_component:
+		hitbox_component.set_invulnerable(false)
+	if animated_sprite:
+		animated_sprite.modulate = _saved_modulate
+	_cooldown_until_msec = 0
+	set_physics_process(false)
+	if indicator_enabled:
+		visible = false
+		set_process(false)
+		queue_redraw()
+
+
 func _physics_process(delta: float) -> void:
 	if not _dashing:
 		set_physics_process(false)
@@ -100,12 +122,20 @@ func _physics_process(delta: float) -> void:
 		body.velocity = Vector2.ZERO
 	body.move_and_slide()
 
-	var moved: float = start_pos.distance_to(body.global_position)
+	var end_pos: Vector2 = body.global_position
+	var moved: float = start_pos.distance_to(end_pos)
 	if afterimage_enabled and afterimage_interval > 0.0 and animated_sprite:
 		_distance_since_last_afterimage += moved
 		if _distance_since_last_afterimage >= afterimage_interval:
 			_spawn_afterimage(start_pos)
 			_distance_since_last_afterimage = 0.0
+
+	# Dash-vault catch: segment vs orb (player phases through orbs while dashing).
+	var tether: OrbTetherComponent = owner.orb_tether_component
+	if tether != null and tether.dash_vault_enabled:
+		if tether.try_vault_catch(start_pos, end_pos, _direction):
+			return
+
 	# Consume intended distance so a wall block cannot stall the dash forever.
 	_remaining_distance -= step
 

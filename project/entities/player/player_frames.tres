@@ -209,7 +209,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_d86uc")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attacking_nw",
 "speed": 5.0
 }, {
@@ -241,7 +241,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_am1s5")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attacking_sw",
 "speed": 5.0
 }, {

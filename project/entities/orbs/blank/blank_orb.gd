@@ -84,7 +84,7 @@ var aim_direction: Vector2 = Vector2.RIGHT
 var _player: Node2D = null
 var _grace_clear_msec: int = 0
 var _in_focus: bool = false
-## Per-player focus requests (instance_id → requester). Co-op: one player leaving range must not clear another's focus.
+## Per-player focus requests (instance_id keys). Co-op: one player leaving range must not clear another's focus.
 var _focus_requests: Dictionary = {}
 ## Player currently owning the redirect chevron preview (null = free).
 var _redirect_preview_owner: Node = null
@@ -366,7 +366,7 @@ func set_focus_requested_by(requester: Node, value: bool) -> void:
 		return
 	var requester_id: int = requester.get_instance_id()
 	if value:
-		_focus_requests[requester_id] = requester
+		_focus_requests[requester_id] = true
 	else:
 		_focus_requests.erase(requester_id)
 	_refresh_focus_visual()
@@ -394,8 +394,7 @@ func _refresh_focus_visual() -> void:
 func _prune_focus_requests() -> void:
 	var stale: Array = []
 	for requester_id in _focus_requests:
-		var requester: Node = _focus_requests[requester_id]
-		if requester == null or not is_instance_valid(requester):
+		if not is_instance_id_valid(requester_id):
 			stale.append(requester_id)
 	for requester_id in stale:
 		_focus_requests.erase(requester_id)

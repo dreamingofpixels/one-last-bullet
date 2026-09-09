@@ -76,14 +76,21 @@ func _ready() -> void:
 	ritual_menu.new_blank_orb_requested.connect(_on_new_blank_orb_requested)
 	ritual_menu.transform_requested.connect(_on_transform_requested)
 
-	await get_tree().physics_frame
+	if not await _await_physics_frame():
+		return
 	# P2 is instanced as soon as a second pad is already connected — no join button.
 	_try_add_player_2()
 	navigation_region.bake_navigation_polygon(true)
 	await navigation_region.bake_finished
+	if not is_inside_tree():
+		return
 	await _await_navigation_ready()
+	if not is_inside_tree():
+		return
 	enemy_spawner.start()
 	await _assemble_all_players()
+	if not is_inside_tree():
+		return
 	_level_intro_done = true
 	_launch_opening_orbs()
 	status_label.text = "Clear the room"
@@ -110,9 +117,26 @@ func _connect_orb_signals(orb: RigidBody2D) -> void:
 		orb.tether_released.connect(_on_orb_tether_released)
 
 
+## False if this node left the tree during the wait (reload / stop play).
+func _await_physics_frame() -> bool:
+	if not is_inside_tree():
+		return false
+	await get_tree().physics_frame
+	return is_inside_tree()
+
+
+func _await_process_frame() -> bool:
+	if not is_inside_tree():
+		return false
+	await get_tree().process_frame
+	return is_inside_tree()
+
+
 func _await_navigation_ready() -> void:
 	var probe := Vector2(320.0, 180.0)
 	for _attempt in 20:
+		if not is_inside_tree():
+			return
 		var nav_map := navigation_region.get_navigation_map()
 		var from := NavigationServer2D.map_get_closest_point(nav_map, probe)
 		var to := NavigationServer2D.map_get_closest_point(nav_map, player.global_position)
@@ -120,11 +144,14 @@ func _await_navigation_ready() -> void:
 			var path := NavigationServer2D.map_get_path(nav_map, from, to, true)
 			if path.size() >= 2:
 				return
-		await get_tree().physics_frame
+		if not await _await_physics_frame():
+			return
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("restart"):
+		if not is_inside_tree():
+			return
 		Engine.time_scale = 1.0
 		get_tree().reload_current_scene()
 		return
@@ -180,12 +207,13 @@ func _on_joy_connection_changed(_device: int, connected: bool) -> void:
 	# Hot-join after intro: assemble the new player. During intro they are already in the roster.
 	if _level_intro_done:
 		await p2.begin_level()
-		if not _game_over and not _cleared:
-			status_label.text = "Clear the room"
+		if not is_inside_tree() or _game_over or _cleared:
+			return
+		status_label.text = "Clear the room"
 
 
 func _try_add_player_2() -> CharacterBody2D:
-	if _game_over or _cleared:
+	if not is_inside_tree() or _game_over or _cleared:
 		return null
 	if not _has_second_controller():
 		return null
@@ -203,6 +231,8 @@ func _try_add_player_2() -> CharacterBody2D:
 
 
 func _assemble_all_players() -> void:
+	if not is_inside_tree():
+		return
 	var to_assemble: Array[Node2D] = []
 	for p in Players.all(get_tree()):
 		if p.has_method("begin_level"):
@@ -213,15 +243,30 @@ func _assemble_all_players() -> void:
 	# Godot forbids calling async funcs without await; kick each begin_level off via a
 	# one-shot process_frame so both players assemble in the same intro beat.
 	var remaining: Array = [to_assemble.size()]
+	var starters: Array[Callable] = []
+	var tree := get_tree()
 	for p in to_assemble:
 		var player_ref: Node2D = p
 		var start_assemble := func() -> void:
+			if not is_instance_valid(player_ref) or not player_ref.is_inside_tree():
+				remaining[0] -= 1
+				return
 			await player_ref.begin_level()
 			remaining[0] -= 1
-		get_tree().process_frame.connect(start_assemble, CONNECT_ONE_SHOT)
+		starters.append(start_assemble)
+		tree.process_frame.connect(start_assemble, CONNECT_ONE_SHOT)
+
+	# SceneTree outlives a reload; drop pending one-shots so they cannot run on freed players.
+	var drop_starters := func() -> void:
+		for starter in starters:
+			if tree.process_frame.is_connected(starter):
+				tree.process_frame.disconnect(starter)
+		remaining[0] = 0
+	tree_exiting.connect(drop_starters, CONNECT_ONE_SHOT)
 
 	while remaining[0] > 0:
-		await get_tree().process_frame
+		if not await _await_process_frame():
+			return
 
 
 func _has_player_index(index: int) -> bool:
@@ -445,7 +490,8 @@ func _on_player_died(node: Node = null) -> void:
 	_drop_carried_item_on_death(node)
 
 	# DestroyComponent emits before queue_free; count remaining after this frame.
-	await get_tree().process_frame
+	if not await _await_process_frame():
+		return
 	if _cleared or _game_over:
 		return
 

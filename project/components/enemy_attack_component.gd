@@ -7,6 +7,7 @@ class_name EnemyAttackComponent extends Area2D
 enum Phase { READY, WINDUP, HOLD, STRIKE, RECOVER }
 
 const PHYSICS_LAYER_PLAYER := 2
+const PHYSICS_LAYER_WORLD := 1
 const EDITOR_GIZMO_COLOR := Color(1.0, 0.35, 0.2, 0.85)
 
 @export var damage: float = 5.0
@@ -60,7 +61,7 @@ var _anim_finished_connected: bool = false
 
 func _ready() -> void:
 	collision_layer = 0
-	collision_mask = PHYSICS_LAYER_PLAYER
+	collision_mask = PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_WORLD
 	monitoring = false
 	monitorable = false
 	_ensure_collision_shape()
@@ -247,7 +248,9 @@ func _poll_hits() -> void:
 		if victim == null or not victim.monitoring:
 			continue
 		var root: Node = victim.owner
-		if root == null or not root.is_in_group("player"):
+		if root == null:
+			continue
+		if not root.is_in_group("player") and not root.is_in_group("breakables"):
 			continue
 		var id: int = root.get_instance_id()
 		if _hit_this_swing.has(id):

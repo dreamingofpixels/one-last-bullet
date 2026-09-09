@@ -10,10 +10,11 @@ enum OrbState { FLYING, TETHERED, POSSESSED }
 const PHYSICS_LAYER_WORLD := 1
 const PHYSICS_LAYER_PLAYER := 2
 const PHYSICS_LAYER_ENEMY := 4
+const PHYSICS_LAYER_ORB := 8
 const SPLASH_RADIUS := 50.0
 ## Body / tether probe / depenetrate default to world solids (walls, rocks, breakables).
-## When bounce_off_entities is true, flying orbs also bounce off player/enemy bodies.
-## Entity damage still comes from HitboxComponent overlap.
+## Flying orbs always collide with other orbs. When bounce_off_entities is true, they also
+## bounce off player/enemy bodies. Entity damage still comes from HitboxComponent overlap.
 const SEPARATE_STEP_PX := 2.0
 const SEPARATE_MAX_ITERS := 4
 const SEPARATE_MAX_PUSH_PX := 8.0
@@ -800,7 +801,11 @@ func _clear_grace_exception() -> void:
 
 func _apply_collision_mask() -> void:
 	if state == OrbState.FLYING and bounce_off_entities:
-		collision_mask = PHYSICS_LAYER_WORLD | PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_ENEMY
+		collision_mask = (
+			PHYSICS_LAYER_WORLD | PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_ENEMY | PHYSICS_LAYER_ORB
+		)
+	elif state == OrbState.FLYING:
+		collision_mask = PHYSICS_LAYER_WORLD | PHYSICS_LAYER_ORB
 	else:
 		collision_mask = PHYSICS_LAYER_WORLD
 
@@ -1223,11 +1228,16 @@ func _on_body_entered(body: Node) -> void:
 	# Bounce direction is owned by _integrate_forces (true contact normals).
 	# World solids (walls / rocks / breakables) take body-contact damage.
 	# Player / enemies use hitbox poll only (skip here to avoid double-hit when bouncing).
-	if body.is_in_group("player") or body.is_in_group("enemies"):
+	# Other orbs bounce but deal no damage to each other.
+	if body.is_in_group("player") or body.is_in_group("enemies") or body.is_in_group("orb"):
 		return
 	var victim_root: Node = _resolve_entity_root(body)
 	if victim_root != null:
-		if victim_root.is_in_group("player") or victim_root.is_in_group("enemies"):
+		if (
+			victim_root.is_in_group("player")
+			or victim_root.is_in_group("enemies")
+			or victim_root.is_in_group("orb")
+		):
 			return
 		_try_apply_orb_damage(victim_root)
 

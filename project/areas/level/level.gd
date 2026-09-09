@@ -9,6 +9,8 @@ const PLAYER_SCENE := preload("res://entities/player/player.tscn")
 const MAX_PLAYERS := 2
 ## Shared i-frames for all living players when the opening volley launches (P2 has no orb instigator grace).
 const OPENING_PLAYER_INVULN_SECONDS := 1.0
+## Brief mutual RigidBody exceptions so co-spawned opening orbs fan out before colliding.
+const OPENING_ORB_COLLISION_GRACE_SECONDS := 0.2
 const PHYSICS_LAYER_WORLD := 1
 const P2_SPAWN_OFFSETS: Array[Vector2] = [
 	Vector2(40.0, 0.0),
@@ -259,6 +261,7 @@ func _launch_opening_orbs() -> void:
 
 	var origin: Vector2 = summoning_circle.get_launch_origin()
 	var scenes: Array[PackedScene] = _opening_orb_scenes()
+	var spawned: Array[RigidBody2D] = []
 	for scene in scenes:
 		if scene == null:
 			continue
@@ -269,8 +272,31 @@ func _launch_opening_orbs() -> void:
 		orb.global_position = origin
 		_connect_orb_signals(orb)
 		orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
+		spawned.append(orb)
 
+	_apply_opening_orb_collision_grace(spawned)
 	_grant_opening_invulnerability()
+
+
+func _apply_opening_orb_collision_grace(orbs: Array[RigidBody2D]) -> void:
+	var count: int = orbs.size()
+	if count < 2:
+		return
+	for i in range(count):
+		for j in range(i + 1, count):
+			orbs[i].add_collision_exception_with(orbs[j])
+			orbs[j].add_collision_exception_with(orbs[i])
+	get_tree().create_timer(OPENING_ORB_COLLISION_GRACE_SECONDS).timeout.connect(
+		func() -> void:
+			for i in range(count):
+				if not is_instance_valid(orbs[i]):
+					continue
+				for j in range(i + 1, count):
+					if not is_instance_valid(orbs[j]):
+						continue
+					orbs[i].remove_collision_exception_with(orbs[j])
+					orbs[j].remove_collision_exception_with(orbs[i])
+	)
 
 
 func _opening_orb_scenes() -> Array[PackedScene]:

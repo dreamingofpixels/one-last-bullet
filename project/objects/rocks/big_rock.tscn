@@ -8,8 +8,12 @@
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="8_health"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="9_destroy"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="10_hbar"]
+[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="11_hitbox"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_placeholder"]
+size = Vector2(24, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(24, 16)
 
 [node name="BigRock" type="StaticBody2D" unique_id=1978716231]
@@ -42,3 +46,16 @@ offset = Vector2(0, -24)
 [node name="DestroyComponent" type="Node2D" parent="Components" unique_id=225461283 node_paths=PackedStringArray("sprite")]
 script = ExtResource("9_destroy")
 sprite = NodePath("../../Sprite2D")
+
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=225461284 node_paths=PackedStringArray("health_component")]
+unique_name_in_owner = true
+collision_layer = 1
+collision_mask = 0
+monitoring = true
+monitorable = true
+script = ExtResource("11_hitbox")
+health_component = NodePath("../HealthComponent")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=225461285]
+position = Vector2(0, -8)
+shape = SubResource("RectangleShape2D_hitbox")

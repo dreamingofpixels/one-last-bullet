@@ -19,6 +19,7 @@ func update(_delta: float) -> void:
 		owner.is_assembling()
 		or owner.orb_tether_component.is_tethering()
 		or owner.orb_tether_component.is_channeling()
+		or owner.orb_tether_component.is_vaulting()
 	):
 		owner.movement_component.stop()
 		emit_signal("finished", "idle")
@@ -43,7 +44,11 @@ func handle_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed(controls.dash_action.action):
-		if not owner.orb_tether_component.is_tethering() and owner.dash_component.can_dash():
+		if (
+			not owner.orb_tether_component.is_tethering()
+			and not owner.orb_tether_component.is_vaulting()
+			and owner.dash_component.can_dash()
+		):
 			emit_signal("finished", "dash")
 			return
 

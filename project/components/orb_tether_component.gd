@@ -20,6 +20,8 @@ const PHYSICS_LAYER_WALL := 16
 @export var vault_catch_radius: float = 28.0
 @export var vault_hold_duration: float = 0.5
 @export var vault_landing_gap: float = 2.0
+## Half-angle of the vault aim cone (90 = 180° total, away from the player through the orb).
+@export var vault_aim_half_angle_degrees: float = 90.0
 
 ## Channel visual tuning.
 @export var channel_ring_offset: Vector2 = Vector2(0, -18)
@@ -44,6 +46,11 @@ var _redirect_preview_orb: RigidBody2D = null
 var _vault_orb: RigidBody2D = null
 var _vault_elapsed: float = 0.0
 var _vaulting: bool = false
+## Default / fallback forward for the vault aim cone (player → orb at catch).
+var _vault_forward: Vector2 = Vector2.RIGHT
+## Orb the current dash is committed to reach (far-side landing); cleared when dash ends.
+var _vault_commit_orb: RigidBody2D = null
+var _vault_commit_dir: Vector2 = Vector2.RIGHT
 
 
 func _ready() -> void:
@@ -203,16 +210,14 @@ func try_redirect_attack() -> bool:
 	return true
 
 
-## Called each dash physics step. Returns true if a vault catch consumed the dash.
-func try_vault_catch(from: Vector2, to: Vector2, dash_dir: Vector2) -> bool:
+## While dashing: commit to the soonest orb on the remaining ray and clamp remaining
+## distance to the far-side landing so the dash walks there (no teleport).
+## Returns the remaining distance to use this frame.
+func prepare_vault_dash(from: Vector2, dash_dir: Vector2, remaining_distance: float) -> float:
 	if not dash_vault_enabled or not tether_enabled or _vaulting or _channeling:
-		return false
+		return remaining_distance
 	if is_tethering():
-		return false
-
-	var orb := _find_vault_catch_orb(from, to)
-	if orb == null or not orb.has_method("begin_vault_hold"):
-		return false
+		return remaining_distance
 
 	var dir: Vector2 = dash_dir
 	if dir.length_squared() < 0.0001:
@@ -220,22 +225,70 @@ func try_vault_catch(from: Vector2, to: Vector2, dash_dir: Vector2) -> bool:
 	else:
 		dir = dir.normalized()
 
-	# End dash + refund before placing so collision is restored for separation.
-	owner.dash_component.end_and_clear_cooldown()
-	_snap_player_opposite(orb, dir)
+	if not is_instance_valid(_vault_commit_orb) or not _is_orb_flying(_vault_commit_orb):
+		_vault_commit_orb = null
+		var orb := _find_vault_catch_orb_on_ray(from, dir, remaining_distance)
+		if orb == null:
+			return remaining_distance
+		_vault_commit_orb = orb
+		_vault_commit_dir = dir
 
-	if not orb.begin_vault_hold(owner):
+	var landing: Vector2 = _vault_landing_position(_vault_commit_orb, _vault_commit_dir)
+	var along: float = (landing - from).dot(_vault_commit_dir)
+	# Already at / past landing — finish this frame via try_finish_vault_dash.
+	if along <= 0.0:
+		return 0.0
+	return along
+
+
+## After a dash step (or when remaining hits 0): if committed and at/past the far side,
+## abort dash and start the redirect window at the current position.
+func try_finish_vault_dash(player_pos: Vector2, dash_dir: Vector2) -> bool:
+	if not dash_vault_enabled or _vaulting:
+		return false
+	if not is_instance_valid(_vault_commit_orb) or not _is_orb_flying(_vault_commit_orb):
+		_vault_commit_orb = null
+		return false
+
+	var dir: Vector2 = _vault_commit_dir
+	if dir.length_squared() < 0.0001:
+		dir = dash_dir.normalized() if dash_dir.length_squared() > 0.0001 else Vector2.RIGHT
+
+	var landing: Vector2 = _vault_landing_position(_vault_commit_orb, dir)
+	var along_to_landing: float = (landing - player_pos).dot(dir)
+	# Not yet behind the orb.
+	if along_to_landing > 1.0:
+		return false
+
+	var orb: RigidBody2D = _vault_commit_orb
+	_vault_commit_orb = null
+
+	owner.dash_component.end_and_clear_cooldown()
+	_place_player_at_vault_landing(landing)
+
+	if not orb.has_method("begin_vault_hold") or not orb.begin_vault_hold(owner):
 		return true
 
 	_vaulting = true
 	_vault_orb = orb
 	_vault_elapsed = 0.0
-	_last_redirect_aim = dir
+	_vault_forward = _compute_vault_forward(orb, dir)
+	_last_redirect_aim = _vault_forward
 	_redirect_preview_orb = orb
 	if orb.has_method("set_focus_requested_by"):
 		orb.set_focus_requested_by(owner, true)
-	orb.set_redirect_preview(_get_redirect_aim(), owner)
+	orb.set_redirect_preview(_get_vault_aim(), owner)
 	return true
+
+
+func clear_vault_dash_commit() -> void:
+	_vault_commit_orb = null
+
+
+## Legacy name kept for callers; prefer prepare_vault_dash + try_finish_vault_dash.
+func try_vault_catch(from: Vector2, dash_dir: Vector2, remaining_distance: float) -> bool:
+	var _adjusted: float = prepare_vault_dash(from, dash_dir, remaining_distance)
+	return try_finish_vault_dash(from, dash_dir)
 
 
 # ── Drawing ───────────────────────────────────────────────────────────────────
@@ -284,7 +337,7 @@ func _update_vault(delta: float) -> void:
 		return
 
 	_vault_elapsed += delta
-	var aim: Vector2 = _get_redirect_aim()
+	var aim: Vector2 = _get_vault_aim()
 	orb.set_redirect_preview(aim, owner)
 
 	if _vault_elapsed >= vault_hold_duration:
@@ -299,13 +352,13 @@ func _fire_vault(consume_attack: bool) -> bool:
 	var still_held: bool = (
 		orb != null and orb.has_method("is_vault_held") and orb.is_vault_held()
 	)
+	var aim: Vector2 = _get_vault_aim_for_orb(orb) if still_held else _vault_forward
 	_clear_vault_state()
 
 	if not still_held or orb == null or not orb.has_method("deflect"):
 		_clear_redirect_preview()
 		return false
 
-	var aim: Vector2 = _get_redirect_aim()
 	var instigator: Node = owner if is_instance_valid(owner) else null
 	orb.deflect(aim, instigator)
 	_clear_redirect_preview()
@@ -324,9 +377,13 @@ func _clear_vault_state() -> void:
 	_vault_elapsed = 0.0
 
 
-func _find_vault_catch_orb(from: Vector2, to: Vector2) -> RigidBody2D:
+## First flying orb along the remaining dash ray within vault_catch_radius.
+func _find_vault_catch_orb_on_ray(from: Vector2, dir: Vector2, length: float) -> RigidBody2D:
+	var ray_len: float = maxf(length, 0.0)
 	var best: RigidBody2D = null
-	var best_dist_sq: float = vault_catch_radius * vault_catch_radius
+	var best_along: float = INF
+	var catch_r_sq: float = vault_catch_radius * vault_catch_radius
+
 	for node in get_tree().get_nodes_in_group("orb"):
 		var orb := node as RigidBody2D
 		if orb == null or not is_instance_valid(orb):
@@ -335,39 +392,51 @@ func _find_vault_catch_orb(from: Vector2, to: Vector2) -> RigidBody2D:
 			continue
 		if orb.has_method("is_vault_held") and orb.is_vault_held():
 			continue
+
 		var orb_pos: Vector2 = (orb as Node2D).global_position
-		var dist_sq: float = _dist_sq_point_to_segment(orb_pos, from, to)
-		if dist_sq <= best_dist_sq:
-			best_dist_sq = dist_sq
+		var offset: Vector2 = orb_pos - from
+		var along: float = offset.dot(dir)
+		# Behind the dash start (with catch-radius slack) or past the remaining ray.
+		if along < -vault_catch_radius:
+			continue
+		if along > ray_len + vault_catch_radius:
+			continue
+
+		var clamped_along: float = clampf(along, 0.0, ray_len)
+		var closest_on_ray: Vector2 = from + dir * clamped_along
+		var dist_sq: float = orb_pos.distance_squared_to(closest_on_ray)
+		if dist_sq > catch_r_sq:
+			continue
+		# Prefer the soonest orb along the path.
+		if along < best_along:
+			best_along = along
 			best = orb
+
 	return best
 
 
-func _dist_sq_point_to_segment(point: Vector2, a: Vector2, b: Vector2) -> float:
-	var ab: Vector2 = b - a
-	var ab_len_sq: float = ab.length_squared()
-	var t: float = 0.0
-	if ab_len_sq > 0.0001:
-		t = clampf((point - a).dot(ab) / ab_len_sq, 0.0, 1.0)
-	var closest: Vector2 = a + ab * t
-	return point.distance_squared_to(closest)
-
-
 func _snap_player_opposite(orb: RigidBody2D, dash_dir: Vector2) -> void:
-	var body := owner as CharacterBody2D
-	if body == null:
-		return
+	_place_player_at_vault_landing(_vault_landing_position(orb, dash_dir))
 
+
+func _vault_landing_position(orb: RigidBody2D, dash_dir: Vector2) -> Vector2:
+	var dir: Vector2 = dash_dir
+	if dir.length_squared() < 0.0001:
+		dir = Vector2.RIGHT
+	else:
+		dir = dir.normalized()
 	var orb_radius: float = 8.0
 	if orb.has_method("get_collision_radius"):
 		orb_radius = orb.get_collision_radius()
-
 	var player_radius: float = _get_player_body_radius()
-	var landing: Vector2 = (
-		(orb as Node2D).global_position + dash_dir * (orb_radius + player_radius + vault_landing_gap)
-	)
-	body.global_position = landing
+	return (orb as Node2D).global_position + dir * (orb_radius + player_radius + vault_landing_gap)
 
+
+func _place_player_at_vault_landing(landing: Vector2) -> void:
+	var body := owner as CharacterBody2D
+	if body == null:
+		return
+	body.global_position = landing
 	var shape: CollisionShape2D = owner.body_collision_shape
 	if shape == null or shape.shape == null:
 		return
@@ -383,6 +452,57 @@ func _get_player_body_radius() -> float:
 	if shape != null and shape.shape is CircleShape2D:
 		return (shape.shape as CircleShape2D).radius
 	return 6.0
+
+
+## Live player → orb forward for the vault aim cone.
+func _compute_vault_forward(orb: RigidBody2D, fallback: Vector2) -> Vector2:
+	if not is_instance_valid(owner) or orb == null or not is_instance_valid(orb):
+		return fallback if fallback.length_squared() > 0.0001 else Vector2.RIGHT
+	var to_orb: Vector2 = (orb as Node2D).global_position - owner.global_position
+	if to_orb.length_squared() > 0.0001:
+		return to_orb.normalized()
+	if fallback.length_squared() > 0.0001:
+		return fallback.normalized()
+	if _vault_forward.length_squared() > 0.0001:
+		return _vault_forward
+	return Vector2.RIGHT
+
+
+## Aim during vault: clamp input to the cone around live player → orb.
+func _get_vault_aim() -> Vector2:
+	return _get_vault_aim_for_orb(_get_vault_orb())
+
+
+func _get_vault_aim_for_orb(orb: RigidBody2D) -> Vector2:
+	var raw: Vector2 = _get_redirect_aim()
+	var forward: Vector2 = _compute_vault_forward(orb, _vault_forward)
+	return _clamp_aim_to_vault_cone(raw, forward)
+
+
+func _clamp_aim_to_vault_cone(aim: Vector2, forward: Vector2) -> Vector2:
+	var fwd: Vector2 = forward
+	if fwd.length_squared() < 0.0001:
+		fwd = Vector2.RIGHT
+	else:
+		fwd = fwd.normalized()
+
+	var half_rad: float = deg_to_rad(clampf(vault_aim_half_angle_degrees, 0.0, 180.0))
+	if half_rad >= PI - 0.0001:
+		return aim if aim.length_squared() > 0.0001 else fwd
+
+	var desired: Vector2 = aim
+	if desired.length_squared() < 0.0001:
+		return fwd
+	desired = desired.normalized()
+
+	var min_dot: float = cos(half_rad)
+	if desired.dot(fwd) >= min_dot - 0.0001:
+		return desired
+
+	# Nearest cone edge (± half_angle from forward).
+	var cross_z: float = fwd.x * desired.y - fwd.y * desired.x
+	var side: float = 1.0 if cross_z >= 0.0 else -1.0
+	return fwd.rotated(side * half_rad)
 
 
 func _try_immediate_tether() -> bool:

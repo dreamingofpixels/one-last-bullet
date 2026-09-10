@@ -50,6 +50,9 @@ func start(direction: Vector2) -> void:
 	_remaining_distance = dash_distance
 	_distance_since_last_afterimage = 0.0
 	_dashing = true
+	var tether: OrbTetherComponent = owner.orb_tether_component if owner else null
+	if tether != null:
+		tether.clear_vault_dash_commit()
 	var owner_comp = owner.get("COMPONENTS") if owner else null
 	if owner_comp != null and owner_comp.has(KnockbackComponent):
 		(owner_comp[KnockbackComponent] as KnockbackComponent).cancel()
@@ -115,6 +118,15 @@ func _physics_process(delta: float) -> void:
 
 	var body := owner as CharacterBody2D
 	var start_pos: Vector2 = body.global_position
+	var tether: OrbTetherComponent = owner.orb_tether_component
+
+	# Commit to an orb on the remaining ray and shorten remaining to the far-side landing.
+	if tether != null and tether.dash_vault_enabled:
+		_remaining_distance = tether.prepare_vault_dash(start_pos, _direction, _remaining_distance)
+		# Already at/past landing — finish vault without another move.
+		if tether.try_finish_vault_dash(start_pos, _direction):
+			return
+
 	var step: float = minf(dash_speed * delta, _remaining_distance)
 	if delta > 0.0:
 		body.velocity = _direction * (step / delta)
@@ -130,16 +142,17 @@ func _physics_process(delta: float) -> void:
 			_spawn_afterimage(start_pos)
 			_distance_since_last_afterimage = 0.0
 
-	# Dash-vault catch: segment vs orb (player phases through orbs while dashing).
-	var tether: OrbTetherComponent = owner.orb_tether_component
-	if tether != null and tether.dash_vault_enabled:
-		if tether.try_vault_catch(start_pos, end_pos, _direction):
-			return
-
 	# Consume intended distance so a wall block cannot stall the dash forever.
 	_remaining_distance -= step
 
+	# Reached far side (or remaining exhausted while committed) — start redirect window.
+	if tether != null and tether.dash_vault_enabled:
+		if tether.try_finish_vault_dash(end_pos, _direction):
+			return
+
 	if _remaining_distance <= 0.0:
+		if tether != null:
+			tether.clear_vault_dash_commit()
 		_end_dash()
 
 

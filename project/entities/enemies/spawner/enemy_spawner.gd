@@ -19,7 +19,7 @@ const SPAWN_PHYSICS_MARGIN := 2.0
 
 @onready var player: CharacterBody2D = owner.get_node("%Player1")
 @onready var navigation_region: NavigationRegion2D = owner.get_node("%Navigation")
-@onready var enemies: Node2D = owner.get_node("%Enemies")
+@onready var enemies: Node2D = owner.get_node("%WorldYSort")
 
 var _pending: int = 0
 var _alive: int = 0

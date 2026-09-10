@@ -16,7 +16,7 @@ size = Vector2(14, 12)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(14, 12)
 
-[node name="AnimalSkull" type="StaticBody2D" unique_id=1710110375]
+[node name="AnimalSkull" type="StaticBody2D" unique_id=1710110375 groups=["navigation_source"]]
 collision_mask = 0
 script = ExtResource("1_script")
 variants = Array[ExtResource("2_rpnqn")]([ExtResource("3_v1")])

@@ -4,6 +4,9 @@ class_name EnemyAttackComponent extends Area2D
 ## Committed enemy melee: proximity windup → hold telegraph → strike with an authored rect hitbox.
 ## Optional self-lunge (`lunge_distance`) and/or victim shove (`hit_knockback_distance`).
 
+## Emitted once when the strike hitbox goes live (after hold). Listeners can spawn extras (e.g. shockwave).
+signal struck
+
 enum Phase { READY, WINDUP, HOLD, STRIKE, RECOVER }
 
 const PHYSICS_LAYER_PLAYER := 2
@@ -202,6 +205,7 @@ func _begin_strike() -> void:
 		# Resume from the held frame through the rest of the clip.
 		animated_sprite.play(attack_animation)
 		animated_sprite.set_frame_and_progress(lunge_frame, 0.0)
+	struck.emit()
 	_poll_hits()
 
 

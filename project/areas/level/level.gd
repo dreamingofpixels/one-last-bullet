@@ -35,7 +35,7 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 @export var run_start: RunStartConfig
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
-@onready var players_root: Node2D = %Players
+@onready var players_root: Node2D = %WorldYSort
 @onready var player: CharacterBody2D = %Player1
 @onready var summoning_circle: SummoningCircle = %SummoningCircle
 @onready var items: Node2D = %Items

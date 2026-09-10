@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3 uid="uid://bbu1y30p641p2"]
+
+[ext_resource type="Script" uid="uid://bbadqc3a5sd8v" path="res://audio/sound_event.gd" id="1_script"]
+[ext_resource type="AudioStream" uid="uid://bhroegmxi7sb4" path="res://effects/shockwave/line_shockwave.wav" id="2_stream"]
+
+[resource]
+script = ExtResource("1_script")
+streams = Array[AudioStream]([ExtResource("2_stream")])
+volume_db = 2.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 2

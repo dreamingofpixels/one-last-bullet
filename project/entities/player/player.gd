@@ -100,7 +100,7 @@ func try_throw_item() -> bool:
 	if aim.length_squared() < 0.0001:
 		aim = Vector2.RIGHT
 
-	# Players live under %Players, so Items is on the level (current scene), not our parent.
+	# Players live under %WorldYSort, so Items is on the level (current scene), not our parent.
 	var items_parent: Node = get_tree().current_scene.get_node("%Items")
 
 	var item: Glyph = _carried_item

@@ -117,8 +117,32 @@ static func _extract_frame_texture(source: Node2D) -> Texture2D:
 		var spr := source as Sprite2D
 		if spr.texture == null:
 			return null
-		# Single-frame sprites: use texture as-is (enemies, props).
-		# Multi-frame Sprite2D sheets are not used for destruction sources today.
-		return spr.texture
+		# Single-frame sprites: use texture as-is (cactus, rocks, etc.).
+		if spr.hframes <= 1 and spr.vframes <= 1 and not spr.region_enabled:
+			return spr.texture
+		var img: Image = spr.texture.get_image()
+		if img == null:
+			return null
+		var region: Rect2i = _sprite2d_frame_region(spr, img.get_width(), img.get_height())
+		return ImageTexture.create_from_image(img.get_region(region))
 
 	return null
+
+
+## Pixel rect of the currently displayed Sprite2D cell (hframes/vframes and/or region).
+static func _sprite2d_frame_region(spr: Sprite2D, tex_w: int, tex_h: int) -> Rect2i:
+	var base := Rect2i(0, 0, tex_w, tex_h)
+	if spr.region_enabled:
+		base = Rect2i(spr.region_rect)
+	var hframes: int = maxi(spr.hframes, 1)
+	var vframes: int = maxi(spr.vframes, 1)
+	var cell_w: int = base.size.x / hframes
+	var cell_h: int = base.size.y / vframes
+	var col: int = spr.frame % hframes
+	var row: int = int(spr.frame / hframes)
+	return Rect2i(
+		base.position.x + col * cell_w,
+		base.position.y + row * cell_h,
+		cell_w,
+		cell_h
+	)

@@ -20,8 +20,8 @@ const PHYSICS_LAYER_WALL := 16
 @export var vault_catch_radius: float = 28.0
 @export var vault_hold_duration: float = 0.5
 @export var vault_landing_gap: float = 2.0
-## Half-angle of the vault aim cone (90 = 180° total, away from the player through the orb).
-@export var vault_aim_half_angle_degrees: float = 90.0
+## Half-angle of the vault aim cone (180 = full 360°, 90 = 180° away from the player through the orb).
+@export var vault_aim_half_angle_degrees: float = 180.0
 ## After releasing a vaulted orb, ignore that same orb for vault catch (stops dash-away re-grab).
 @export var vault_recatch_cooldown: float = 0.35
 

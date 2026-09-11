@@ -124,7 +124,7 @@ A Final Spell/
         ├── animal_skull.png
         ├── animal_skull_variant.tres     LevelObjectVariant for the skull (collision 14×12)
         ├── cliff/
-        │   ├── cliff.tscn / cliff.gd     Breakable cliff piece; inspector kind + frame (80 HP)
+        │   ├── cliff.tscn / cliff.gd     Breakable cliff; inspector kind; runtime adjacency frames (80 HP)
         │   ├── desert_cliff_corner_SW.png / desert_cliff_corner_SE.png
         │   └── desert_cliff_horizontal_wall_1.png / desert_cliff_horizontal_wall_2.png
         └── rocks/
@@ -219,7 +219,7 @@ A Final Spell/
 - `project/objects/rocks/rock.tscn` — solid rock (no components; bounces only)
 - `project/objects/rocks/big_rock.tscn` — breakable rock; `max_health = 60.0`; Health + HealthBar + Destroy + HitboxComponent; single variant (`big_rock.tres`); scene remains, not currently placed in `desert.tscn`
 - `project/objects/animal_skull.tscn` — breakable skull; `max_health = 20.0`; Health + HealthBar + Destroy + HitboxComponent; single variant (`animal_skull_variant.tres`); scene remains, not currently placed in `desert.tscn`
-- `project/objects/cliff/cliff.tscn` + `cliff.gd` (`class_name Cliff`) — `@tool` breakable cliff piece; inspector `kind` (`corner_SW` / `corner_SE` / `wall_1` / `wall_2`) + `frame_index` from that sheet’s vertical strip (2 frames corners, 4 walls); skips random `LevelObjectVariant`; `max_health = 80`; optional collision size/offset overrides; groups `breakables` + `navigation_source`; not yet placed in `desert.tscn`; neighbor expose-texture swap still planned
+- `project/objects/cliff/cliff.tscn` + `cliff.gd` (`class_name Cliff`) — `@tool` breakable cliff piece; inspector `kind` + editable `frame_index` (preview; runtime adjacency overwrites); 32 px neighbors (corners 3 frames, walls 4); `Cliff.refresh_all_frames` on ready + destroy (dying cliff leaves `cliffs` immediately); skips random `LevelObjectVariant`; `max_health = 80`; optional collision size/offset overrides; groups `breakables` + `cliffs` + `navigation_source`; placed under `%WorldYSort/Cliffs` in `desert.tscn`
 - `project/objects/summoning_circle/summoning_circle.tscn` + `.gd` — floor circle with `%DepositArea` (player + item + **orb** mask), `%ManaPoolLabel`, `%ArcaneParticles`; owns `mana_pool` + **3-slot `glyph_inventory`**; `deposit` / `spend` / **`try_activate()`** (escalating cost **0, 5, 10…**) / **`deactivate()`** / **`receive_glyph`** / **`add_inventory_entry`** / **`insert_inventory_entry`** / **`apply_start_config`** / **`capture_orb`** / **`release_orb`** / **`swap_captured_orb`**; signals `ritual_started` / `ritual_ended` / `inventory_changed`; group `summoning_circle`
 - `project/items/glyphs/glyph.tscn` + `.gd` — RigidBody2D pickup on `item` layer; `glyph_id` + **Rarity**; per-id texture via `Glyph.texture_for_id` (GameData `glyphs.scene_path`) + **unison center-rune blink** (`glyph_rarity.gdshader` via `Glyph.apply_rarity_visual`) + Rare/Unique rising motes; **pickup** grab, carry, **pickup** throw, deposit → circle inventory or overflow mana; group **`glyphs`**
 - `project/items/glyphs/glyph_rarity.gdshader` — canvas_item: recolors bright/white center-rune pixels to a rarity base tint and blinks toward a darker tint (Common white / Rare jade / Unique purple); per-item duplicated ShaderMaterial
@@ -273,7 +273,8 @@ A Final Spell/
 | `breakables` | Breakable props (cactus, big_rock, cliff, etc.) |
 | `glyphs` | Glyph roots (`glyph.gd`) |
 | `summoning_circle` | SummoningCircle roots (`summoning_circle.gd`) |
-| `navigation_source` | Desert navmesh contributors (`LowerGround`, `Cliffs`, `Walls`, plus cactus / big_rock / animal_skull / cliff scenes) |
+| `cliffs` | Cliff roots (`cliff.gd`); adjacency frame refresh |
+| `navigation_source` | Desert navmesh contributors (`LowerGround`, `Cliffs` tile layer if present, `Walls`, plus cactus / big_rock / animal_skull / cliff scenes) |
 
 ## Input actions
 

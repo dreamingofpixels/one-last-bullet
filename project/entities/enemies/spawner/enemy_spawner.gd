@@ -44,7 +44,8 @@ func start() -> void:
 			return
 		var wave := waves[wave_index]
 		if wave != null and wave.delay_before > 0.0:
-			await get_tree().create_timer(wave.delay_before).timeout
+			# process_always=false so wave delays freeze during ritual / inspect pause
+			await get_tree().create_timer(wave.delay_before, false).timeout
 			if _stopped:
 				return
 		_waves_issued += 1
@@ -56,6 +57,7 @@ func start() -> void:
 
 func stop() -> void:
 	_stopped = true
+	_idle_living_enemies()
 
 
 func _count_planned() -> int:
@@ -107,7 +109,7 @@ func _spawn_one(scene: PackedScene) -> void:
 	SpawnTelegraphEffect.play(self, spawn_position, telegraph_duration, assemble_duration)
 
 	if telegraph_duration > 0.0:
-		await get_tree().create_timer(telegraph_duration).timeout
+		await get_tree().create_timer(telegraph_duration, false).timeout
 
 	if _stopped or not is_instance_valid(enemy):
 		return
@@ -124,6 +126,52 @@ func _spawn_one(scene: PackedScene) -> void:
 	_set_spawn_inert(enemy, false)
 	_depenetrate_enemy_from_world(enemy)
 	enemy_spawned.emit(enemy)
+
+
+func _idle_living_enemies() -> void:
+	if not is_inside_tree():
+		return
+	for node in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(node):
+			continue
+		_idle_enemy(node)
+
+
+func _idle_enemy(enemy: Node) -> void:
+	var raw: Variant = enemy.get("COMPONENTS")
+	if raw == null or not (raw is Dictionary):
+		return
+	var components: Dictionary = raw as Dictionary
+
+	var attack: EnemyAttackComponent = components.get(EnemyAttackComponent)
+	if attack:
+		attack.set_active(false)
+
+	var navigation: NavigationComponent = components.get(NavigationComponent)
+	if navigation:
+		navigation.set_chasing(false)
+
+	var knockback: KnockbackComponent = components.get(KnockbackComponent)
+	if knockback:
+		knockback.cancel()
+
+	if enemy is CharacterBody2D:
+		(enemy as CharacterBody2D).velocity = Vector2.ZERO
+
+	_play_enemy_idle(enemy, components)
+
+
+func _play_enemy_idle(enemy: Node, components: Dictionary) -> void:
+	var sprite: AnimatedSprite2D = null
+	var destroy: DestroyComponent = components.get(DestroyComponent)
+	if destroy and destroy.sprite is AnimatedSprite2D:
+		sprite = destroy.sprite as AnimatedSprite2D
+	if sprite == null:
+		sprite = enemy.get_node_or_null("%Sprite2D") as AnimatedSprite2D
+	if sprite == null or sprite.sprite_frames == null:
+		return
+	if sprite.sprite_frames.has_animation(&"idle"):
+		sprite.play(&"idle")
 
 
 func _set_spawn_inert(enemy: CharacterBody2D, inert: bool) -> void:

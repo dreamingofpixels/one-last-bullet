@@ -108,6 +108,10 @@ func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 
+	if is_attacking() and Players.count(get_tree()) <= 0:
+		cancel()
+		return
+
 	var scaled_delta: float = delta * speed_multiplier
 
 	match _phase:
@@ -318,6 +322,8 @@ func _restore_chase_if_allowed() -> void:
 	if status_component and status_component.is_stunned():
 		return
 	if not _active:
+		return
+	if Players.count(get_tree()) <= 0:
 		return
 	if _was_chasing_before_attack:
 		navigation_component.set_chasing(true)

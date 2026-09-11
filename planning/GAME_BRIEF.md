@@ -23,7 +23,7 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 ## Win / lose
 - **Level win**: all enemies dead.
 - **Run win**: clear 10 levels.
-- **Lose**: all players' HP reach 0 from enemy contact or the orb (co-op: one player dying leaves the others playing).
+- **Lose**: all players' HP reach 0 from enemy contact or the orb (co-op: one player dying leaves the others playing). Remaining enemies stop chasing and return to idle.
 
 ## Orbs
 - **Design**: a **Blank Orb** enters play at level start from the summoning circle in a **random direction**, then travels and bounces freely forever. You start with **one** orb and can acquire more. Speed slow enough to interact but fast enough that avoiding it is a challenge. Speed and damage increase each time you redirect it.
@@ -67,7 +67,7 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - Starting mana, opening orbs, and circle glyph inventory are authored on the level via **`RunStartConfig`** (`run_start_default.tres`: 0 mana, Ghost/Contagion/Conduit, one Common Air `static`). Mana label in the inventory bar updates live on deposit/spend.
 
 ## Enemies
-- Two chaser enemies (`goblin_knife`, `ogre`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking.
+- Two chaser enemies (`goblin_knife`, `ogre`) **path around obstacles toward the player** and use local avoidance so packs spread instead of body-stacking. When every player is dead they cancel attacks, stop pathing, and play `idle`.
 - Goblins use a committed melee attack (`EnemyAttackComponent`): when the player is in range they stop, play `attacking`, **hold on frame 3**, then **lunge** with an authored rect hitbox + attack SFX (`goblin_knife_attack`). Damage is **only** from that swing (no passive contact tick). Breakables overlapping the live hitbox take the same damage.
 - Ogres use the same component planted (no self-lunge): hold overhead, then activate a **large around-body** hitbox that damages once and **knocks the player outward**, and spawn **eight earth-spike shockwave lines** (N, S, E, W, NW, NE, SW, SE) that erupt outward from the feet. Spike hits use the same damage/knockback as the slam. Both play `idle` / `running` / `attacking`.
 - Scene-authored HP: goblin **25**, ogre **60**. Melee knockback from the **player** Attack is parked (`melee_enabled = false`); ogre slam knockback uses the player's `KnockbackComponent`.

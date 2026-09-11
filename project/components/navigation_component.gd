@@ -22,6 +22,8 @@ var _saved_avoidance: bool = true
 
 
 func set_chasing(enabled: bool) -> void:
+	if enabled and not _has_group_target():
+		enabled = false
 	_chasing = enabled
 	set_physics_process(enabled)
 	if enabled:
@@ -32,6 +34,8 @@ func set_chasing(enabled: bool) -> void:
 		_saved_avoidance = avoidance_enabled
 		avoidance_enabled = false
 		velocity = Vector2.ZERO
+		if owner is CharacterBody2D:
+			(owner as CharacterBody2D).velocity = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -67,8 +71,8 @@ func _physics_process(delta: float) -> void:
 		_acquire_target()
 
 	if not is_instance_valid(_target):
-		movement_component.stop()
 		_reset_stuck_state(body.global_position)
+		set_chasing(false)
 		return
 
 	_repath_cooldown -= delta
@@ -121,6 +125,15 @@ func _on_velocity_computed(safe_velocity: Vector2) -> void:
 	if not _chasing:
 		return
 	movement_component.move_velocity(safe_velocity)
+
+
+func _has_group_target() -> bool:
+	if not is_inside_tree():
+		return false
+	for node in get_tree().get_nodes_in_group(target_group):
+		if node is Node2D and is_instance_valid(node):
+			return true
+	return false
 
 
 func _acquire_target() -> void:

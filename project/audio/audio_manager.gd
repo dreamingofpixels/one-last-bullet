@@ -99,6 +99,8 @@ func play_music(stream: AudioStream, fade: float = 1.0, from_position: float = 0
 	if stream == null:
 		return
 
+	_ensure_music_loops(stream)
+
 	if _music_tween != null and _music_tween.is_valid():
 		_music_tween.kill()
 
@@ -182,6 +184,17 @@ func set_bus_muted(bus: StringName, muted: bool) -> void:
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────
+
+func _ensure_music_loops(stream: AudioStream) -> void:
+	if stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
+	elif stream is AudioStreamOggVorbis:
+		(stream as AudioStreamOggVorbis).loop = true
+	elif stream is AudioStreamWAV:
+		var wav := stream as AudioStreamWAV
+		if wav.loop_mode == AudioStreamWAV.LOOP_DISABLED:
+			wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+
 
 func _build_pool(parent: Node, count: int, positional: bool) -> void:
 	for i in count:

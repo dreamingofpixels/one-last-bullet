@@ -135,7 +135,7 @@ func _tick_stun(delta: float) -> void:
 		return
 
 	_stun_remaining = 0.0
-	if navigation_component and _was_chasing_before_stun:
+	if navigation_component and _was_chasing_before_stun and Players.count(get_tree()) > 0:
 		navigation_component.set_chasing(true)
 
 

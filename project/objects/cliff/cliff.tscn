@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://qp0lxy4hhm8o"]
+
+[ext_resource type="Script" uid="uid://cjfyacjw560e" path="res://objects/cliff/cliff.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cc6eniprgcmiq" path="res://objects/cliff/desert_cliff_horizontal_wall_1.png" id="2_tex"]
+[ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="7_handler"]
+[ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="8_health"]
+[ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="9_destroy"]
+[ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="10_hbar"]
+[ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="11_hitbox"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_placeholder"]
+size = Vector2(32, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
+size = Vector2(32, 16)
+
+[node name="Cliff" type="StaticBody2D" unique_id=1390132895 groups=["breakables", "navigation_source"]]
+collision_mask = 0
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1417950090]
+unique_name_in_owner = true
+texture = ExtResource("2_tex")
+vframes = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1362914624]
+unique_name_in_owner = true
+shape = SubResource("RectangleShape2D_placeholder")
+
+[node name="Components" type="Node2D" parent="." unique_id=120446047]
+script = ExtResource("7_handler")
+
+[node name="HealthComponent" type="Node2D" parent="Components" unique_id=1874417249 node_paths=PackedStringArray("destroy_component")]
+script = ExtResource("8_health")
+max_health = 100.0
+destroy_component = NodePath("../DestroyComponent")
+
+[node name="HealthBarComponent" parent="Components" unique_id=1029861671 node_paths=PackedStringArray("health_component") instance=ExtResource("10_hbar")]
+health_component = NodePath("../HealthComponent")
+offset = Vector2(0, -84)
+
+[node name="DestroyComponent" type="Node2D" parent="Components" unique_id=557276746 node_paths=PackedStringArray("sprite")]
+script = ExtResource("9_destroy")
+sprite = NodePath("../../Sprite2D")
+
+[node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1274335967 node_paths=PackedStringArray("health_component")]
+unique_name_in_owner = true
+collision_mask = 0
+script = ExtResource("11_hitbox")
+health_component = NodePath("../HealthComponent")
+
+[node name="HitboxShape" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=822279490]
+unique_name_in_owner = true
+shape = SubResource("RectangleShape2D_hitbox")

@@ -156,10 +156,10 @@ unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "attack"
 
-[node name="TetherAction" type="Node" parent="Controls" unique_id=1421936632]
+[node name="PickupAction" type="Node" parent="Controls" unique_id=1421936632]
 unique_name_in_owner = true
 script = ExtResource("10_action")
-action = "tether"
+action = "pickup"
 
 [node name="DashAction" type="Node" parent="Controls" unique_id=520390759]
 unique_name_in_owner = true

@@ -293,7 +293,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	if event.is_action_pressed("tether"):
+	if event.is_action_pressed("pickup"):
 		if _is_holding():
 			_cancel_drag()
 			get_viewport().set_input_as_handled()

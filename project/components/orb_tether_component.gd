@@ -22,6 +22,8 @@ const PHYSICS_LAYER_WALL := 16
 @export var vault_landing_gap: float = 2.0
 ## Half-angle of the vault aim cone (90 = 180° total, away from the player through the orb).
 @export var vault_aim_half_angle_degrees: float = 90.0
+## After releasing a vaulted orb, ignore that same orb for vault catch (stops dash-away re-grab).
+@export var vault_recatch_cooldown: float = 0.35
 
 ## Channel visual tuning.
 @export var channel_ring_offset: Vector2 = Vector2(0, -18)
@@ -51,6 +53,9 @@ var _vault_forward: Vector2 = Vector2.RIGHT
 ## Orb the current dash is committed to reach (far-side landing); cleared when dash ends.
 var _vault_commit_orb: RigidBody2D = null
 var _vault_commit_dir: Vector2 = Vector2.RIGHT
+## Same orb cannot be vault-caught again until this wall-clock time (dash-away re-grab guard).
+var _vault_recatch_orb: RigidBody2D = null
+var _vault_recatch_until_msec: int = 0
 
 
 func _ready() -> void:
@@ -106,7 +111,7 @@ func _process(delta: float) -> void:
 		var channel_orb := _get_channel_orb()
 		# Cancel: button released, target invalid / not flying, or tether disabled.
 		if (
-			not controls.is_tether_pressed()
+			not controls.is_pickup_pressed()
 			or channel_orb == null
 			or not _is_orb_flying(channel_orb)
 			or not tether_enabled
@@ -125,7 +130,7 @@ func _process(delta: float) -> void:
 		return
 
 	# --- Tether input (centralized) — must run before flying guards so release works while tethered ---
-	if controls.is_tether_just_pressed():
+	if controls.is_pickup_just_pressed():
 		if _try_immediate_tether():
 			_clear_redirect_preview()
 			return
@@ -340,6 +345,18 @@ func _update_vault(delta: float) -> void:
 	var aim: Vector2 = _get_vault_aim()
 	orb.set_redirect_preview(aim, owner)
 
+	# Dash-again: fire early along aim, then start a real dash (starts cooldown).
+	# Prefer move stick / WASD for dash direction; facing stays as inbound fallback.
+	var controls: Controls = owner.controls
+	if controls.is_dash_just_pressed():
+		_fire_vault(false)
+		if is_instance_valid(owner) and owner.state_machine != null:
+			var move: Vector2 = controls.get_move_vector()
+			if move.length_squared() > 0.0001:
+				owner.directional_sprite.face(move)
+			owner.state_machine.force_state("dash")
+		return
+
 	if _vault_elapsed >= vault_hold_duration:
 		_fire_vault(false)
 
@@ -359,6 +376,8 @@ func _fire_vault(consume_attack: bool) -> bool:
 		_clear_redirect_preview()
 		return false
 
+	_begin_vault_recatch_cooldown(orb)
+
 	var instigator: Node = owner if is_instance_valid(owner) else null
 	orb.deflect(aim, instigator)
 	_clear_redirect_preview()
@@ -368,6 +387,27 @@ func _fire_vault(consume_attack: bool) -> bool:
 		if owner.has_method("play_attack_visual"):
 			owner.play_attack_visual(aim)
 
+	return true
+
+
+func _begin_vault_recatch_cooldown(orb: RigidBody2D) -> void:
+	if orb == null or not is_instance_valid(orb) or vault_recatch_cooldown <= 0.0:
+		_vault_recatch_orb = null
+		_vault_recatch_until_msec = 0
+		return
+	_vault_recatch_orb = orb
+	_vault_recatch_until_msec = Time.get_ticks_msec() + int(vault_recatch_cooldown * 1000.0)
+
+
+func _is_vault_recatch_blocked(orb: RigidBody2D) -> bool:
+	if orb == null or not is_instance_valid(_vault_recatch_orb):
+		return false
+	if orb != _vault_recatch_orb:
+		return false
+	if Time.get_ticks_msec() >= _vault_recatch_until_msec:
+		_vault_recatch_orb = null
+		_vault_recatch_until_msec = 0
+		return false
 	return true
 
 
@@ -391,6 +431,8 @@ func _find_vault_catch_orb_on_ray(from: Vector2, dir: Vector2, length: float) ->
 		if not _is_orb_flying(orb):
 			continue
 		if orb.has_method("is_vault_held") and orb.is_vault_held():
+			continue
+		if _is_vault_recatch_blocked(orb):
 			continue
 
 		var orb_pos: Vector2 = (orb as Node2D).global_position
@@ -514,6 +556,12 @@ func _try_immediate_tether() -> bool:
 		return true
 
 	if Time.get_ticks_msec() < _cooldown_until_msec:
+		return false
+
+	# Throw carried glyph on second pickup press.
+	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
+		if owner.has_method("try_throw_item"):
+			return owner.try_throw_item()
 		return false
 
 	# Activate summoning circle while standing in its DepositArea (before glyph pickup).

@@ -18,7 +18,7 @@ var player_index: int = 1
 @onready var aim_left_action: PlayerAction = %AimLeftAction
 @onready var aim_right_action: PlayerAction = %AimRightAction
 @onready var attack_action: PlayerAction = %AttackAction
-@onready var tether_action: PlayerAction = %TetherAction
+@onready var pickup_action: PlayerAction = %PickupAction
 @onready var dash_action: PlayerAction = %DashAction
 
 
@@ -67,22 +67,22 @@ func is_attack_just_pressed() -> bool:
 	return Input.is_action_just_pressed(attack_action.action)
 
 
-func is_tether_just_pressed() -> bool:
-	if tether_action.action.is_empty():
+func is_pickup_just_pressed() -> bool:
+	if pickup_action.action.is_empty():
 		return false
-	return Input.is_action_just_pressed(tether_action.action)
+	return Input.is_action_just_pressed(pickup_action.action)
 
 
-func is_tether_pressed() -> bool:
-	if tether_action.action.is_empty():
+func is_pickup_pressed() -> bool:
+	if pickup_action.action.is_empty():
 		return false
-	return Input.is_action_pressed(tether_action.action)
+	return Input.is_action_pressed(pickup_action.action)
 
 
-func is_tether_just_released() -> bool:
-	if tether_action.action.is_empty():
+func is_pickup_just_released() -> bool:
+	if pickup_action.action.is_empty():
 		return false
-	return Input.is_action_just_released(tether_action.action)
+	return Input.is_action_just_released(pickup_action.action)
 
 
 func is_dash_just_pressed() -> bool:

@@ -91,8 +91,6 @@ func clear_carried_item(item: Glyph = null) -> void:
 func try_throw_item() -> bool:
 	if not is_carrying_item():
 		return false
-	if not attack_component.can_attack():
-		return false
 
 	var aim: Vector2 = controls.get_aim_vector(global_position)
 	if aim.length_squared() < 0.0001:
@@ -109,12 +107,11 @@ func try_throw_item() -> bool:
 		_carried_item = item
 		return false
 
-	attack_component.consume_cooldown()
 	play_attack_visual(aim)
 	return true
 
 
-## Face aim and play the body attacking clip (redirect / glyph throw / future melee).
+## Face aim and play the body attacking clip (glyph throw / future melee).
 func play_attack_visual(aim: Vector2 = Vector2.ZERO) -> void:
 	var dir: Vector2 = aim
 	if dir.length_squared() < 0.0001:

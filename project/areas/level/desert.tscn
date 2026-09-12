@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://dktjay6ddgeo5" path="res://entities/enemies/goblin/goblin_knife.tscn" id="10_4ykq2"]
 [ext_resource type="PackedScene" uid="uid://qp0lxy4hhm8o" path="res://objects/cliff/cliff.tscn" id="10_dlb6r"]
 [ext_resource type="PackedScene" uid="uid://bq7w3m5k8tn2r" path="res://entities/enemies/ogre/ogre.tscn" id="11_mc6if"]
+[ext_resource type="Texture2D" uid="uid://cx0yo7qqwds70" path="res://objects/cliff/desert_cliff_vertical_wall.png" id="11_qygx2"]
 [ext_resource type="PackedScene" uid="uid://b3xqmv7y4c8et" path="res://effects/time_slow_overlay.tscn" id="12_timeslow"]
 [ext_resource type="PackedScene" uid="uid://ni4epc6h4rnd" path="res://objects/summoning_circle/summoning_circle.tscn" id="14_mc6if"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="15_font"]
@@ -158,14 +159,6 @@ separation = Vector2i(1, 1)
 [sub_resource type="TileSet" id="TileSet_6pmnr"]
 sources/0 = SubResource("TileSetAtlasSource_3bkra")
 
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_dlb6r"]
-friction = 0.0
-bounce = 1.0
-
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_qygx2"]
-friction = 0.0
-bounce = 1.0
-
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_i6s34"]
 friction = 0.0
 bounce = 1.0
@@ -183,6 +176,38 @@ friction = 0.0
 bounce = 1.0
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bph6h"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_hl55e"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_idl62"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_trig7"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_unt07"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_0h4hb"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_18scs"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_gagfv"]
+friction = 0.0
+bounce = 1.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_a4ugq"]
 friction = 0.0
 bounce = 1.0
 
@@ -345,13 +370,13 @@ position = Vector2(600, 256)
 position = Vector2(624, 256)
 
 [node name="BigRock3" parent="WorldYSort" unique_id=952171354 instance=ExtResource("5_4ykq2")]
-position = Vector2(488, 24)
+position = Vector2(424, 24)
 
 [node name="BigRock4" parent="WorldYSort" unique_id=1955602185 instance=ExtResource("5_4ykq2")]
-position = Vector2(472, 40)
+position = Vector2(296, 48)
 
 [node name="BigRock5" parent="WorldYSort" unique_id=191806002 instance=ExtResource("5_4ykq2")]
-position = Vector2(472, 56)
+position = Vector2(528, 128)
 
 [node name="BigRock10" parent="WorldYSort" unique_id=1683889156 instance=ExtResource("5_4ykq2")]
 position = Vector2(152, 80)
@@ -363,19 +388,10 @@ position = Vector2(160, 96)
 position = Vector2(40, 288)
 
 [node name="BigRock6" parent="WorldYSort" unique_id=549727229 instance=ExtResource("5_4ykq2")]
-position = Vector2(488, 72)
+position = Vector2(400, 216)
 
 [node name="BigRock7" parent="WorldYSort" unique_id=1375967798 instance=ExtResource("5_4ykq2")]
-position = Vector2(480, 88)
-
-[node name="BigRock8" parent="WorldYSort" unique_id=1402843715 instance=ExtResource("5_4ykq2")]
-position = Vector2(488, 104)
-
-[node name="BigRock9" parent="WorldYSort" unique_id=99632168 instance=ExtResource("5_4ykq2")]
-position = Vector2(480, 120)
-
-[node name="BigRock13" parent="WorldYSort" unique_id=1136247544 instance=ExtResource("5_4ykq2")]
-position = Vector2(488, 136)
+position = Vector2(392, 232)
 
 [node name="BigRock14" parent="WorldYSort" unique_id=1594919807 instance=ExtResource("5_4ykq2")]
 position = Vector2(576, 248)
@@ -394,54 +410,129 @@ position = Vector2(584, 328)
 
 [node name="Cliffs" type="Node2D" parent="WorldYSort" unique_id=776114261]
 
-[node name="Cliff" parent="WorldYSort/Cliffs" unique_id=1390132895 instance=ExtResource("10_dlb6r")]
+[node name="CliffSection1" type="Node2D" parent="WorldYSort/Cliffs" unique_id=492503312]
+
+[node name="Cliff" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1390132895 instance=ExtResource("10_dlb6r")]
 position = Vector2(0, 160)
-physics_material_override = SubResource("PhysicsMaterial_dlb6r")
+physics_material_override = SubResource("PhysicsMaterial_i6s34")
 frame_index = 1
 collision_size_override = Vector2(32, 16)
 collision_offset_override = Vector2(0, -8)
 
-[node name="Cliff2" parent="WorldYSort/Cliffs" unique_id=1466881220 instance=ExtResource("10_dlb6r")]
+[node name="Cliff2" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1466881220 instance=ExtResource("10_dlb6r")]
 position = Vector2(32, 160)
-physics_material_override = SubResource("PhysicsMaterial_qygx2")
+physics_material_override = SubResource("PhysicsMaterial_5gi8o")
 kind = 3
 collision_size_override = Vector2(32, 16)
 collision_offset_override = Vector2(0, -8)
 
-[node name="Cliff3" parent="WorldYSort/Cliffs" unique_id=165962899 instance=ExtResource("10_dlb6r")]
+[node name="Cliff3" parent="WorldYSort/Cliffs/CliffSection1" unique_id=165962899 instance=ExtResource("10_dlb6r")]
 position = Vector2(64, 160)
-physics_material_override = SubResource("PhysicsMaterial_i6s34")
-collision_size_override = Vector2(32, 16)
-collision_offset_override = Vector2(0, -8)
-
-[node name="Cliff4" parent="WorldYSort/Cliffs" unique_id=396341585 instance=ExtResource("10_dlb6r")]
-position = Vector2(96, 160)
-physics_material_override = SubResource("PhysicsMaterial_5gi8o")
-collision_size_override = Vector2(32, 16)
-collision_offset_override = Vector2(0, -8)
-
-[node name="Cliff5" parent="WorldYSort/Cliffs" unique_id=74671947 instance=ExtResource("10_dlb6r")]
-position = Vector2(128, 160)
 physics_material_override = SubResource("PhysicsMaterial_7kamk")
+collision_size_override = Vector2(32, 16)
+collision_offset_override = Vector2(0, -8)
+
+[node name="Cliff4" parent="WorldYSort/Cliffs/CliffSection1" unique_id=396341585 instance=ExtResource("10_dlb6r")]
+position = Vector2(96, 160)
+physics_material_override = SubResource("PhysicsMaterial_cl1nj")
+collision_size_override = Vector2(32, 16)
+collision_offset_override = Vector2(0, -8)
+
+[node name="Cliff5" parent="WorldYSort/Cliffs/CliffSection1" unique_id=74671947 instance=ExtResource("10_dlb6r")]
+position = Vector2(128, 160)
+physics_material_override = SubResource("PhysicsMaterial_bph6h")
 kind = 1
 frame_index = 1
 collision_size_override = Vector2(32, 16)
 collision_offset_override = Vector2(0, -8)
 
-[node name="Cliff6" parent="WorldYSort/Cliffs" unique_id=1436162261 instance=ExtResource("10_dlb6r")]
+[node name="Cliff6" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1436162261 instance=ExtResource("10_dlb6r")]
 position = Vector2(40, 96)
-physics_material_override = SubResource("PhysicsMaterial_cl1nj")
+physics_material_override = SubResource("PhysicsMaterial_hl55e")
 frame_index = 3
 collision_size_override = Vector2(32, 16)
 collision_offset_override = Vector2(0, -8)
 
-[node name="Cliff7" parent="WorldYSort/Cliffs" unique_id=1404541899 instance=ExtResource("10_dlb6r")]
+[node name="Cliff7" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1404541899 instance=ExtResource("10_dlb6r")]
 position = Vector2(72, 96)
-physics_material_override = SubResource("PhysicsMaterial_bph6h")
-kind = 3
-frame_index = 3
+physics_material_override = SubResource("PhysicsMaterial_idl62")
+kind = 1
+frame_index = 2
 collision_size_override = Vector2(32, 16)
 collision_offset_override = Vector2(0, -8)
+
+[node name="Cliff8" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1014100694 instance=ExtResource("10_dlb6r")]
+position = Vector2(240, 24)
+physics_material_override = SubResource("PhysicsMaterial_trig7")
+kind = 5
+frame_index = 2
+collision_size_override = Vector2(32, 16)
+collision_offset_override = Vector2(0, -8)
+
+[node name="Cliff9" parent="WorldYSort/Cliffs/CliffSection1" unique_id=45525979 instance=ExtResource("10_dlb6r")]
+visible = false
+position = Vector2(248, 56)
+physics_material_override = SubResource("PhysicsMaterial_unt07")
+kind = 7
+collision_size_override = Vector2(16, 32)
+collision_offset_override = Vector2(0, -16)
+
+[node name="Cliff10" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1556767833 instance=ExtResource("10_dlb6r")]
+visible = false
+position = Vector2(248, 88)
+physics_material_override = SubResource("PhysicsMaterial_0h4hb")
+kind = 7
+collision_size_override = Vector2(16, 32)
+collision_offset_override = Vector2(0, -16)
+
+[node name="Sprite2D" type="Sprite2D" parent="WorldYSort/Cliffs/CliffSection1" unique_id=549303015]
+y_sort_enabled = true
+position = Vector2(248, 32)
+texture = ExtResource("11_qygx2")
+vframes = 2
+
+[node name="Sprite2D2" type="Sprite2D" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1252886116]
+y_sort_enabled = true
+position = Vector2(248, 48)
+texture = ExtResource("11_qygx2")
+vframes = 2
+frame = 1
+
+[node name="Sprite2D3" type="Sprite2D" parent="WorldYSort/Cliffs/CliffSection1" unique_id=351294461]
+y_sort_enabled = true
+position = Vector2(248, 64)
+texture = ExtResource("11_qygx2")
+vframes = 2
+frame = 1
+
+[node name="Sprite2D4" type="Sprite2D" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1652911936]
+y_sort_enabled = true
+position = Vector2(248, 80)
+texture = ExtResource("11_qygx2")
+vframes = 2
+
+[node name="CliffSection2" type="Node2D" parent="WorldYSort/Cliffs" unique_id=928987340]
+
+[node name="Cliff" parent="WorldYSort/Cliffs/CliffSection2" unique_id=1210649232 instance=ExtResource("10_dlb6r")]
+position = Vector2(432, 120)
+physics_material_override = SubResource("PhysicsMaterial_18scs")
+kind = 0
+collision_size_override = Vector2(32, 16)
+collision_offset_override = Vector2(0, -8)
+
+[node name="Cliff2" parent="WorldYSort/Cliffs/CliffSection2" unique_id=28213190 instance=ExtResource("10_dlb6r")]
+position = Vector2(464, 120)
+physics_material_override = SubResource("PhysicsMaterial_gagfv")
+kind = 3
+collision_size_override = Vector2(32, 16)
+collision_offset_override = Vector2(0, -8)
+
+[node name="Cliff3" parent="WorldYSort/Cliffs/CliffSection2" unique_id=184009030 instance=ExtResource("10_dlb6r")]
+position = Vector2(424, 88)
+physics_material_override = SubResource("PhysicsMaterial_a4ugq")
+kind = 6
+collision_size_override = Vector2(16, 32)
+collision_offset_override = Vector2(0, -16)
 
 [node name="Player1" parent="WorldYSort" unique_id=735883009 instance=ExtResource("3_player")]
 unique_name_in_owner = true

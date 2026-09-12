@@ -7,6 +7,10 @@ enum Kind {
 	CORNER_SE,
 	WALL_1,
 	WALL_2,
+	CORNER_NW,
+	CORNER_NE,
+	VERTICAL_WALL_W,
+	VERTICAL_WALL_E,
 }
 
 const CELL_SIZE := 32.0
@@ -17,6 +21,10 @@ const _SHEET_PATHS: Dictionary = {
 	Kind.CORNER_SE: "res://objects/cliff/desert_cliff_corner_SE.png",
 	Kind.WALL_1: "res://objects/cliff/desert_cliff_horizontal_wall_1.png",
 	Kind.WALL_2: "res://objects/cliff/desert_cliff_horizontal_wall_2.png",
+	Kind.CORNER_NW: "res://objects/cliff/desert_cliff_corner_NW.png",
+	Kind.CORNER_NE: "res://objects/cliff/desert_cliff_corner_NE.png",
+	Kind.VERTICAL_WALL_W: "res://objects/cliff/desert_cliff_vertical_wall_W.png",
+	Kind.VERTICAL_WALL_E: "res://objects/cliff/desert_cliff_vertical_wall_E.png",
 }
 
 const _FRAME_COUNTS: Dictionary = {
@@ -24,9 +32,22 @@ const _FRAME_COUNTS: Dictionary = {
 	Kind.CORNER_SE: 4,
 	Kind.WALL_1: 4,
 	Kind.WALL_2: 4,
+	Kind.CORNER_NW: 4,
+	Kind.CORNER_NE: 4,
+	Kind.VERTICAL_WALL_W: 4,
+	Kind.VERTICAL_WALL_E: 4,
 }
 
-@export_enum("corner_SW", "corner_SE", "wall_1", "wall_2")
+@export_enum(
+	"corner_SW",
+	"corner_SE",
+	"wall_1",
+	"wall_2",
+	"corner_NW",
+	"corner_NE",
+	"vertical_wall_W",
+	"vertical_wall_E"
+)
 var kind: int = Kind.WALL_1:
 	set(value):
 		kind = value as Kind
@@ -119,29 +140,56 @@ func _refresh_frame_from_neighbors() -> void:
 	var has_left: bool = _has_cliff_at(Vector2(-CELL_SIZE, 0.0))
 	var has_right: bool = _has_cliff_at(Vector2(CELL_SIZE, 0.0))
 	var has_above: bool = _has_cliff_at(Vector2(0.0, -CELL_SIZE))
-	frame_index = _resolve_frame(has_left, has_right, has_above)
+	var has_below: bool = _has_cliff_at(Vector2(0.0, CELL_SIZE))
+	frame_index = _resolve_frame(has_left, has_right, has_above, has_below)
 
 
-func _resolve_frame(has_left: bool, has_right: bool, has_above: bool) -> int:
+func _resolve_frame(
+	has_left: bool, has_right: bool, has_above: bool, has_below: bool
+) -> int:
 	match kind:
 		Kind.CORNER_SW:
 			if has_above and has_right:
 				return 0
-			if not has_above and has_right:
+			if has_right or has_above:
 				return 1
-			return 2
+			return 3
 		Kind.CORNER_SE:
 			if has_above and has_left:
 				return 0
 			if not has_above and has_left:
 				return 1
-			return 2
+			if has_above and not has_left:
+				return 2
+			return 3
+		Kind.CORNER_NW:
+			if has_below and has_right:
+				return 0
+			if has_right or has_below:
+				return 1
+			return 3
+		Kind.CORNER_NE:
+			if has_below and has_left:
+				return 0
+			if not has_below and has_left:
+				return 1
+			if has_below and not has_left:
+				return 2
+			return 3
 		Kind.WALL_1, Kind.WALL_2:
 			if has_left and has_right:
 				return 0
 			if not has_left and has_right:
 				return 1
 			if has_left and not has_right:
+				return 2
+			return 3
+		Kind.VERTICAL_WALL_W, Kind.VERTICAL_WALL_E:
+			if has_above and has_below:
+				return 0
+			if has_above and not has_below:
+				return 1
+			if has_below and not has_above:
 				return 2
 			return 3
 		_:

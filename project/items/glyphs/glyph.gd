@@ -1,3 +1,4 @@
+@tool
 class_name Glyph
 extends RigidBody2D
 
@@ -7,7 +8,7 @@ enum GlyphState { GROUNDED, CARRIED, THROWN, DEPOSITING }
 const PHYSICS_LAYER_WORLD := 1
 const PHYSICS_LAYER_ITEM := 32
 const STOP_SPEED := 12.0
-const CARRY_OFFSET := Vector2(10.0, -12.0)
+const CARRY_OFFSET := Vector2(0,-16)
 const DEPOSIT_SUCK_MIN_DURATION := 0.12
 
 const MANA_BY_RARITY: Dictionary = {
@@ -168,6 +169,24 @@ static func texture_for_id(glyph_id: StringName) -> Texture2D:
 	return tex
 
 
+## Sorted GameData `glyphs` ids for inspector enum dropdowns.
+static func glyph_ids_for_inspector() -> PackedStringArray:
+	var ids: PackedStringArray = []
+	if Engine.get_main_loop() == null:
+		ids.append("coal")
+		return ids
+	for row_variant in GameData.get_table(&"glyphs"):
+		if typeof(row_variant) != TYPE_DICTIONARY:
+			continue
+		var id_s: String = String((row_variant as Dictionary).get("id", "")).strip_edges()
+		if not id_s.is_empty():
+			ids.append(id_s)
+	ids.sort()
+	if ids.is_empty():
+		ids.append("coal")
+	return ids
+
+
 var COMPONENTS: Dictionary = {}
 
 @export var glyph_id: StringName = &"coal"
@@ -179,6 +198,13 @@ var COMPONENTS: Dictionary = {}
 @export var deposit_suck_speed: float = 240.0
 @export var pickup_sound: SoundEvent = preload("res://items/item_picked_up.tres")
 @export var deposit_sound: SoundEvent = preload("res://items/mana_crystal_deposited.tres")
+
+
+func _validate_property(property: Dictionary) -> void:
+	if property.name != &"glyph_id":
+		return
+	property.hint = PROPERTY_HINT_ENUM
+	property.hint_string = ",".join(glyph_ids_for_inspector())
 
 @onready var sprite: Sprite2D = %Sprite2D
 @onready var body_collision: CollisionShape2D = %CollisionShape2D

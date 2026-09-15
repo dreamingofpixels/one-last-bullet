@@ -735,14 +735,34 @@ unique_name_in_owner = true
 
 [node name="Glyph" parent="Items" unique_id=1454728676 instance=ExtResource("12_qygx2")]
 position = Vector2(372, 120)
+can_sleep = false
+freeze = true
+freeze_mode = 1
+linear_damp_mode = 1
+angular_damp_mode = 1
+angular_damp = 100.0
 rarity = 1
 
 [node name="Glyph2" parent="Items" unique_id=915524516 instance=ExtResource("12_qygx2")]
 position = Vector2(251, 142)
+can_sleep = false
+freeze = true
+freeze_mode = 1
+linear_damp_mode = 1
+angular_damp_mode = 1
+angular_damp = 100.0
+glyph_id = &"shear"
 rarity = 1
 
 [node name="Glyph3" parent="Items" unique_id=430587660 instance=ExtResource("12_qygx2")]
 position = Vector2(267, 207)
+can_sleep = false
+freeze = true
+freeze_mode = 1
+linear_damp_mode = 1
+angular_damp_mode = 1
+angular_damp = 100.0
+glyph_id = &"shear"
 rarity = 1
 
 [node name="EnemySpawner" parent="." unique_id=127933936 instance=ExtResource("7_spawner")]

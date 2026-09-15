@@ -48,6 +48,7 @@ var _glyph_icons: Array[Sprite2D] = []
 @onready var sprite: Sprite2D = %Sprite2D
 @onready var arcane_particles: GPUParticles2D = %ArcaneParticles
 @onready var orb_info: Control = %OrbInfo
+@onready var orb_name_label: Label = %OrbNameLabel
 @onready var effect_label: Label = %EffectLabel
 @onready var damage_box: AttributeBox = %DamageBox
 @onready var self_damage_box: AttributeBox = %SelfDamageBox
@@ -403,6 +404,7 @@ func _refresh_orb_info(_force_slots: bool = true) -> void:
 	var orb: BlankOrb = get_captured_orb() as BlankOrb
 	if orb == null:
 		return
+	orb_name_label.text = orb.get_display_name().to_upper()
 	effect_label.text = _effect_text_for_orb(orb)
 	_apply_stats(orb.get_stat_snapshot())
 	_refresh_glyph_slot_icons(orb)

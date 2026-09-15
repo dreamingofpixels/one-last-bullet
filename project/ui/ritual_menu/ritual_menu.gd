@@ -519,7 +519,7 @@ func _apply_attribute_desc(box: AttributeBox) -> void:
 	var data: Dictionary = row
 	var attr_name: String = String(data.get("name", attr_id))
 	var desc: String = String(data.get("desc", ""))
-	effect_label.text = "%s — %s" % [attr_name, desc] if not desc.is_empty() else attr_name
+	effect_label.text = "%s - %s" % [attr_name, desc] if not desc.is_empty() else attr_name
 	_refresh_stats()
 
 

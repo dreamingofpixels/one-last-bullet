@@ -102,11 +102,10 @@ process_material = SubResource("ParticleProcessMaterial_arcane")
 
 [node name="OrbInfo" type="Control" parent="." unique_id=1933136328]
 unique_name_in_owner = true
-visible = false
 layout_mode = 3
 anchors_preset = 0
 offset_left = -93.0
-offset_top = -158.0
+offset_top = -177.0
 offset_right = 106.0
 offset_bottom = -31.0
 
@@ -122,20 +121,39 @@ color = Color(0, 0, 0, 0.42352942)
 [node name="OrbInFocus" type="VBoxContainer" parent="OrbInfo" unique_id=644458848]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = -1
 anchor_right = 1.0
-anchor_bottom = 1.0
+anchor_bottom = 0.99200004
+offset_left = -0.5
+offset_right = 0.5
+offset_bottom = 0.015991211
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 9
+theme_override_constants/separation = 0
 
-[node name="EffectContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus" unique_id=733674310]
-layout_mode = 2
-
-[node name="EffectLabel" type="Label" parent="OrbInfo/OrbInFocus/EffectContainer" unique_id=112360026]
+[node name="OrbNameLabel" type="Label" parent="OrbInfo/OrbInFocus" unique_id=1488119001]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(200, 47)
 layout_mode = 2
+text = "GHOST"
+label_settings = SubResource("LabelSettings_0l32g")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="OrbInfo/OrbInFocus" unique_id=849244168]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="EffectContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus/MarginContainer" unique_id=733674310]
+layout_mode = 2
+
+[node name="EffectLabel" type="Label" parent="OrbInfo/OrbInFocus/MarginContainer/EffectContainer" unique_id=112360026]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 47)
+layout_mode = 2
+size_flags_horizontal = 6
 text = "Enters and haunts enemies and deal its damage per second to them. Once dead, exits in a random direction."
 label_settings = SubResource("LabelSettings_0l32g")
 vertical_alignment = 1
@@ -143,13 +161,25 @@ autowrap_mode = 2
 
 [node name="StatsContainer" type="VBoxContainer" parent="OrbInfo/OrbInFocus" unique_id=231378692]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 4
 
 [node name="FireRow" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer" unique_id=1432138893]
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
 theme_override_constants/separation = 10
+
+[node name="FireHint" type="Label" parent="OrbInfo/OrbInFocus/StatsContainer/FireRow" unique_id=519550453]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="DamageContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer/FireRow" unique_id=636875060]
 layout_mode = 2
@@ -157,6 +187,7 @@ size_flags_horizontal = 0
 
 [node name="DamageBox" parent="OrbInfo/OrbInFocus/StatsContainer/FireRow/DamageContainer" unique_id=558950410 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 icon_id = "damage_icon"
@@ -169,6 +200,7 @@ size_flags_horizontal = 0
 
 [node name="SplashBox" parent="OrbInfo/OrbInFocus/StatsContainer/FireRow/SplashContainer" unique_id=1570272957 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "splash_icon"
 value = 0.03
@@ -180,6 +212,7 @@ size_flags_horizontal = 0
 
 [node name="BurnBox" parent="OrbInfo/OrbInFocus/StatsContainer/FireRow/BurnContainer" unique_id=516724155 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "burn_icon"
 value = 0.0
@@ -187,9 +220,20 @@ value_format = 0
 decimal_places = 0
 
 [node name="WaterRow" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer" unique_id=804258990]
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
 theme_override_constants/separation = 10
+
+[node name="WaterHint" type="Label" parent="OrbInfo/OrbInFocus/StatsContainer/WaterRow" unique_id=1407496237]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="SelfDamageContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer/WaterRow" unique_id=202392096]
 layout_mode = 2
@@ -197,6 +241,7 @@ size_flags_horizontal = 0
 
 [node name="SelfDamageBox" parent="OrbInfo/OrbInFocus/StatsContainer/WaterRow/SelfDamageContainer" unique_id=145874812 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "self_damage_icon"
 value = 8.4
@@ -208,6 +253,7 @@ size_flags_horizontal = 0
 
 [node name="GlyphDropBox" parent="OrbInfo/OrbInFocus/StatsContainer/WaterRow/GlyphDropContainer" unique_id=119513089 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "glyph_drop_icon"
 value = 0.05
@@ -219,6 +265,7 @@ size_flags_horizontal = 0
 
 [node name="ChillBox" parent="OrbInfo/OrbInFocus/StatsContainer/WaterRow/ChillContainer" unique_id=1862266612 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "chill_icon"
 value = 1.0
@@ -226,9 +273,20 @@ value_format = 0
 decimal_places = 0
 
 [node name="AirRow" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer" unique_id=1970371857]
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
 theme_override_constants/separation = 10
+
+[node name="AirHint" type="Label" parent="OrbInfo/OrbInFocus/StatsContainer/AirRow" unique_id=464072133]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="CritChanceContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer/AirRow" unique_id=1263515902]
 layout_mode = 2
@@ -236,6 +294,7 @@ size_flags_horizontal = 0
 
 [node name="CritChanceBox" parent="OrbInfo/OrbInFocus/StatsContainer/AirRow/CritChanceContainer" unique_id=1615897189 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 value = 0.01
 
@@ -245,6 +304,7 @@ size_flags_horizontal = 0
 
 [node name="SpeedBox" parent="OrbInfo/OrbInFocus/StatsContainer/AirRow/SpeedContainer" unique_id=63534021 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "speed_icon"
 value = 100.0
@@ -257,6 +317,7 @@ size_flags_horizontal = 0
 
 [node name="ShockBox" parent="OrbInfo/OrbInFocus/StatsContainer/AirRow/ShockContainer" unique_id=766443359 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "shock_icon"
 value = 0.0
@@ -264,9 +325,20 @@ value_format = 0
 decimal_places = 0
 
 [node name="EarthRow" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer" unique_id=521318967]
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
 theme_override_constants/separation = 10
+
+[node name="EarthHint" type="Label" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow" unique_id=404427638]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="CritDamageContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow" unique_id=1984149242]
 layout_mode = 2
@@ -274,6 +346,7 @@ size_flags_horizontal = 0
 
 [node name="CritDamageBox" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow/CritDamageContainer" unique_id=1325005410 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "crit_damage_icon"
 value = 2.0
@@ -285,6 +358,7 @@ size_flags_horizontal = 0
 
 [node name="WeightBox" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow/WeightContainer" unique_id=1781662311 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "weight_icon"
 value = 5.0
@@ -297,6 +371,7 @@ size_flags_horizontal = 0
 
 [node name="PoisonBox" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow/PoisonContainer" unique_id=1559502256 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 icon_id = "poison_icon"
 value = 0.0
@@ -351,45 +426,10 @@ theme_override_constants/h_separation = 21
 theme_override_constants/v_separation = 4
 columns = 2
 
-[node name="Hint1" type="Label" parent="OrbInfo/OrbInFocus/TransformSection/HintContainer" unique_id=519550453]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 0
-text = "???"
-label_settings = SubResource("LabelSettings_o7k1j")
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Hint2" type="Label" parent="OrbInfo/OrbInFocus/TransformSection/HintContainer" unique_id=1407496237]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 0
-text = "???"
-label_settings = SubResource("LabelSettings_o7k1j")
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Hint3" type="Label" parent="OrbInfo/OrbInFocus/TransformSection/HintContainer" unique_id=464072133]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 0
-text = "???"
-label_settings = SubResource("LabelSettings_o7k1j")
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Hint4" type="Label" parent="OrbInfo/OrbInFocus/TransformSection/HintContainer" unique_id=404427638]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 0
-text = "???"
-label_settings = SubResource("LabelSettings_o7k1j")
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="GlyphSlots" type="Node2D" parent="." unique_id=43664027]
 unique_name_in_owner = true
 visible = false
+z_as_relative = false
 
 [node name="GlyphSocket1" type="Sprite2D" parent="GlyphSlots" unique_id=1581169965]
 unique_name_in_owner = true

@@ -1,6 +1,6 @@
 @tool
 class_name AttributeBox
-extends HBoxContainer
+extends Control
 
 enum ValueFormat {
 	DECIMAL,

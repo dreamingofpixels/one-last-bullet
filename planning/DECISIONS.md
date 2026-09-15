@@ -43,9 +43,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase)
 
 ### Pause inspect: view-only ritual menu
-- **Decision**: Esc / gamepad Start pauses the tree and opens `RitualMenu` in **inspect** mode. Shows orb info (name, effect, 12 stats, socketed glyphs) plus the bottom orb inventory and mana. **Transform**, **recycle**, **buy**, recipe **hints**, and **glyph inventory** are hidden. Hover / controller-focus an `AttributeBox` to show GameData `attribute.desc` in the effect label. Inventory orbs are **selectable** to switch which orb’s info is shown. Close via Esc / Start / Done emits `inspect_closed` (no `release_orb`).
-- **Why**: Players need a mid-combat inventory check and attribute lookup without mutating orbs outside the live circle ritual.
-- **Alternatives**: Separate inspect HUD — duplicates layout; allow socketing from pause — skips activation cost; real-time overlay without pause — harder to read in co-op chaos.
+- **Decision**: Esc / gamepad Start pauses the tree and opens `RitualMenu` in **inspect** mode. Shows orb info (name, effect, 12 stats, socketed glyphs) plus the bottom orb inventory and mana. **Transform**, **recycle**, **buy**, recipe **hints**, and **glyph inventory** are hidden. Hover / controller-focus an `AttributeBox` to show GameData `attribute.desc` in the effect label (ASCII `Name - desc`; white Outline overlay on the focused row). Inventory orbs are **selectable** to switch which orb’s info is shown. Close via Esc / Start / Done emits `inspect_closed` (no `release_orb`).
+- **Why**: Players need a mid-combat inventory check and attribute lookup without mutating orbs outside the live circle ritual. Outline must live on a non-container root so it frames the row; pixel font lacks em dash so the separator is ASCII.
+- **Alternatives**: Separate inspect HUD — duplicates layout; allow socketing from pause — skips activation cost; real-time overlay without pause — harder to read in co-op chaos; AttributeBox as HBoxContainer with Outline child — previous, Outline became a layout column and never framed the row; Unicode em dash separator — previous, showed as missing-glyph junk in `pixel_medium`.
 - **Status**: decided (in-codebase)
 
 ### RunStartConfig: editor-authored starting mana / orbs / glyphs

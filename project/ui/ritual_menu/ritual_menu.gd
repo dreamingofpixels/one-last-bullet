@@ -33,6 +33,7 @@ enum FocusZone {
 	HINT,
 	BUY,
 	DONE,
+	STAT,
 }
 
 @onready var panel: ColorRect = %Panel
@@ -95,10 +96,13 @@ var _target_index: int = DROP_SLOT_0
 var _dragging_mouse: bool = false
 ## Mouse-hovered hint index (-1 = none). Wins over controller HINT focus for preview.
 var _hovered_hint_index: int = -1
+## Mouse-hovered attribute index (-1 = none). Wins over controller STAT focus for desc.
+var _hovered_stat_index: int = -1
+var _stat_outlines: Array[Panel] = []
 
 var _focus_zone: FocusZone = FocusZone.INV_GLYPH
 var _focus_index: int = 0
-## True after an analog flick until the left stick recenters (one step per flick).
+## True after an analog flick until the left stick must recenter (one step per flick).
 var _analog_nav_latched: bool = false
 
 
@@ -127,6 +131,12 @@ func _ready() -> void:
 		_hint_outlines.append(_ensure_outline(hint_label))
 		hint_label.mouse_entered.connect(_on_hint_hover.bind(i, true))
 		hint_label.mouse_exited.connect(_on_hint_hover.bind(i, false))
+	for i in _stat_boxes.size():
+		var box: AttributeBox = _stat_boxes[i]
+		box.mouse_filter = Control.MOUSE_FILTER_STOP
+		_stat_outlines.append(_ensure_outline(box))
+		box.mouse_entered.connect(_on_stat_hover.bind(i, true))
+		box.mouse_exited.connect(_on_stat_hover.bind(i, false))
 	_ensure_outline(recycle_socket)
 	_center_panel()
 	visible = false
@@ -164,6 +174,7 @@ func _editor_panel_size() -> Vector2:
 
 
 func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0, orbs: Array = []) -> void:
+	# Legacy paused ritual path — live upgrades use the summoning circle UI instead.
 	_menu_mode = MenuMode.RITUAL
 	_orb = orb as BlankOrb
 	_circle = circle
@@ -171,13 +182,14 @@ func open(orb: RigidBody2D, circle: SummoningCircle, new_orb_cost: float = 20.0,
 	_orbs = orbs.duplicate()
 	_cancel_drag()
 	_hovered_hint_index = -1
+	_hovered_stat_index = -1
 	visible = true
 	_set_economy_columns_visible(true)
+	inventory.set_glyph_sockets_visible(false)
 	inventory.set_orbs_selectable(false)
-	inventory.set_glyphs_interactive(true)
-	_focus_zone = FocusZone.INV_GLYPH
+	inventory.set_glyphs_interactive(false)
+	_focus_zone = FocusZone.DONE
 	_focus_index = 0
-	# Ignore a stick that was already deflected from walking into the circle.
 	_analog_nav_latched = _move_stick().length() >= ANALOG_NAV_DEADZONE
 
 	_connect_circle_signals()
@@ -198,8 +210,10 @@ func open_inspect(circle: SummoningCircle, orbs: Array = []) -> void:
 			break
 	_cancel_drag()
 	_hovered_hint_index = -1
+	_hovered_stat_index = -1
 	visible = true
 	_set_economy_columns_visible(false)
+	inventory.set_glyph_sockets_visible(false)
 	inventory.set_orbs_selectable(true)
 	inventory.set_glyphs_interactive(false)
 	_focus_zone = FocusZone.INV_ORB if _count_live_orbs() > 0 else FocusZone.DONE
@@ -218,10 +232,12 @@ func is_inspect_mode() -> bool:
 func close_menu() -> void:
 	_cancel_drag()
 	_hovered_hint_index = -1
+	_hovered_stat_index = -1
 	_hint_data.clear()
 	_disconnect_circle_signals()
 	inventory.set_orbs_selectable(false)
-	inventory.set_glyphs_interactive(true)
+	inventory.set_glyphs_interactive(false)
+	inventory.set_glyph_sockets_visible(false)
 	inventory.set_orb_menu_focus(false)
 	_set_economy_columns_visible(true)
 	_orb = null
@@ -241,8 +257,6 @@ func set_orbs(orbs: Array) -> void:
 func _connect_circle_signals() -> void:
 	if _circle == null:
 		return
-	if not _circle.inventory_changed.is_connected(_refresh_ui):
-		_circle.inventory_changed.connect(_refresh_ui)
 	if not _circle.mana_deposited.is_connected(_on_mana_changed):
 		_circle.mana_deposited.connect(_on_mana_changed)
 	if not _circle.mana_spent.is_connected(_on_mana_changed):
@@ -252,8 +266,6 @@ func _connect_circle_signals() -> void:
 func _disconnect_circle_signals() -> void:
 	if _circle == null or not is_instance_valid(_circle):
 		return
-	if _circle.inventory_changed.is_connected(_refresh_ui):
-		_circle.inventory_changed.disconnect(_refresh_ui)
 	if _circle.mana_deposited.is_connected(_on_mana_changed):
 		_circle.mana_deposited.disconnect(_on_mana_changed)
 	if _circle.mana_spent.is_connected(_on_mana_changed):
@@ -475,11 +487,53 @@ func _active_hint_preview_index() -> int:
 
 
 func _apply_orb_info_display() -> void:
+	if _menu_mode == MenuMode.INSPECT:
+		var attr_index: int = _active_stat_preview_index()
+		if attr_index >= 0 and attr_index < _stat_boxes.size():
+			_apply_attribute_desc(_stat_boxes[attr_index])
+			return
 	var preview_index: int = _active_hint_preview_index()
 	if preview_index >= 0 and preview_index < _hint_data.size():
 		_apply_hint_preview(_hint_data[preview_index])
 		return
 	_show_current_orb_info()
+
+
+func _active_stat_preview_index() -> int:
+	if _hovered_stat_index >= 0:
+		return _hovered_stat_index
+	if _focus_zone == FocusZone.STAT:
+		return _focus_index
+	return -1
+
+
+func _apply_attribute_desc(box: AttributeBox) -> void:
+	if _orb != null and is_instance_valid(_orb):
+		orb_name_label.text = _orb.get_display_name().to_upper()
+	var attr_id: StringName = box.get_attribute_id()
+	var row: Variant = GameData.get_row(&"attribute", attr_id)
+	if row == null or typeof(row) != TYPE_DICTIONARY:
+		effect_label.text = ""
+		_refresh_stats()
+		return
+	var data: Dictionary = row
+	var attr_name: String = String(data.get("name", attr_id))
+	var desc: String = String(data.get("desc", ""))
+	effect_label.text = "%s — %s" % [attr_name, desc] if not desc.is_empty() else attr_name
+	_refresh_stats()
+
+
+func _on_stat_hover(index: int, active: bool) -> void:
+	if _menu_mode != MenuMode.INSPECT:
+		return
+	if active and (index < 0 or index >= _stat_boxes.size()):
+		return
+	if active:
+		_hovered_stat_index = index
+	elif _hovered_stat_index == index:
+		_hovered_stat_index = -1
+	_apply_orb_info_display()
+	_apply_focus_visuals()
 
 
 func _show_current_orb_info() -> void:
@@ -550,8 +604,12 @@ func _refresh_orb_slots() -> void:
 
 func _refresh_inventory_bar() -> void:
 	inventory.set_orbs(_orbs, _orb)
-	inventory.set_glyphs(_circle.glyph_inventory, _held_inv_index)
-	inventory.set_mana(_circle.mana_pool)
+	inventory.set_glyphs([], -1)
+	inventory.set_glyph_sockets_visible(false)
+	if _circle != null:
+		inventory.set_mana(_circle.mana_pool)
+	else:
+		inventory.set_mana(0.0)
 
 
 func _refresh_hints() -> void:
@@ -706,24 +764,9 @@ func _on_orb_slot_gui_input(event: InputEvent, slot_index: int) -> void:
 	_begin_drag_from_orb_slot(slot_index, true)
 
 
-func _begin_drag_from_inventory(index: int, from_mouse: bool) -> void:
-	if _menu_mode == MenuMode.INSPECT:
-		return
-	if _circle == null or index < 0 or index >= _circle.glyph_inventory.size():
-		return
-	_held_inv_index = index
-	_held_orb_slot = -1
-	_held_entry = _circle.glyph_inventory[index].duplicate()
-	_dragging_mouse = from_mouse
-	_target_index = DROP_SLOT_0
-	_show_drag_preview(_held_entry)
-	inventory.set_held_glyph_index(_held_inv_index)
-	_refresh_inventory_bar()
-	if from_mouse:
-		_update_drag_preview_position(get_viewport().get_mouse_position())
-	else:
-		_snap_to_first_empty_orb_slot()
-	_refresh_drop_target_outline()
+func _begin_drag_from_inventory(_index: int, _from_mouse: bool) -> void:
+	# Circle glyph inventory removed — live ritual sockets on the floor circle.
+	return
 
 
 func _begin_drag_from_orb_slot(slot_index: int, from_mouse: bool) -> void:
@@ -858,8 +901,33 @@ func _on_controller_confirm() -> void:
 func _navigate_inspect_focus(dir: Vector2) -> void:
 	var orb_count: int = _count_live_orbs()
 	match _focus_zone:
+		FocusZone.STAT:
+			if dir.x < 0.0:
+				_focus_index = maxi(_focus_index - 1, 0)
+			elif dir.x > 0.0:
+				_focus_index = mini(_focus_index + 1, _stat_boxes.size() - 1)
+			elif dir.y > 0.0:
+				if _focus_index + 4 < _stat_boxes.size():
+					_focus_index += 4
+				elif orb_count > 0:
+					_focus_zone = FocusZone.INV_ORB
+					_focus_index = 0
+					_select_inspect_orb(_focus_index)
+					return
+				else:
+					_focus_zone = FocusZone.DONE
+					_focus_index = 0
+			elif dir.y < 0.0:
+				if _focus_index >= 4:
+					_focus_index -= 4
+				else:
+					_focus_zone = FocusZone.DONE
+					_focus_index = 0
 		FocusZone.INV_ORB:
 			if dir.y < 0.0:
+				_focus_zone = FocusZone.STAT
+				_focus_index = 0
+			elif dir.y > 0.0:
 				_focus_zone = FocusZone.DONE
 				_focus_index = 0
 			elif dir.x < 0.0:
@@ -873,13 +941,16 @@ func _navigate_inspect_focus(dir: Vector2) -> void:
 					_select_inspect_orb(_focus_index)
 					return
 		FocusZone.DONE:
-			if dir.y > 0.0 and orb_count > 0:
+			if dir.y < 0.0 and orb_count > 0:
 				_focus_zone = FocusZone.INV_ORB
 				_focus_index = 0
 				_select_inspect_orb(_focus_index)
 				return
+			elif dir.y != 0.0:
+				_focus_zone = FocusZone.STAT
+				_focus_index = 0
 		_:
-			_focus_zone = FocusZone.INV_ORB if orb_count > 0 else FocusZone.DONE
+			_focus_zone = FocusZone.STAT if _orb != null else (FocusZone.INV_ORB if orb_count > 0 else FocusZone.DONE)
 			_focus_index = 0
 	_apply_orb_info_display()
 	_apply_focus_visuals()
@@ -891,7 +962,7 @@ func _navigate_focus(dir: Vector2) -> void:
 			if dir.x < 0.0:
 				_focus_index = maxi(_focus_index - 1, 0)
 			elif dir.x > 0.0:
-				var max_g: int = maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0)
+				var max_g: int = 0
 				_focus_index = mini(_focus_index + 1, max_g)
 			elif dir.y < 0.0:
 				if _hints_visible():
@@ -930,7 +1001,7 @@ func _navigate_focus(dir: Vector2) -> void:
 					_focus_index += 1
 			elif dir.y > 0.0:
 				_focus_zone = FocusZone.INV_GLYPH
-				_focus_index = mini(_focus_index, maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0))
+				_focus_index = mini(_focus_index, 0)
 			elif dir.y < 0.0:
 				_focus_zone = FocusZone.DONE
 				_focus_index = 0
@@ -965,7 +1036,7 @@ func _navigate_focus(dir: Vector2) -> void:
 					_focus_index = 0
 				elif dir.y > 0.0:
 					_focus_zone = FocusZone.INV_GLYPH
-					_focus_index = mini(0, maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0))
+					_focus_index = 0
 			elif dir.x < 0.0:
 				if _focus_index == 0 or _focus_index == 2:
 					_focus_zone = FocusZone.RECYCLE
@@ -989,14 +1060,14 @@ func _navigate_focus(dir: Vector2) -> void:
 					_focus_index += 2
 				else:
 					_focus_zone = FocusZone.INV_GLYPH
-					_focus_index = mini(_focus_index - 2, maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0))
+					_focus_index = maxi(_focus_index - 2, 0)
 		FocusZone.BUY:
 			if dir.x < 0.0:
 				_focus_zone = FocusZone.TRANSFORM
 				_focus_index = 0
 			elif dir.y > 0.0:
 				_focus_zone = FocusZone.INV_GLYPH
-				_focus_index = maxi((_circle.glyph_inventory.size() if _circle else 1) - 1, 0)
+				_focus_index = 0
 			elif dir.y < 0.0:
 				_focus_zone = FocusZone.DONE
 				_focus_index = 0
@@ -1058,6 +1129,16 @@ func _apply_focus_visuals() -> void:
 			)
 		)
 		_hint_outlines[i].visible = highlighted
+
+	for i in _stat_outlines.size():
+		var stat_highlighted: bool = (
+			_menu_mode == MenuMode.INSPECT
+			and (
+				_hovered_stat_index == i
+				or (_hovered_stat_index < 0 and _focus_zone == FocusZone.STAT and i == _focus_index)
+			)
+		)
+		_stat_outlines[i].visible = stat_highlighted
 
 	transform_button.modulate = (
 		Color(1.35, 1.35, 1.35, 1.0)
@@ -1313,20 +1394,15 @@ func _restore_held_glyph(from_inv: int, from_slot: int, glyph_id: StringName, ra
 		if not _orb.apply_glyph_at(from_slot, glyph_id, rarity):
 			_orb.apply_glyph(glyph_id, rarity)
 	elif from_inv >= 0:
-		if not _circle.insert_inventory_entry(from_inv, glyph_id, rarity):
-			_circle.add_inventory_entry(glyph_id, rarity)
+		# Glyph inventory removed — re-socket on the orb if possible.
+		_orb.apply_glyph(glyph_id, rarity)
 	else:
 		_orb.apply_glyph(glyph_id, rarity)
 
 
-func _recycle_inventory_glyph(index: int) -> void:
-	if index < 0 or index >= _circle.glyph_inventory.size():
-		return
-	var entry: Dictionary = _circle.glyph_inventory[index]
-	var rarity: int = int(entry.get("rarity", Glyph.Rarity.COMMON))
-	var mana_val: float = float(Glyph.MANA_BY_RARITY.get(rarity, 5.0))
-	_circle.remove_inventory_entry(index)
-	_circle.deposit(mana_val)
+func _recycle_inventory_glyph(_index: int) -> void:
+	# Glyph inventory removed — recycle happens by depositing into the circle for mana.
+	return
 
 
 func _texture_for_glyph_id(glyph_id: StringName) -> Texture2D:

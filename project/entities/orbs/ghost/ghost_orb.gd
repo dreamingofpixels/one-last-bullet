@@ -13,6 +13,8 @@ var _saved_collision_layer: int = 8
 
 
 func should_apply_hitbox_damage(victim: Node) -> bool:
+	if not super.should_apply_hitbox_damage(victim):
+		return false
 	# Enter enemies without dealing impact HP; still chip the player.
 	if victim != null and victim.is_in_group("enemies"):
 		return false
@@ -20,7 +22,7 @@ func should_apply_hitbox_damage(victim: Node) -> bool:
 
 
 func on_hitbox_hit(victim: Node) -> void:
-	if state != OrbState.FLYING:
+	if state != OrbState.FLYING or _circle_captured:
 		return
 	if victim == null or not is_instance_valid(victim):
 		return

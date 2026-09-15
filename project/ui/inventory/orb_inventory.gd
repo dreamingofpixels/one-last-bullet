@@ -170,6 +170,14 @@ func set_glyphs_interactive(enabled: bool) -> void:
 	_glyphs_interactive = enabled
 
 
+func set_glyph_sockets_visible(visible_sockets: bool) -> void:
+	for socket in _glyph_sockets:
+		socket.visible = visible_sockets
+	var container: Node = get_node_or_null("HBoxContainer/GlyphContainer")
+	if container is CanvasItem:
+		(container as CanvasItem).visible = visible_sockets
+
+
 func set_held_glyph_index(index: int) -> void:
 	_held_glyph_index = index
 	# Hide the source icon immediately so it does not look duplicated next to the drag preview.

@@ -71,7 +71,9 @@ func _ready() -> void:
 	_connect_breakable_destroy_signals()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	summoning_circle.ritual_started.connect(_on_ritual_started)
-	ritual_menu.closed.connect(_on_ritual_menu_closed)
+	summoning_circle.ritual_ended.connect(_on_ritual_ended)
+	summoning_circle.new_blank_orb_requested.connect(_on_new_blank_orb_requested)
+	summoning_circle.transform_requested.connect(_on_transform_requested)
 	ritual_menu.inspect_closed.connect(_on_inspect_closed)
 	ritual_menu.new_blank_orb_requested.connect(_on_new_blank_orb_requested)
 	ritual_menu.transform_requested.connect(_on_transform_requested)
@@ -528,18 +530,15 @@ func _drop_carried_item_on_death(dying_player: Node = null) -> void:
 	item.settle_on_ground()
 
 
-func _on_ritual_started(orb: BlankOrb) -> void:
+func _on_ritual_started(_orb: BlankOrb) -> void:
 	if _game_over or _cleared:
 		return
-	time_slow_overlay.end()
-	get_tree().paused = true
-	ritual_menu.open(orb, summoning_circle, new_orb_cost, _live_orbs())
+	# Live ritual: combat keeps running; circle owns OrbInfo / GlyphSlots.
+	summoning_circle.notify_orb_count_changed()
 
 
-func _on_ritual_menu_closed() -> void:
-	get_tree().paused = false
-	if summoning_circle != null and is_instance_valid(summoning_circle):
-		summoning_circle.release_orb()
+func _on_ritual_ended() -> void:
+	summoning_circle.notify_orb_count_changed()
 
 
 func _on_inspect_closed() -> void:
@@ -550,7 +549,9 @@ func _on_new_blank_orb_requested() -> void:
 	if _game_over or _cleared:
 		return
 	_spawn_blank_orb_at_circle()
-	ritual_menu.set_orbs(_live_orbs())
+	if ritual_menu.visible:
+		ritual_menu.set_orbs(_live_orbs())
+	summoning_circle.notify_orb_count_changed()
 
 
 func _on_transform_requested(orb_id: StringName) -> void:
@@ -572,7 +573,7 @@ func _on_transform_requested(orb_id: StringName) -> void:
 	var scene_path: String = String(data.get("scene_path", ""))
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
-		push_warning("RitualMenu: missing orb scene at %s" % scene_path)
+		push_warning("Transform: missing orb scene at %s" % scene_path)
 		return
 
 	var new_orb: BlankOrb = packed.instantiate() as BlankOrb
@@ -589,7 +590,9 @@ func _on_transform_requested(orb_id: StringName) -> void:
 		old_orb.remove_from_group("orb")
 		old_orb.queue_free()
 
-	ritual_menu.open(new_orb, summoning_circle, new_orb_cost, _live_orbs())
+	if ritual_menu.visible:
+		ritual_menu.set_orbs(_live_orbs())
+	summoning_circle.notify_orb_count_changed()
 
 
 func _live_orbs() -> Array:
@@ -601,10 +604,12 @@ func _live_orbs() -> Array:
 
 
 func _spawn_blank_orb_at_circle() -> void:
-	if _live_orbs().size() >= RitualMenu.MAX_ORBS:
+	if _live_orbs().size() >= SummoningCircle.MAX_ORBS:
 		return
 	var orb: BlankOrb = BLANK_ORB_SCENE.instantiate() as BlankOrb
 	add_child(orb)
 	orb.global_position = summoning_circle.get_launch_origin()
 	_connect_orb_signals(orb)
+	summoning_circle.grant_capture_grace(orb)
 	orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
+	summoning_circle.notify_orb_count_changed()

@@ -19,6 +19,8 @@ var player_index: int = 1
 @onready var aim_right_action: PlayerAction = %AimRightAction
 @onready var attack_action: PlayerAction = %AttackAction
 @onready var pickup_action: PlayerAction = %PickupAction
+@onready var upgrade_action: PlayerAction = %UpgradeAction
+@onready var ritual_cancel_action: PlayerAction = %RitualCancelAction
 @onready var dash_action: PlayerAction = %DashAction
 
 
@@ -89,6 +91,18 @@ func is_dash_just_pressed() -> bool:
 	if dash_action.action.is_empty():
 		return false
 	return Input.is_action_just_pressed(dash_action.action)
+
+
+func is_upgrade_just_pressed() -> bool:
+	if upgrade_action.action.is_empty():
+		return false
+	return Input.is_action_just_pressed(upgrade_action.action)
+
+
+func is_ritual_cancel_just_pressed() -> bool:
+	if ritual_cancel_action.action.is_empty():
+		return false
+	return Input.is_action_just_pressed(ritual_cancel_action.action)
 
 
 ## True when this player aims with the mouse (P1). Gamepad-only players must not use mouse GUI gates.

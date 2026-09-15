@@ -558,14 +558,16 @@ func _try_immediate_tether() -> bool:
 	if Time.get_ticks_msec() < _cooldown_until_msec:
 		return false
 
-	# Throw carried glyph on second pickup press.
+	# Throw carried glyph on second pickup press — unless the circle ritual wants the press.
 	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
+		if _try_ritual_circle_pickup():
+			return true
 		if owner.has_method("try_throw_item"):
 			return owner.try_throw_item()
 		return false
 
-	# Activate summoning circle while standing in its DepositArea (before glyph pickup).
-	if _try_activate_summoning_circle():
+	# Live ritual socket / unsocket while an orb is captured in the circle.
+	if _try_ritual_circle_pickup():
 		return true
 
 	# Prefer nearby glyphs over orb capture.
@@ -585,14 +587,12 @@ func _try_immediate_tether() -> bool:
 	return true
 
 
-func _try_activate_summoning_circle() -> bool:
+func _try_ritual_circle_pickup() -> bool:
 	for node in get_tree().get_nodes_in_group("summoning_circle"):
 		var circle := node as SummoningCircle
 		if circle == null or not is_instance_valid(circle):
 			continue
-		if not circle.contains_player(owner):
-			continue
-		if circle.try_activate():
+		if circle.try_handle_ritual_pickup(owner):
 			return true
 	return false
 

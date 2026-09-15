@@ -24,7 +24,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	if state == OrbState.FLYING or state == OrbState.TETHERED:
+	# is_flying() is false while circle-captured — current must not tick in the ritual.
+	if is_flying() or is_tethered():
 		_update_current()
 	else:
 		_disable_current()

@@ -14,6 +14,8 @@ enum DecimalPlaces {
 }
 
 const ICON_DIR: String = "res://ui/attributes/"
+const FLASH_GREEN := Color(0.35, 1.0, 0.45, 1.0)
+const FLASH_DURATION := 0.6
 
 @export var icon_id: String = "damage_icon":
 	set(value):
@@ -44,10 +46,35 @@ const ICON_DIR: String = "res://ui/attributes/"
 @onready var icon: TextureRect = %Icon
 @onready var value_label: Label = %Value
 
+var _flash_tween: Tween
+
 
 func _ready() -> void:
 	_apply_icon()
 	_apply_value()
+
+
+func get_attribute_id() -> StringName:
+	var base: String = icon_id
+	if base.ends_with("_icon"):
+		base = base.substr(0, base.length() - 5)
+	return StringName(base)
+
+
+func set_value_color(color: Color) -> void:
+	if not is_node_ready():
+		return
+	value_label.modulate = color
+
+
+func flash_value_changed(color: Color = FLASH_GREEN, duration: float = FLASH_DURATION) -> void:
+	if not is_node_ready():
+		return
+	if _flash_tween != null and _flash_tween.is_valid():
+		_flash_tween.kill()
+	value_label.modulate = color
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(value_label, "modulate", Color.WHITE, duration)
 
 
 func _validate_property(property: Dictionary) -> void:

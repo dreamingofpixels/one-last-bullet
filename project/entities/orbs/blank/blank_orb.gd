@@ -592,6 +592,12 @@ func remove_glyph(slot_index: int) -> Dictionary:
 	return entry
 
 
+## Keep socketed attribute bonuses permanently and clear the three slots (no Transform recipe).
+func bake_socketed_glyphs() -> void:
+	for i in socketed_glyphs.size():
+		socketed_glyphs[i] = {}
+
+
 func _apply_glyph_attribute(attr: StringName, value: float) -> bool:
 	var key: String = String(attr)
 	var sync_damage: bool = false
@@ -652,7 +658,7 @@ func _begin_circle_capture_deferred(center: Vector2, suck_speed: float, on_finis
 		return
 
 	freeze = true
-	hitbox_component.monitoring = false
+	_set_circle_inert(true)
 
 	if _capture_tween != null and _capture_tween.is_valid():
 		_capture_tween.kill()
@@ -676,6 +682,7 @@ func release_from_circle(direction: Vector2) -> void:
 		_capture_tween.kill()
 		_capture_tween = null
 
+	_set_circle_inert(false)
 	var exit_dir: Vector2 = direction
 	if exit_dir.length_squared() < 0.0001:
 		exit_dir = Vector2.RIGHT
@@ -699,8 +706,22 @@ func assume_circle_capture(center: Vector2) -> void:
 	set_in_focus(false)
 	_focus_requests.clear()
 	orb_in_focus.visible = false
-	hitbox_component.monitoring = false
+	_set_circle_inert(true)
 	_apply_heading()
+
+
+## Captured orbs deal no damage, trigger no effects, and do not collide.
+func _set_circle_inert(inert: bool) -> void:
+	if inert:
+		# Victim hitboxes poll our Area2D; monitoring=false alone still leaves us detectible.
+		hitbox_component.set_deferred("monitoring", false)
+		hitbox_component.set_deferred("monitorable", false)
+		set_deferred("collision_layer", 0)
+		set_deferred("collision_mask", 0)
+	else:
+		hitbox_component.monitorable = true
+		collision_layer = 8
+		_apply_collision_mask()
 
 
 func is_tethered() -> bool:
@@ -717,11 +738,13 @@ func get_tether_player() -> Node2D:
 
 ## Optional hook for typed orbs: return false to skip HealthComponent damage on hitbox poll.
 func should_apply_hitbox_damage(_victim: Node) -> bool:
-	return true
+	return not _circle_captured
 
 
 ## Optional hook for typed orbs: called after a successful hitbox hit (HP applied or skipped).
 func on_hitbox_hit(victim: Node) -> void:
+	if _circle_captured:
+		return
 	if victim == null or not is_instance_valid(victim):
 		return
 

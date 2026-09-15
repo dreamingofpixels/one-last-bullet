@@ -4,6 +4,8 @@ const DISEASE_CHANCE := 0.2
 
 
 func on_hitbox_hit(victim: Node) -> void:
+	if _circle_captured:
+		return
 	super.on_hitbox_hit(victim)
 	if victim == null or not is_instance_valid(victim):
 		return

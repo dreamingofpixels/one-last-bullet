@@ -8,9 +8,9 @@
 font = ExtResource("2_2tpu1")
 font_size = 12
 
-[node name="AttributeBox" type="Control"]
+[node name="AttributeBox" type="Control" unique_id=101354778]
 custom_minimum_size = Vector2(35, 16)
-anchors_preset = -1
+layout_mode = 3
 anchor_right = 0.025
 anchor_bottom = 0.022000002
 offset_bottom = 0.23999786
@@ -21,7 +21,7 @@ icon_id = "crit_chance_icon"
 value = 0.104
 value_format = 1
 
-[node name="Content" type="HBoxContainer" parent="."]
+[node name="Content" type="HBoxContainer" parent="." unique_id=1663251610]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -30,14 +30,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Icon" type="TextureRect" parent="Content"]
+[node name="Icon" type="TextureRect" parent="Content" unique_id=377998161]
 unique_name_in_owner = true
 custom_maximum_size = Vector2(16, 16)
 layout_mode = 2
 size_flags_vertical = 4
 texture = ExtResource("2_3ekyw")
 
-[node name="Value" type="Label" parent="Content"]
+[node name="Value" type="Label" parent="Content" unique_id=2115491384]
 unique_name_in_owner = true
 layout_mode = 2
 text = "10.40%"

@@ -106,6 +106,8 @@ var _resolved_hit_frame: int = -1
 var _resolved_hit_cache: Dictionary = {}
 var _grace_exception_body: CollisionObject2D = null
 var _circle_captured: bool = false
+## Bumped so a same-frame capture→release ignores deferred inert (layer/mask 0).
+var _circle_inert_seq: int = 0
 var _capture_tween: Tween
 ## Dash-vault: frozen in place while still FLYING; first holder owns aim chevron.
 var _vault_hold: bool = false
@@ -264,7 +266,11 @@ func begin_flight(direction: Vector2, instigator: Node = null) -> void:
 	freeze = false
 	orb_sprite.visible = true
 	clear_redirect_preview()
+	# Launch always restores body collisions; a pending deferred inert-true must not win.
+	_circle_inert_seq += 1
+	collision_layer = 8
 	_apply_collision_mask()
+	hitbox_component.monitorable = true
 	hitbox_component.monitoring = true
 	set_in_focus(false)
 	_separate_from_overlaps()
@@ -658,7 +664,8 @@ func _begin_circle_capture_deferred(center: Vector2, suck_speed: float, on_finis
 		return
 
 	freeze = true
-	_set_circle_inert(true)
+	_circle_inert_seq += 1
+	_apply_circle_inert_state(true)
 
 	if _capture_tween != null and _capture_tween.is_valid():
 		_capture_tween.kill()
@@ -716,12 +723,29 @@ func assume_circle_capture(center: Vector2) -> void:
 
 ## Captured orbs deal no damage, trigger no effects, and do not collide.
 func _set_circle_inert(inert: bool) -> void:
+	_circle_inert_seq += 1
+	var seq: int = _circle_inert_seq
+	if inert:
+		# DepositArea body_entered runs during a physics query flush; layers/Area2D
+		# flags cannot change until that flush finishes.
+		call_deferred("_apply_circle_inert_if_current", true, seq)
+	else:
+		_apply_circle_inert_state(false)
+
+
+func _apply_circle_inert_if_current(inert: bool, seq: int) -> void:
+	if seq != _circle_inert_seq:
+		return
+	_apply_circle_inert_state(inert)
+
+
+func _apply_circle_inert_state(inert: bool) -> void:
 	if inert:
 		# Victim hitboxes poll our Area2D; monitoring=false alone still leaves us detectible.
-		hitbox_component.set_deferred("monitoring", false)
-		hitbox_component.set_deferred("monitorable", false)
-		set_deferred("collision_layer", 0)
-		set_deferred("collision_mask", 0)
+		hitbox_component.monitoring = false
+		hitbox_component.monitorable = false
+		collision_layer = 0
+		collision_mask = 0
 	else:
 		hitbox_component.monitorable = true
 		collision_layer = 8

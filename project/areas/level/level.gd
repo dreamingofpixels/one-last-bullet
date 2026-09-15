@@ -554,7 +554,7 @@ func _on_new_blank_orb_requested() -> void:
 	summoning_circle.notify_orb_count_changed()
 
 
-func _on_transform_requested(orb_id: StringName) -> void:
+func _on_transform_requested(orb_id: StringName, by: Node = null) -> void:
 	if _game_over or _cleared:
 		return
 	if summoning_circle == null or not is_instance_valid(summoning_circle):
@@ -570,7 +570,7 @@ func _on_transform_requested(orb_id: StringName) -> void:
 	if not OrbRecipes.is_playable(data):
 		return
 
-	var scene_path: String = String(data.get("scene_path", ""))
+	var scene_path: String = OrbRecipes.resolved_scene_path(data)
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
 		push_warning("Transform: missing orb scene at %s" % scene_path)
@@ -584,7 +584,7 @@ func _on_transform_requested(orb_id: StringName) -> void:
 	add_child(new_orb)
 	new_orb.global_position = spawn_pos
 	_connect_orb_signals(new_orb)
-	summoning_circle.swap_captured_orb(new_orb)
+	summoning_circle.commit_transformed_orb(new_orb, by)
 
 	if is_instance_valid(old_orb):
 		old_orb.remove_from_group("orb")

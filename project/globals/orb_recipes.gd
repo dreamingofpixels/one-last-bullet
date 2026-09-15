@@ -80,14 +80,57 @@ static func hints_for(orb: BlankOrb, two_elements: Array[String]) -> Array:
 	return hints
 
 
-static func is_playable(row: Dictionary) -> bool:
+## Authored `scene_path` if that file exists, else `res://entities/orbs/{id}/{id}_orb.tscn`.
+static func resolved_scene_path(row: Dictionary) -> String:
 	if row.is_empty():
-		return false
-	var scene_path: Variant = row.get("scene_path", null)
-	if scene_path == null:
-		return false
-	var path: String = String(scene_path)
-	return not path.is_empty()
+		return ""
+	var authored: String = String(row.get("scene_path", ""))
+	if not authored.is_empty() and ResourceLoader.exists(authored):
+		return authored
+	var id: String = String(row.get("id", ""))
+	if id.is_empty():
+		return ""
+	var fallback: String = "res://entities/orbs/%s/%s_orb.tscn" % [id, id]
+	if ResourceLoader.exists(fallback):
+		return fallback
+	return ""
+
+
+static func is_playable(row: Dictionary) -> bool:
+	return not resolved_scene_path(row).is_empty()
+
+
+static func effect_text(row: Dictionary) -> String:
+	if row.is_empty():
+		return ""
+	var effect: String = String(row.get("effect", ""))
+	if effect.is_empty():
+		effect = String(row.get("desc", ""))
+	return effect
+
+
+static func stats_from_row(row: Dictionary) -> Dictionary:
+	return {
+		"damage": _row_float(row, "damage"),
+		"self_damage": _row_float(row, "self_damage"),
+		"splash": _row_float(row, "splash"),
+		"speed": _row_float(row, "speed"),
+		"weight": _row_float(row, "weight"),
+		"crit_chance": _row_float(row, "crit_chance"),
+		"crit_damage": _row_float(row, "crit_damage"),
+		"glyph_drop": _row_float(row, "glyph_drop"),
+		"burn": _row_float(row, "burn"),
+		"chill": _row_float(row, "chill"),
+		"shock": _row_float(row, "shock"),
+		"poison": _row_float(row, "poison"),
+	}
+
+
+static func _row_float(row: Dictionary, key: String) -> float:
+	var value: Variant = row.get(key, 0.0)
+	if value == null:
+		return 0.0
+	return float(value)
 
 
 ## Provisional: all authored recipes are treated as discovered. Swap seam for a future registry.

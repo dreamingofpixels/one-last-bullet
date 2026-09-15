@@ -4,7 +4,7 @@ extends CanvasLayer
 signal closed
 signal inspect_closed
 signal new_blank_orb_requested
-signal transform_requested(orb_id: StringName)
+signal transform_requested(orb_id: StringName, by: Node)
 
 const MAX_ORBS := 5
 const DROP_RECYCLE := 0
@@ -1462,7 +1462,7 @@ func _on_transform_pressed() -> void:
 	if not OrbRecipes.is_playable(row):
 		return
 	var orb_id: StringName = StringName(String(row.get("id", "")))
-	transform_requested.emit(orb_id)
+	transform_requested.emit(orb_id, null)
 
 
 func _on_done_pressed() -> void:

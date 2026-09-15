@@ -8,7 +8,7 @@ signal deactivated
 signal ritual_started(orb: RigidBody2D)
 signal ritual_ended
 signal new_blank_orb_requested
-signal transform_requested(orb_id: StringName)
+signal transform_requested(orb_id: StringName, by: Node)
 
 const GLYPH_SCENE := preload("res://items/glyphs/glyph.tscn")
 const MAX_ORBS := 5
@@ -25,7 +25,7 @@ const CAPTURE_GRACE_SECONDS := 0.35
 @export var blink_duration: float = 0.35
 @export var orb_capture_suck_speed: float = 240.0
 ## Tiny player-detect radius around each world glyph socket for Cross place/remove.
-@export var socket_interact_radius: float = 12.0
+@export var socket_interact_radius: float = 16.0
 
 var mana_pool: float = 0.0
 
@@ -34,13 +34,15 @@ var _active: bool = false
 var _ritual_running: bool = false
 var _captured_orb: RigidBody2D = null
 var _players_inside: Dictionary = {}
-## Players inside InfoProximityArea (larger than DepositArea); drives OrbInfo visibility.
+## Players inside InfoProximityArea (larger than DepositArea); drives OrbInfo and BuyBlankOrb visibility.
 var _players_near_info: Dictionary = {}
 var _blink_tween: Tween
 var _capture_tween: Tween
 var _capture_grace_orbs: Dictionary = {}
 var _glyph_sockets: Array[Sprite2D] = []
 var _glyph_icons: Array[Sprite2D] = []
+## Ordered Fire / Water / Air / Earth to match OrbRecipes.ELEMENTS.
+var _hint_labels: Array[Label] = []
 
 @onready var deposit_area: Area2D = %DepositArea
 @onready var info_proximity_area: Area2D = %InfoProximityArea
@@ -62,6 +64,10 @@ var _glyph_icons: Array[Sprite2D] = []
 @onready var chill_box: AttributeBox = %ChillBox
 @onready var shock_box: AttributeBox = %ShockBox
 @onready var poison_box: AttributeBox = %PoisonBox
+@onready var fire_hint: Label = %FireHint
+@onready var water_hint: Label = %WaterHint
+@onready var air_hint: Label = %AirHint
+@onready var earth_hint: Label = %EarthHint
 @onready var glyph_slots: Node2D = %GlyphSlots
 @onready var glyph_socket_1: Sprite2D = %GlyphSocket1
 @onready var glyph_socket_2: Sprite2D = %GlyphSocket2
@@ -77,8 +83,10 @@ func _ready() -> void:
 	arcane_particles.emitting = false
 	_glyph_sockets = [glyph_socket_1, glyph_socket_2, glyph_socket_3]
 	_glyph_icons = [glyph_icon_1, glyph_icon_2, glyph_icon_3]
+	_hint_labels = [fire_hint, water_hint, air_hint, earth_hint]
 	orb_info.visible = false
 	glyph_slots.visible = false
+	_hide_hints()
 	_refresh_mana_label()
 	_refresh_buy_label()
 	deposit_area.body_entered.connect(_on_deposit_area_body_entered)
@@ -222,7 +230,7 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 			return false
 		if orb.has_glyph_at(slot_index):
 			return false
-		var before: Dictionary = orb.get_stat_snapshot()
+		var before: Dictionary = _displayed_stat_snapshot(orb)
 		var glyph_id: StringName = carried.glyph_id
 		var rarity: int = int(carried.rarity)
 		if not orb.apply_glyph_at(slot_index, glyph_id, rarity):
@@ -230,13 +238,13 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 		if player.has_method("clear_carried_item"):
 			player.clear_carried_item(carried)
 		carried.queue_free()
-		_flash_stat_deltas(before, orb.get_stat_snapshot())
 		_refresh_orb_info(true)
+		_flash_stat_deltas(before, _displayed_stat_snapshot(orb))
 		return true
 
 	if not orb.has_glyph_at(slot_index):
 		return false
-	var before_remove: Dictionary = orb.get_stat_snapshot()
+	var before_remove: Dictionary = _displayed_stat_snapshot(orb)
 	var entry: Dictionary = orb.remove_glyph(slot_index)
 	if entry.is_empty():
 		return false
@@ -249,8 +257,8 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 		# Put the glyph back if the player could not take it.
 		orb.apply_glyph_at(slot_index, StringName(String(entry.get("id", ""))), int(entry.get("rarity", 0)))
 		return false
-	_flash_stat_deltas(before_remove, orb.get_stat_snapshot())
 	_refresh_orb_info(true)
+	_flash_stat_deltas(before_remove, _displayed_stat_snapshot(orb))
 	return true
 
 
@@ -316,6 +324,16 @@ func swap_captured_orb(new_orb: RigidBody2D) -> void:
 	_refresh_orb_info(true)
 
 
+## Swap in the transformed orb, then launch it and end the ritual.
+func commit_transformed_orb(new_orb: RigidBody2D, by: Node = null) -> void:
+	if not _ritual_running or new_orb == null or not is_instance_valid(new_orb):
+		return
+	# Do not assume_circle_capture: that defers collision_layer/mask to 0, and a
+	# same-frame release restores them only for the deferred zeros to wipe walls.
+	_captured_orb = new_orb
+	release_orb(Vector2.ZERO, by)
+
+
 func grant_capture_grace(orb: Node, seconds: float = CAPTURE_GRACE_SECONDS) -> void:
 	if orb == null or not is_instance_valid(orb):
 		return
@@ -343,12 +361,12 @@ func _poll_ritual_input() -> void:
 			release_orb(Vector2.ZERO, player)
 
 
-func _try_upgrade_or_buy(_player: Node) -> void:
+func _try_upgrade_or_buy(player: Node) -> void:
 	# Triangle / F: buy blank anytime outside ritual; Transform/bake during ritual.
 	if not _ritual_running:
 		_try_buy_blank_orb()
 		return
-	_try_commit_upgrade()
+	_try_commit_upgrade(player)
 
 
 func _try_buy_blank_orb() -> void:
@@ -365,7 +383,7 @@ func _try_buy_blank_orb() -> void:
 	_refresh_buy_label()
 
 
-func _try_commit_upgrade() -> void:
+func _try_commit_upgrade(player: Node) -> void:
 	var orb: BlankOrb = get_captured_orb() as BlankOrb
 	if orb == null or orb.socketed_count() < 3:
 		return
@@ -374,7 +392,7 @@ func _try_commit_upgrade() -> void:
 	if OrbRecipes.is_playable(row):
 		var orb_id: StringName = StringName(String(row.get("id", "")))
 		if not orb_id.is_empty():
-			transform_requested.emit(orb_id)
+			transform_requested.emit(orb_id, player)
 		return
 	orb.bake_socketed_glyphs()
 	_refresh_orb_info(true)
@@ -390,24 +408,74 @@ func _show_ritual_ui() -> void:
 func _hide_ritual_ui() -> void:
 	orb_info.visible = false
 	glyph_slots.visible = false
+	_hide_hints()
 	_refresh_buy_label()
 
 
-## OrbInfo only while a player is in InfoProximityArea; GlyphSlots stay up for the whole capture.
+## OrbInfo (ritual) and BuyBlankOrb (idle) only while a player is in InfoProximityArea.
 func _update_ritual_ui_proximity() -> void:
 	orb_info.visible = _ritual_running and not _players_near_info.is_empty()
 	if orb_info.visible:
 		_refresh_orb_info(true)
+	_refresh_buy_label()
 
 
 func _refresh_orb_info(_force_slots: bool = true) -> void:
 	var orb: BlankOrb = get_captured_orb() as BlankOrb
 	if orb == null:
 		return
-	orb_name_label.text = orb.get_display_name().to_upper()
-	effect_label.text = _effect_text_for_orb(orb)
-	_apply_stats(orb.get_stat_snapshot())
+	var preview: Dictionary = _playable_transform_row(orb)
+	if preview.is_empty():
+		orb_name_label.text = orb.get_display_name().to_upper()
+		effect_label.text = _effect_text_for_orb(orb)
+		_apply_stats(orb.get_stat_snapshot())
+	else:
+		orb_name_label.text = String(preview.get("name", orb.get_display_name())).to_upper()
+		effect_label.text = OrbRecipes.effect_text(preview)
+		_apply_stats(OrbRecipes.stats_from_row(preview))
+	_refresh_hints(orb)
 	_refresh_glyph_slot_icons(orb)
+
+
+## Playable 3-glyph recipe for the captured orb, or {} if Transform is not available.
+func _playable_transform_row(orb: BlankOrb) -> Dictionary:
+	if orb == null or orb.socketed_count() != 3:
+		return {}
+	var elements: Array[String] = OrbRecipes.elements_from_socketed(orb.socketed_glyphs)
+	var row: Dictionary = OrbRecipes.result_for(orb, elements)
+	if OrbRecipes.is_playable(row):
+		return row
+	return {}
+
+
+func _displayed_stat_snapshot(orb: BlankOrb) -> Dictionary:
+	var preview: Dictionary = _playable_transform_row(orb)
+	if preview.is_empty():
+		return orb.get_stat_snapshot()
+	return OrbRecipes.stats_from_row(preview)
+
+
+## Two socketed glyphs: show Transform name (or ???) on the row for each possible third element.
+func _refresh_hints(orb: BlankOrb) -> void:
+	if orb == null or orb.socketed_count() != 2:
+		_hide_hints()
+		return
+	var elements: Array[String] = OrbRecipes.elements_from_socketed(orb.socketed_glyphs)
+	var hints: Array = OrbRecipes.hints_for(orb, elements)
+	for i in _hint_labels.size():
+		var hint_label: Label = _hint_labels[i]
+		hint_label.visible = true
+		if i < hints.size():
+			var hint: Dictionary = hints[i]
+			hint_label.text = String(hint.get("label", "???")).to_upper()
+		else:
+			hint_label.text = "???"
+
+
+func _hide_hints() -> void:
+	for hint_label in _hint_labels:
+		hint_label.visible = false
+		hint_label.text = "???"
 
 
 func _apply_stats(stats: Dictionary) -> void:
@@ -468,11 +536,7 @@ func _effect_text_for_orb(orb: BlankOrb) -> String:
 	var row: Variant = GameData.get_row(&"orbs", orb.orb_id)
 	if row == null or typeof(row) != TYPE_DICTIONARY:
 		return ""
-	var data: Dictionary = row
-	var effect: String = String(data.get("effect", ""))
-	if effect.is_empty():
-		effect = String(data.get("desc", ""))
-	return effect
+	return OrbRecipes.effect_text(row as Dictionary)
 
 
 ## Nearest world glyph socket within `socket_interact_radius`, or -1 if none.
@@ -522,7 +586,7 @@ func _live_orb_count() -> int:
 
 
 func _refresh_buy_label() -> void:
-	if _ritual_running:
+	if _ritual_running or _players_near_info.is_empty():
 		buy_blank_orb_label.visible = false
 		return
 	var live_count: int = _live_orb_count()

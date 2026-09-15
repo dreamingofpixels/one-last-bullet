@@ -161,6 +161,11 @@ unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "pickup"
 
+[node name="ActivateAction" type="Node" parent="Controls"]
+unique_name_in_owner = true
+script = ExtResource("10_action")
+action = "activate"
+
 [node name="UpgradeAction" type="Node" parent="Controls"]
 unique_name_in_owner = true
 script = ExtResource("10_action")

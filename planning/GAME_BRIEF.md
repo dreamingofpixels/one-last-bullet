@@ -14,12 +14,13 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - **Combat**: orbs travel and bounce indefinitely after the opening launch. Enemies chase the player; **goblins** deal damage via a telegraphed lunge attack, **ogres** via a planted club slam (large around-body hitbox + player knockback) plus **eight outward earth-spike lines** (cardinals + diagonals). Solid props and breakables bounce orbs; breakables are destroyed on that hit. Obstacles can interact further (e.g. TNT barrels explode). Enemies and obstacles drop **glyphs**.
 - **Attack**: parked for now (bindings remain: left click only). No melee, no vault early-fire, no glyph throw. Melee swing / knockback stay behind `AttackComponent.melee_enabled`. Walk-up proximity redirect stays behind `OrbTetherComponent.dash_vault_enabled` (flip false to restore). **Movement and dash locked** during vault aim (same as tether); unlocked when the orb fires (or when dash-again starts a real dash).
 - **Pickup**: right click / gamepad **X (Cross)**. Within **48 px** (`focus_radius`), picks up a **glyph**. While carrying, press again to **throw** along aim. While a ritual orb is captured and sockets are visible, stand in a socket's tiny interact radius and press Cross to **place** into that slot (if empty) or **remove** that slot's glyph into hands (if filled). Orb focus overlays still show for in-range orbs. Capture/release/orbit path remains in code for later — not reachable while capture is off (`capture_enabled = false`).
-- **Upgrade / activate / buy**: keyboard **F** / gamepad **Y (Triangle)**. While in the circle: **activates** the ritual (first free, then escalating mana); with no captured orb, also **buys a Blank Orb** for **`live_orb_count × 20`** mana (cap **3**); with a captured orb and **3** socketed glyphs: **Transform** if a playable recipe exists, otherwise **bake** (attribute bonuses stay, slots clear).
-- **Ritual cancel**: keyboard **C** / gamepad **B (Circle)**. While in the circle during a capture, releases the orb (random direction, glyphs stay) and hides OrbInfo / GlyphSlots.
+- **Activate**: keyboard **E** / gamepad **Square**. While in the circle: **activates** the ritual (first free, then escalating mana). Does not buy orbs.
+- **Buy / upgrade**: keyboard **F** / gamepad **Y (Triangle)**. While in the circle with no captured orb: **buys a Blank Orb** for **`live_orb_count × 20`** mana (cap **5**), even if the circle is idle. With a captured orb and **3** socketed glyphs: **Transform** if a playable recipe exists, otherwise **bake** (attribute bonuses stay, slots clear).
+- **Ritual cancel**: keyboard **C** / gamepad **B (Circle)**. While in the circle during a capture, releases the orb (random direction, glyphs stay) with the same **1 s** post-launch player grace as a vault redirect, and hides OrbInfo / GlyphSlots.
 - **Dash**: press Space (or gamepad **R2**) to dash **50 px** toward current facing (8 directions: N/S/E/W + diagonals). While dashing the player is immune to damage, phases through props/enemies, and cannot move or attack. Outer arena walls still block the dash. Cooldown **1.5 s** on the player scene (shown as a small ring above the head by `DashComponent`); cannot start mid-swing or while **carrying a glyph**. **Dash vault**: if the remaining dash ray will hit a flying orb within **28 px**, the dash **commits** and continues (no teleport) until the player reaches the **far side** of that orb, then aborts into the **0.5 s** aim window. Player **cannot move or dash** until the orb fires (or dash-again). Chevrons follow aim **360°** (`vault_aim_half_angle_degrees` 180). **Press dash again** during the window to fire early along aim **and** start a real dash (starts the 1.5 s cooldown) — dash direction from **WASD / left stick** when held, otherwise last facing (inbound). That same orb cannot be vault-caught again for **~0.35 s** (`vault_recatch_cooldown`) so dash-away does not re-grab it. Timeout auto-fires without a follow-up dash and **refunds dash cooldown**. Successful vault timeout **refunds dash cooldown** (usable after the orb fires). One vault at a time. Possessed Ghost orbs cannot be vaulted.
 - **Loot**: enemies (and, per source design, obstacles) roll **`glyph_drop`** from the killing orb (default **10%** per orb row; level fallback **25%**). Drops are one of **12 glyphs** (4 elements × 3 types) at **Common / Rare / Unique** rarity (default weights **70 / 25 / 5**). Pick up with **pickup** in focus range. Carrying blocks dash; **pickup again** throws the glyph. Deliver into the **summoning circle** when **no orb is captured**: glyph converts to mana (**5 / 10 / 20** by rarity). **No circle glyph inventory**. Orbs can destroy grounded glyphs (no mana credit).
 - **Clear**: kill all enemies → level win.
-- **Ritual (in-level)**: activate the summoning circle with **Triangle / F** (first use free, then **+5 mana** per use). The next orb that enters is captured **without pausing**: `%GlyphSlots` stay visible for the capture; `%OrbInfo` appears only while a player is in the larger `%InfoProximityArea` (DepositArea unchanged for interact size); walk to a socket and Cross to place/remove; Transform/bake with Triangle; cancel with Circle. A captured orb is **inert** (no damage, statuses, Conduit current, or collisions) until released. Starting mana / orbs / glyphs come from **`RunStartConfig`** (starting glyphs convert to mana).
+- **Ritual (in-level)**: activate the summoning circle with **Square / E** (first use free, then **+5 mana** per use). The next orb that enters is captured **without pausing**: `%GlyphSlots` stay visible for the capture; `%OrbInfo` appears only while a player is in the larger `%InfoProximityArea` (DepositArea unchanged for interact size); walk to a socket and Cross to place/remove; Transform/bake with Triangle; cancel with Circle. A captured orb is **inert** (no damage, statuses, Conduit current, or collisions) until released. Starting mana / orbs / glyphs come from **`RunStartConfig`** (starting glyphs convert to mana).
 - **Next level**: repeat until 10 clears (run win) or death (HP depleted by enemy contact or own orb).
 
 ## Win / lose
@@ -42,9 +43,10 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 
 ## Input
 - **Move**: WASD (keyboard) or left stick / D-pad (gamepad)
-- **Attack**: left click (keyboard) — **parked**; gamepad face buttons: **X** = pickup, **Triangle** = activate/upgrade/buy, **Circle** = ritual cancel
+- **Attack**: left click (keyboard) — **parked**; gamepad face buttons: **X** = pickup, **Square** = activate, **Triangle** = buy/Transform/bake, **Circle** = ritual cancel
 - **Pickup**: right click (keyboard); **X / Cross** (gamepad) — glyph grab / throw; near a ritual socket, place/remove that slot
-- **Upgrade / activate / buy**: **F** (keyboard); **Y / Triangle** (gamepad) — activate circle; buy Blank Orb; Transform/bake
+- **Activate**: **E** (keyboard); **Square** (gamepad) — activate circle for orb capture
+- **Buy / upgrade**: **F** (keyboard); **Y / Triangle** (gamepad) — buy Blank Orb (idle or waiting); Transform/bake while captured
 - **Ritual cancel**: **C** (keyboard); **B / Circle** (gamepad) — release captured orb
 - **Dash**: Space (keyboard); **R2** (gamepad)
 - **Aim**: mouse for the keyboard player; right stick for gamepad players
@@ -63,11 +65,11 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 - Enemy glyph drops vanish after a short time (exact duration TBD).
 
 ## Progression
-- **During the level**, activate the **summoning circle** (first activation free, then **+5 mana** each use). The next orb that enters is captured **in real time** (no tree pause) and is **inert** until released:
+- **During the level**, activate the **summoning circle** with **Square / E** (first activation free, then **+5 mana** each use). The next orb that enters is captured **in real time** (no tree pause) and is **inert** until released:
   1. **Socket glyphs** by standing in a socket's tiny interact radius and pressing Cross while carrying (places into that slot) or empty-handed (removes that slot's glyph into hands). Changed attributes flash green on `%OrbInfo`.
   2. **Upgrade** (Triangle / F) with 3 glyphs: Transform if playable recipe; otherwise **bake** bonuses and clear slots.
   3. **Cancel** (Circle / C) to launch the orb with whatever glyphs remain socketed.
-  4. **Buy** a Blank Orb when no orb is captured: cost **`live_orb_count × 20`** mana; cap **3** orbs; bought orb flies out with brief capture grace.
+  4. **Buy** a Blank Orb with Triangle / F anytime no orb is captured (circle idle or waiting): cost **`live_orb_count × 20`** mana; cap **5** orbs; bought orb flies out with brief capture grace.
 - Glyphs deposited with no captured orb always become mana (**5 / 10 / 20**). Starting circle glyphs from **`RunStartConfig`** also convert to mana.
 - Esc inspect remains a paused view-only lookup (orbs + attribute descriptions).
 
@@ -82,8 +84,8 @@ Dodge your own orb while batting it at enemies. Risk the floor for glyphs. Build
 
 ## Economy
 - **Single resource**: **mana** (from depositing glyphs into the circle with no captured orb, starting-glyph conversion, and future breakables — open).
-- Spent at the summoning circle (**`live_orb_count × 20`** mana for a new blank orb; max **3** orbs).
-- **Summoning circle** holds a level `mana_pool` (label shows the current total). **No glyph inventory**. **Activation** costs escalate: **0**, then **5**, **10**, **15…** mana. While active, the next orb entering opens the **live ritual** (OrbInfo + GlyphSlots, tree not paused).
+- Spent at the summoning circle (**`live_orb_count × 20`** mana for a new blank orb; max **5** orbs).
+- **Summoning circle** holds a level `mana_pool` (label shows the current total). **No glyph inventory**. **Activation** (**Square / E**) costs escalate: **0**, then **5**, **10**, **15…** mana. While active, the next orb entering opens the **live ritual** (OrbInfo + GlyphSlots, tree not paused). **Buy** is **Triangle / F** and works while idle.
 
 ## Open questions / design tensions to resolve
 - **Opening volley**: design now starts with **one Blank Orb** from the circle; prototype launches orbs from `RunStartConfig` (default Ghost / Contagion / Conduit). Reconcile after playtest.

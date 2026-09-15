@@ -11,7 +11,7 @@ signal new_blank_orb_requested
 signal transform_requested(orb_id: StringName)
 
 const GLYPH_SCENE := preload("res://items/glyphs/glyph.tscn")
-const MAX_ORBS := 3
+const MAX_ORBS := 5
 const BLANK_ORB_COST_PER_EXISTING := 20.0
 const MANA_BY_RARITY: Dictionary = {
 	Glyph.Rarity.COMMON: 5.0,
@@ -278,7 +278,7 @@ func _on_orb_capture_finished() -> void:
 	ritual_started.emit(_captured_orb)
 
 
-func release_orb(direction: Vector2 = Vector2.ZERO) -> void:
+func release_orb(direction: Vector2 = Vector2.ZERO, by: Node = null) -> void:
 	if _captured_orb == null or not is_instance_valid(_captured_orb):
 		_ritual_running = false
 		_captured_orb = null
@@ -296,7 +296,7 @@ func release_orb(direction: Vector2 = Vector2.ZERO) -> void:
 	if exit_dir.length_squared() < 0.0001:
 		exit_dir = Vector2.from_angle(randf() * TAU)
 	if orb.has_method("release_from_circle"):
-		orb.release_from_circle(exit_dir)
+		orb.release_from_circle(exit_dir, by)
 	deactivate()
 	ritual_ended.emit()
 
@@ -334,17 +334,17 @@ func _poll_ritual_input() -> void:
 		if controls == null:
 			continue
 
+		if controls.is_activate_just_pressed():
+			try_activate()
 		if controls.is_upgrade_just_pressed():
 			_try_upgrade_or_buy(player)
 		if controls.is_ritual_cancel_just_pressed() and _ritual_running and contains_player(player):
-			release_orb()
+			release_orb(Vector2.ZERO, player)
 
 
 func _try_upgrade_or_buy(_player: Node) -> void:
-	# Triangle / F: activate circle when idle; buy blank when waiting; Transform/bake during ritual.
+	# Triangle / F: buy blank anytime outside ritual; Transform/bake during ritual.
 	if not _ritual_running:
-		if try_activate():
-			return
 		_try_buy_blank_orb()
 		return
 	_try_commit_upgrade()
@@ -609,6 +609,9 @@ func _resolve_glyph(node: Node) -> Node:
 
 func _try_deposit_glyph(glyph: Node) -> void:
 	if glyph == null or not is_instance_valid(glyph):
+		return
+	# Mana conversion only when no orb is captured; sockets use Cross instead.
+	if _ritual_running:
 		return
 	if glyph.has_method("deposit_into"):
 		glyph.deposit_into(self)

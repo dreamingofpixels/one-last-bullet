@@ -11,6 +11,8 @@ const OUTLINE_TINT := Color(1.0, 1.0, 1.0, 1.0)
 @onready var orb_socket_1: TextureRect = %OrbSocket1
 @onready var orb_socket_2: TextureRect = %OrbSocket2
 @onready var orb_socket_3: TextureRect = %OrbSocket3
+@onready var orb_socket_4: TextureRect = %OrbSocket4
+@onready var orb_socket_5: TextureRect = %OrbSocket5
 @onready var glyph_socket_1: TextureRect = %GlyphSocket1
 @onready var glyph_socket_2: TextureRect = %GlyphSocket2
 @onready var glyph_socket_3: TextureRect = %GlyphSocket3
@@ -32,7 +34,7 @@ var _filled_orb_count: int = 0
 
 
 func _ready() -> void:
-	_orb_sockets = [orb_socket_1, orb_socket_2, orb_socket_3]
+	_orb_sockets = [orb_socket_1, orb_socket_2, orb_socket_3, orb_socket_4, orb_socket_5]
 	_glyph_sockets = [glyph_socket_1, glyph_socket_2, glyph_socket_3]
 	for i in _orb_sockets.size():
 		var socket: TextureRect = _orb_sockets[i]

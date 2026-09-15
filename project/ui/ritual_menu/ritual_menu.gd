@@ -6,7 +6,7 @@ signal inspect_closed
 signal new_blank_orb_requested
 signal transform_requested(orb_id: StringName)
 
-const MAX_ORBS := 3
+const MAX_ORBS := 5
 const DROP_RECYCLE := 0
 const DROP_SLOT_0 := 1
 const DROP_SLOT_1 := 2

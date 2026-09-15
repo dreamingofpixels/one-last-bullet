@@ -19,6 +19,7 @@ var player_index: int = 1
 @onready var aim_right_action: PlayerAction = %AimRightAction
 @onready var attack_action: PlayerAction = %AttackAction
 @onready var pickup_action: PlayerAction = %PickupAction
+@onready var activate_action: PlayerAction = %ActivateAction
 @onready var upgrade_action: PlayerAction = %UpgradeAction
 @onready var ritual_cancel_action: PlayerAction = %RitualCancelAction
 @onready var dash_action: PlayerAction = %DashAction
@@ -91,6 +92,12 @@ func is_dash_just_pressed() -> bool:
 	if dash_action.action.is_empty():
 		return false
 	return Input.is_action_just_pressed(dash_action.action)
+
+
+func is_activate_just_pressed() -> bool:
+	if activate_action.action.is_empty():
+		return false
+	return Input.is_action_just_pressed(activate_action.action)
 
 
 func is_upgrade_just_pressed() -> bool:

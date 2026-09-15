@@ -11,6 +11,8 @@ const PHYSICS_LAYER_WORLD := 1
 const SPAWN_PHYSICS_MARGIN := 2.0
 
 @export var waves: Array[EnemyWave] = []
+## When false, skip all waves so the arena can be tested with no enemies. Does not count as a room clear.
+@export var spawning_enabled: bool = true
 @export var assemble_duration: float = 2.0
 @export var telegraph_duration: float = 0.6
 @export var min_spawn_distance: float = 120.0
@@ -34,6 +36,8 @@ func start() -> void:
 	_pending = _count_planned()
 	_alive = 0
 	_waves_issued = 0
+	if not spawning_enabled:
+		return
 	if _pending <= 0:
 		_waves_issued = waves.size()
 		_try_clear()
@@ -81,7 +85,7 @@ func _issue_wave(wave: EnemyWave) -> void:
 
 
 func _spawn_one(scene: PackedScene) -> void:
-	if _stopped:
+	if _stopped or not spawning_enabled:
 		return
 
 	var enemy := scene.instantiate() as CharacterBody2D

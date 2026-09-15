@@ -676,7 +676,7 @@ func _begin_circle_capture_deferred(center: Vector2, suck_speed: float, on_finis
 	)
 
 
-func release_from_circle(direction: Vector2) -> void:
+func release_from_circle(direction: Vector2, instigator: Node = null) -> void:
 	_circle_captured = false
 	if _capture_tween != null and _capture_tween.is_valid():
 		_capture_tween.kill()
@@ -686,7 +686,11 @@ func release_from_circle(direction: Vector2) -> void:
 	var exit_dir: Vector2 = direction
 	if exit_dir.length_squared() < 0.0001:
 		exit_dir = Vector2.RIGHT
-	begin_flight(exit_dir, null)
+	var grace_by: Node = instigator
+	if grace_by == null or not is_instance_valid(grace_by):
+		grace_by = Players.closest_to(get_tree(), global_position)
+	# Same post-launch grace as vault redirect / tether release (instigator + halo).
+	begin_flight(exit_dir, grace_by)
 
 
 ## Park this orb at the circle as if it had just finished a capture suck-in (used by Transform swap).

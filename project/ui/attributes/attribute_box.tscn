@@ -9,6 +9,7 @@ font = ExtResource("2_2tpu1")
 font_size = 12
 
 [node name="AttributeBox" type="HBoxContainer" unique_id=558950410]
+custom_minimum_size = Vector2(35, 0)
 anchors_preset = -1
 anchor_right = 0.025
 anchor_bottom = 0.022000002

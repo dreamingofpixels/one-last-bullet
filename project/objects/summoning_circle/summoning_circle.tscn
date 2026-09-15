@@ -4,6 +4,8 @@
 [ext_resource type="Texture2D" uid="uid://rydltayd3s4e" path="res://objects/summoning_circle/summoning_circle.png" id="2_tex"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="3_uicfy"]
 [ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="4_pixel"]
+[ext_resource type="PackedScene" uid="uid://dyxsux8amgcwk" path="res://ui/attributes/attribute_box.tscn" id="5_e8f1m"]
+[ext_resource type="Texture2D" uid="uid://bodj13cjxk3wq" path="res://items/glyphs/glyph_socket.png" id="6_pjoiy"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_deposit"]
 radius = 22.0
@@ -31,6 +33,14 @@ gravity = Vector3(0, -8, 0)
 scale_min = 2.0
 scale_max = 3.0
 color_ramp = SubResource("GradientTexture1D_arcane")
+
+[sub_resource type="LabelSettings" id="LabelSettings_0l32g"]
+font = ExtResource("3_uicfy")
+font_size = 12
+
+[sub_resource type="LabelSettings" id="LabelSettings_o7k1j"]
+font = ExtResource("3_uicfy")
+font_size = 12
 
 [node name="SummoningCircle" type="Node2D" unique_id=1057267850]
 script = ExtResource("1_script")
@@ -73,7 +83,306 @@ z_index = 1
 texture_filter = 1
 emitting = false
 amount = 28
+texture = ExtResource("4_pixel")
 lifetime = 0.9
 visibility_rect = Rect2(-80, -120, 160, 160)
 process_material = SubResource("ParticleProcessMaterial_arcane")
-texture = ExtResource("4_pixel")
+
+[node name="Control" type="Control" parent="." unique_id=1933136328]
+layout_mode = 3
+anchors_preset = 0
+offset_left = -93.0
+offset_top = -158.0
+offset_right = 106.0
+offset_bottom = -31.0
+
+[node name="ColorRect" type="ColorRect" parent="Control" unique_id=263922798]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.42352942)
+
+[node name="OrbInFocus" type="VBoxContainer" parent="Control" unique_id=644458848]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 9
+
+[node name="EffectContainer" type="HBoxContainer" parent="Control/OrbInFocus" unique_id=733674310]
+layout_mode = 2
+
+[node name="EffectLabel" type="Label" parent="Control/OrbInFocus/EffectContainer" unique_id=112360026]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 47)
+layout_mode = 2
+text = "Enters and haunts enemies and deal its damage per second to them. Once dead, exits in a random direction."
+label_settings = SubResource("LabelSettings_0l32g")
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="StatsContainer" type="VBoxContainer" parent="Control/OrbInFocus" unique_id=231378692]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="FireRow" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer" unique_id=1432138893]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="DamageContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/FireRow" unique_id=636875060]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="DamageBox" parent="Control/OrbInFocus/StatsContainer/FireRow/DamageContainer" unique_id=558950410 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+icon_id = "damage_icon"
+value = 10.4
+value_format = 0
+
+[node name="SplashContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/FireRow" unique_id=1285927449]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="SplashBox" parent="Control/OrbInFocus/StatsContainer/FireRow/SplashContainer" unique_id=1570272957 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "splash_icon"
+value = 0.03
+decimal_places = 0
+
+[node name="BurnContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/FireRow" unique_id=1602426894]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="BurnBox" parent="Control/OrbInFocus/StatsContainer/FireRow/BurnContainer" unique_id=516724155 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "burn_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="WaterRow" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer" unique_id=804258990]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="SelfDamageContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/WaterRow" unique_id=202392096]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="SelfDamageBox" parent="Control/OrbInFocus/StatsContainer/WaterRow/SelfDamageContainer" unique_id=145874812 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "self_damage_icon"
+value = 8.4
+value_format = 0
+
+[node name="GlyphDropContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/WaterRow" unique_id=1200900673]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="GlyphDropBox" parent="Control/OrbInFocus/StatsContainer/WaterRow/GlyphDropContainer" unique_id=119513089 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "glyph_drop_icon"
+value = 0.05
+decimal_places = 0
+
+[node name="ChillContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/WaterRow" unique_id=517654787]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ChillBox" parent="Control/OrbInFocus/StatsContainer/WaterRow/ChillContainer" unique_id=1862266612 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "chill_icon"
+value = 1.0
+value_format = 0
+decimal_places = 0
+
+[node name="AirRow" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer" unique_id=1970371857]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="CritChanceContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/AirRow" unique_id=1263515902]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="CritChanceBox" parent="Control/OrbInFocus/StatsContainer/AirRow/CritChanceContainer" unique_id=1615897189 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+value = 0.01
+
+[node name="SpeedContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/AirRow" unique_id=2135269501]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="SpeedBox" parent="Control/OrbInFocus/StatsContainer/AirRow/SpeedContainer" unique_id=63534021 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "speed_icon"
+value = 100.0
+value_format = 0
+decimal_places = 0
+
+[node name="ShockContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/AirRow" unique_id=1574632125]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ShockBox" parent="Control/OrbInFocus/StatsContainer/AirRow/ShockContainer" unique_id=766443359 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "shock_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="EarthRow" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer" unique_id=521318967]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="CritDamageContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/EarthRow" unique_id=1984149242]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="CritDamageBox" parent="Control/OrbInFocus/StatsContainer/EarthRow/CritDamageContainer" unique_id=1325005410 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "crit_damage_icon"
+value = 2.0
+decimal_places = 0
+
+[node name="WeightContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/EarthRow" unique_id=1192855692]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="WeightBox" parent="Control/OrbInFocus/StatsContainer/EarthRow/WeightContainer" unique_id=1781662311 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "weight_icon"
+value = 5.0
+value_format = 0
+decimal_places = 0
+
+[node name="PoisonContainer" type="HBoxContainer" parent="Control/OrbInFocus/StatsContainer/EarthRow" unique_id=1305230848]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="PoisonBox" parent="Control/OrbInFocus/StatsContainer/EarthRow/PoisonContainer" unique_id=1559502256 instance=ExtResource("5_e8f1m")]
+unique_name_in_owner = true
+layout_mode = 2
+icon_id = "poison_icon"
+value = 0.0
+value_format = 0
+decimal_places = 0
+
+[node name="OrbSlotsContainer" type="HBoxContainer" parent="Control/OrbInFocus" unique_id=661330792]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 4
+
+[node name="OrbSlot1" type="TextureRect" parent="Control/OrbInFocus/OrbSlotsContainer" unique_id=1931059428]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("6_pjoiy")
+
+[node name="OrbSlot2" type="TextureRect" parent="Control/OrbInFocus/OrbSlotsContainer" unique_id=520395944]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("6_pjoiy")
+
+[node name="OrbSlot3" type="TextureRect" parent="Control/OrbInFocus/OrbSlotsContainer" unique_id=1414133947]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("6_pjoiy")
+
+[node name="TransformSection" type="VBoxContainer" parent="Control/OrbInFocus" unique_id=1224219207]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="TransformButton" type="Button" parent="Control/OrbInFocus/TransformSection" unique_id=37768532]
+unique_name_in_owner = true
+visible = false
+custom_maximum_size = Vector2(80, -1)
+layout_mode = 2
+size_flags_horizontal = 4
+disabled = true
+text = "Transform"
+
+[node name="HintContainer" type="GridContainer" parent="Control/OrbInFocus/TransformSection" unique_id=1804304394]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 21
+theme_override_constants/v_separation = 4
+columns = 2
+
+[node name="Hint1" type="Label" parent="Control/OrbInFocus/TransformSection/HintContainer" unique_id=519550453]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint2" type="Label" parent="Control/OrbInFocus/TransformSection/HintContainer" unique_id=1407496237]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint3" type="Label" parent="Control/OrbInFocus/TransformSection/HintContainer" unique_id=464072133]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hint4" type="Label" parent="Control/OrbInFocus/TransformSection/HintContainer" unique_id=404427638]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 0
+text = "???"
+label_settings = SubResource("LabelSettings_o7k1j")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GlyphSlots" type="Node2D" parent="." unique_id=43664027]
+
+[node name="GlyphSocket1" type="Sprite2D" parent="GlyphSlots" unique_id=1581169965]
+position = Vector2(-29, -15)
+texture = ExtResource("6_pjoiy")
+
+[node name="GlyphSocket2" type="Sprite2D" parent="GlyphSlots" unique_id=832447030]
+position = Vector2(29, -15)
+texture = ExtResource("6_pjoiy")
+
+[node name="GlyphSocket3" type="Sprite2D" parent="GlyphSlots" unique_id=372444667]
+position = Vector2(0, 33)
+texture = ExtResource("6_pjoiy")

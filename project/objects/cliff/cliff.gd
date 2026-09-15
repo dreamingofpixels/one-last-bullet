@@ -9,8 +9,7 @@ enum Kind {
 	WALL_2,
 	CORNER_NW,
 	CORNER_NE,
-	VERTICAL_WALL_W,
-	VERTICAL_WALL_E,
+	VERTICAL_WALL,
 }
 
 const CELL_SIZE := 32.0
@@ -23,8 +22,7 @@ const _SHEET_PATHS: Dictionary = {
 	Kind.WALL_2: "res://objects/cliff/desert_cliff_horizontal_wall_2.png",
 	Kind.CORNER_NW: "res://objects/cliff/desert_cliff_corner_NW.png",
 	Kind.CORNER_NE: "res://objects/cliff/desert_cliff_corner_NE.png",
-	Kind.VERTICAL_WALL_W: "res://objects/cliff/desert_cliff_vertical_wall_W.png",
-	Kind.VERTICAL_WALL_E: "res://objects/cliff/desert_cliff_vertical_wall_E.png",
+	Kind.VERTICAL_WALL: "res://objects/cliff/desert_cliff_vertical_wall.png",
 }
 
 const _FRAME_COUNTS: Dictionary = {
@@ -34,8 +32,7 @@ const _FRAME_COUNTS: Dictionary = {
 	Kind.WALL_2: 4,
 	Kind.CORNER_NW: 4,
 	Kind.CORNER_NE: 4,
-	Kind.VERTICAL_WALL_W: 4,
-	Kind.VERTICAL_WALL_E: 4,
+	Kind.VERTICAL_WALL: 2,
 }
 
 @export_enum(
@@ -45,8 +42,7 @@ const _FRAME_COUNTS: Dictionary = {
 	"wall_2",
 	"corner_NW",
 	"corner_NE",
-	"vertical_wall_W",
-	"vertical_wall_E"
+	"vertical_wall"
 )
 var kind: int = Kind.WALL_1:
 	set(value):
@@ -55,7 +51,7 @@ var kind: int = Kind.WALL_1:
 		notify_property_list_changed()
 		_apply_sheet()
 
-## Editor preview / starting frame. Overwritten at runtime by adjacency refresh.
+## Editor preview / starting frame. Overwritten at runtime by adjacency (except vertical_wall, which randomizes).
 @export var frame_index: int = 0:
 	set(value):
 		frame_index = clampi(value, 0, _frame_count() - 1)
@@ -87,6 +83,8 @@ func _ready() -> void:
 		destroy.destroyed.connect(_on_cliff_destroyed)
 
 	if not Engine.is_editor_hint():
+		if kind == Kind.VERTICAL_WALL:
+			frame_index = randi() % 2
 		Cliff.refresh_all_frames.call_deferred(get_tree())
 
 
@@ -137,6 +135,9 @@ func _on_cliff_destroyed(_node: Node) -> void:
 
 
 func _refresh_frame_from_neighbors() -> void:
+	# Vertical wall: cosmetic frame is randomized once on ready, not adjacency-driven.
+	if kind == Kind.VERTICAL_WALL:
+		return
 	var has_left: bool = _has_cliff_at(Vector2(-CELL_SIZE, 0.0))
 	var has_right: bool = _has_cliff_at(Vector2(CELL_SIZE, 0.0))
 	var has_above: bool = _has_cliff_at(Vector2(0.0, -CELL_SIZE))
@@ -182,14 +183,6 @@ func _resolve_frame(
 			if not has_left and has_right:
 				return 1
 			if has_left and not has_right:
-				return 2
-			return 3
-		Kind.VERTICAL_WALL_W, Kind.VERTICAL_WALL_E:
-			if has_above and has_below:
-				return 0
-			if has_above and not has_below:
-				return 1
-			if has_below and not has_above:
 				return 2
 			return 3
 		_:

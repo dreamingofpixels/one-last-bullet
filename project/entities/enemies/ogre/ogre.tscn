@@ -288,6 +288,7 @@ shape = SubResource("CircleShape2D_hitbox")
 
 [node name="EnemyAttackComponent" parent="Components" unique_id=2048123457 node_paths=PackedStringArray("animated_sprite", "movement_component", "navigation_component", "knockback_component", "status_component") instance=ExtResource("13_eattack")]
 unique_name_in_owner = true
+collision_mask = 3
 damage = 10.0
 attack_range = 44.0
 hold_duration = 0.35

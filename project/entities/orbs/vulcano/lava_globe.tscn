@@ -1,0 +1,161 @@
+[gd_scene format=3 uid="uid://creoxyki6oeom"]
+
+[ext_resource type="Script" uid="uid://bsm7kg48wphlw" path="res://entities/orbs/vulcano/lava_globe.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cfb1kl30bkbmb" path="res://entities/orbs/vulcano/lava_globe.png" id="2_fly"]
+[ext_resource type="Texture2D" uid="uid://f8exfe4p13cl" path="res://entities/orbs/vulcano/lava_globe_to_puddle.png" id="3_splat"]
+[ext_resource type="Texture2D" uid="uid://cgyct4ifywjc7" path="res://entities/orbs/vulcano/lava_puddle.png" id="4_puddle"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fly_0"]
+atlas = ExtResource("2_fly")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fly_1"]
+atlas = ExtResource("2_fly")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fly_2"]
+atlas = ExtResource("2_fly")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fly_3"]
+atlas = ExtResource("2_fly")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_puddle_0"]
+atlas = ExtResource("4_puddle")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_puddle_1"]
+atlas = ExtResource("4_puddle")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_puddle_2"]
+atlas = ExtResource("4_puddle")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_puddle_3"]
+atlas = ExtResource("4_puddle")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_0"]
+atlas = ExtResource("3_splat")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_1"]
+atlas = ExtResource("3_splat")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_2"]
+atlas = ExtResource("3_splat")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_3"]
+atlas = ExtResource("3_splat")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_4"]
+atlas = ExtResource("3_splat")
+region = Rect2(128, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_5"]
+atlas = ExtResource("3_splat")
+region = Rect2(160, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_6"]
+atlas = ExtResource("3_splat")
+region = Rect2(192, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_splat_7"]
+atlas = ExtResource("3_splat")
+region = Rect2(224, 0, 32, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_lava"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fly_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fly_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fly_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fly_3")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_puddle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_puddle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_puddle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_puddle_3")
+}],
+"loop": 1,
+"name": &"puddle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_splat_7")
+}],
+"loop": 0,
+"name": &"splat",
+"speed": 10.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_puddle"]
+
+[node name="LavaGlobe" type="Node2D" unique_id=269772445]
+script = ExtResource("1_script")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1743722571]
+unique_name_in_owner = true
+texture_filter = 1
+sprite_frames = SubResource("SpriteFrames_lava")
+animation = &"splat"
+frame = 7
+frame_progress = 1.0
+
+[node name="Hitbox" type="Area2D" parent="." unique_id=392789683]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 4
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox" unique_id=1541627090]
+unique_name_in_owner = true
+shape = SubResource("CircleShape2D_puddle")
+disabled = true

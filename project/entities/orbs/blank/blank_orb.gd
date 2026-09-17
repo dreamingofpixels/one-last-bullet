@@ -169,10 +169,17 @@ static func set_bounce_off_entities(value: bool) -> void:
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
-	if state != OrbState.FLYING or _circle_captured or _vault_hold:
+	if state != OrbState.FLYING or _circle_captured or _vault_hold or freeze:
 		return
 	if aim_direction.length_squared() < 0.0001:
 		aim_direction = Vector2.RIGHT
+
+	var keep_speed: bool = _keeps_constant_flight_speed()
+	var travel: Vector2 = aim_direction
+	if not keep_speed:
+		var current_vel: Vector2 = physics_state.linear_velocity
+		if current_vel.length_squared() > 0.0001:
+			travel = current_vel.normalized()
 
 	var blocked_normal := Vector2.ZERO
 	var contact_count: int = physics_state.get_contact_count()
@@ -182,7 +189,7 @@ func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
 			continue
 		normal = normal.normalized()
 		# Only count surfaces we are moving into (avoids sticky re-reflect jitter).
-		if aim_direction.dot(normal) >= 0.0:
+		if travel.dot(normal) >= 0.0:
 			continue
 		blocked_normal += normal
 
@@ -191,9 +198,14 @@ func _integrate_forces(physics_state: PhysicsDirectBodyState2D) -> void:
 			_spawn_world_impact(physics_state.get_contact_collider_position(i), normal)
 
 	if blocked_normal.length_squared() > 0.0001:
-		aim_direction = _safe_exit_direction(aim_direction, blocked_normal.normalized())
-
-	physics_state.linear_velocity = aim_direction * speed
+		aim_direction = _safe_exit_direction(travel, blocked_normal.normalized())
+		if keep_speed:
+			physics_state.linear_velocity = aim_direction * speed
+		else:
+			var speed_now: float = physics_state.linear_velocity.length()
+			physics_state.linear_velocity = aim_direction * speed_now
+	elif keep_speed:
+		physics_state.linear_velocity = aim_direction * speed
 
 
 func _physics_process(delta: float) -> void:
@@ -205,19 +217,31 @@ func _physics_process(delta: float) -> void:
 			if _circle_captured or _vault_hold:
 				linear_velocity = Vector2.ZERO
 				return
-			# Keep constant speed; direction is owned by aim_direction / _integrate_forces.
-			if aim_direction.length_squared() < 0.0001:
-				aim_direction = Vector2.RIGHT
-			linear_velocity = aim_direction * speed
-			_apply_heading()
-			# Clear instigator once grace window elapses.
-			if _grace_clear_msec > 0 and Time.get_ticks_msec() >= _grace_clear_msec:
-				_end_grace_visual()
-			_update_never_still_watchdog(delta)
+			if _keeps_constant_flight_speed():
+				# Keep constant speed; direction is owned by aim_direction / _integrate_forces.
+				if aim_direction.length_squared() < 0.0001:
+					aim_direction = Vector2.RIGHT
+				linear_velocity = aim_direction * speed
+				_apply_heading()
+				# Clear instigator once grace window elapses.
+				if _grace_clear_msec > 0 and Time.get_ticks_msec() >= _grace_clear_msec:
+					_end_grace_visual()
+				_update_never_still_watchdog(delta)
+			else:
+				if linear_velocity.length_squared() > 0.0001:
+					aim_direction = linear_velocity.normalized()
+				_apply_heading()
+				if _grace_clear_msec > 0 and Time.get_ticks_msec() >= _grace_clear_msec:
+					_end_grace_visual()
 		OrbState.TETHERED:
 			_update_tether(delta)
 		OrbState.POSSESSED:
 			pass
+
+
+## Typed orbs can opt out of constant-speed flight (e.g. Vulcano slides then parks).
+func _keeps_constant_flight_speed() -> bool:
+	return true
 
 
 # ── Lifecycle API ─────────────────────────────────────────────────────────────

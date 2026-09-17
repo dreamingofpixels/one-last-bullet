@@ -28,7 +28,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision (design)**: Socketing glyphs boosts one of the orb's 12 attributes (Common / Rare / Unique values). **Three glyphs on a Blank Orb** can upgrade it into one of **20** specialist orbs with special effects. **Three glyphs on a non-Blank orb** can, with the right combination, trigger **Attunement**. After **two** glyphs are socketed, the live circle shows Transform hints on the matching element stat row (recipe **name** if discovered / row exists and GameData `active` is not `false`, `???` otherwise). After **three** glyphs match a playable recipe, OrbInfo previews that specialist (name / effect / GameData stats); Triangle confirms Transform and **launches** the new orb. Two-glyph hints do not swap the whole panel.
 - **Why**: Gives Blank Orbs a craft identity and specialist orbs a further chase; the two-glyph hint teaches recipes without inventing names for missing data; placing the name on the third-element row shows which glyph to add next; a full 3-glyph preview is the confirm step before the orb flies out.
 - **Alternatives**: Glyphs only ever flat-add stats — no orb identity change; auto-upgrade on any three glyphs without recipes — less discovery; show all recipe names immediately without a discovery seam — harder to add meta later; menu hover/focus preview + 3-glyph single hint — previous paused-menu UX, superseded for live ritual; keep OrbInfo on the Blank after three glyphs — rejected, hid the craft result until after Triangle; Transform in-place and keep captured — previous, extra Circle press to launch.
-- **Status**: decided (in-codebase) for Blank→specialist Transform when a scene resolves (Ghost/Contagion/Conduit); Attunement Transform not playable yet (no scenes); full 20-orb table still incomplete; live element-row hints (names only) plus 3-glyph OrbInfo preview in-codebase
+- **Status**: decided (in-codebase) for Blank→specialist Transform when a scene resolves (Ghost/Contagion/Conduit/Vulcano); Attunement Transform not playable yet (no scenes); full 20-orb table still incomplete; live element-row hints (names only) plus 3-glyph OrbInfo preview in-codebase
 
 ### Ritual menu: all-orb inventory; Blank Orb buy scales
 - **Decision (design)**: The ritual menu shows info about the captured orb **and** an **inventory of all current orbs** at the bottom of the screen. **Buy a new Blank Orb** starts at **20 mana** and **goes up by 10** each purchase. Recycle is **5 / 10 / 20** mana for Common / Rare / Unique (already in prototype). Circle activation is first-use free, then **+5 mana** per use (already in prototype). Cap **3 orbs** in play.
@@ -79,8 +79,8 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase); playtest — source design now wants one Blank Orb at start; Contagion renamed from Rot
 
 ### Orb folder layout and class rename (`entities/orbs/`)
-- **Decision**: Orbs live under `project/entities/orbs/` with one subfolder per type: `blank/` (shared `BlankOrb` base), `ghost/`, `contagion/`, `conduit/`. Shared SFX in `orb_sfx/`. Typed `class_name`s are `GhostOrb`, `ContagionOrb`, `ConduitOrb` (all extend `BlankOrb`). The old `ChaosOrb` class name and `entities/chaos_orb/` path are retired; `RotOrb` / `rot/` are renamed to Contagion.
-- **Why**: Clearer per-type organization as more orb variants are added; `BlankOrb` matches the neutral base scene; Ghost/Contagion/Conduit names match the current design vocabulary.
+- **Decision**: Orbs live under `project/entities/orbs/` with one subfolder per type: `blank/` (shared `BlankOrb` base), `ghost/`, `contagion/`, `conduit/`, `vulcano/`. Shared SFX in `orb_sfx/`. Typed `class_name`s are `GhostOrb`, `ContagionOrb`, `ConduitOrb`, `VulcanoOrb` (all extend `BlankOrb`). The old `ChaosOrb` class name and `entities/chaos_orb/` path are retired; `RotOrb` / `rot/` are renamed to Contagion.
+- **Why**: Clearer per-type organization as more orb variants are added; `BlankOrb` matches the neutral base scene; Ghost/Contagion/Conduit/Vulcano names match the current design vocabulary.
 - **Alternatives**: Keep flat `chaos_orb/` with Shadow/Poison/Electric names — mismatched with current art/naming; rename only paths but keep `ChaosOrb` class — conflicts with blank-base fantasy; keep the Rot name — superseded by Contagion branding + Disease fantasy.
 - **Status**: decided (in-codebase)
 
@@ -100,6 +100,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: Blight stacks persist until death. Each stack: **−5% damage dealt** and **+5% damage taken from orbs** (impact, splash, weight bowling), both capped at **90%**. Outgoing never hits 0 (10% remains). Does **not** amp Burn ticks, Ghost possession DPS, Conduit current, or Shock burst. Glyph for the attribute is **Spore** (Earth).
 - **Why**: Percent scales with future enemy/orb damage without a sheet-wide retune; orb-only amp keeps Fire/Ghost/Conduit identities distinct and avoids accidental DoT melt; 90% cap matches Chill's ceiling language.
 - **Alternatives**: Flat ±1 per stack — zeros goblins and Ghost DPS too early; inflate all HP/damage 4× to shrink flat 1 — full combat retune; amp all damage sources — Fire+Earth becomes mandatory; cap at 50% — playtest may revisit; dual wither (−dealt/−taken) — wrong sign, self-nerf.
+- **Status**: decided (in-codebase)
+
+### Vulcano rooted motion + lava puddles
+- **Decision**: Vulcano (`Fire`+`Earth`+`Earth`) stays `FLYING` for vault/capture but opts out of BlankOrb constant-speed flight via `_keeps_constant_flight_speed()`. After launch or vault redirect it slides with glyph-like damp (`linear_damp` 5, stop ≤ 12 px/s), then freezes as a parked contact hazard (GameData impact/self-damage/burn). While parked it spews lava globes (~1.25 s) to a random 28–72 px ring; each globe arcs, plays splat, then a 5 s puddle applies **1 Burn/s** to enemies (source = Vulcano for glyph-drop). Spew pauses while vault-held or circle-captured; existing globes/puddles keep running. Feel constants live on the Vulcano scripts, not a new GameData sheet. Scene at `entities/orbs/vulcano/vulcano_orb.tscn` (OrbRecipes fallback; authored JSON path under `blank/` is unused).
+- **Why**: Matches the rooted/immobile fantasy without a full motion-system rewrite; keeping `FLYING` preserves dash vault and ritual capture; puddles reuse Burn stacks instead of a second DoT.
+- **Alternatives**: New `ROOTED` orb state — more plumbing for vault/capture; always-flying with zero speed — stall watchdog and trail fight it; puddle deals flat HP — duplicates Burn identity; wire motion from GameData `motion` sheet — not ready yet.
 - **Status**: decided (in-codebase)
 
 ### Poison stacks persist (no decay)
@@ -354,7 +360,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Mana vs glyphs as floor loot**: source overview still says enemies drop vanishing **mana**; Glyphs / Progression sections make **glyphs** the drop and mana the recycle/overflow currency.
 - **Glyph vanish duration**: glyphs currently persist until deposited or orb-destroyed; should grounded glyphs still time out?
 - **Attunement discovery**: prototype treats authored recipe names as discovered (`OrbRecipes.is_discovered` always true). Persistent / per-run registry still TBD.
-- **20 specialist orbs / Attunement recipes**: `orbs` / `attunements` sheets hold element combos; only Ghost / Contagion / Conduit are playable (`scene_path`). Missing combos show `???` and cannot Transform.
+- **20 specialist orbs / Attunement recipes**: `orbs` / `attunements` sheets hold element combos; playable scenes so far: Ghost / Contagion / Conduit / Vulcano. Missing combos show `???` and cannot Transform.
 - **Camera / view perspective**: player uses 4-direction diagonal sprites in a flat arena; prototype uses a fixed centered `Camera2D` on the 640×360 arena. Confirm long-term camera for larger stages.
 - **Arc deflect / melee rollback**: flip `deflect_orb_enabled` / `melee_enabled` if proximity Attack redirect needs the old swing again.
 - **Entity bounce default**: keep punch-through or ship bounce-off-entities after desert export playtests.

@@ -304,6 +304,7 @@ func release_orb(direction: Vector2 = Vector2.ZERO, by: Node = null) -> void:
 	var exit_dir: Vector2 = direction
 	if exit_dir.length_squared() < 0.0001:
 		exit_dir = Vector2.from_angle(randf() * TAU)
+	grant_capture_grace(orb)
 	if orb.has_method("release_from_circle"):
 		orb.release_from_circle(exit_dir, by)
 	deactivate()
@@ -345,20 +346,31 @@ func notify_orb_count_changed() -> void:
 
 
 func _poll_ritual_input() -> void:
+	var seen: Dictionary = {}
 	for player_variant in _players_inside.keys():
-		var player: Node = player_variant as Node
-		if player == null or not is_instance_valid(player):
+		_handle_ritual_player_input(player_variant as Node, true)
+		seen[player_variant] = true
+	# Glyph sockets sit outside DepositArea (~33 px vs radius 22). Transform / bake /
+	# cancel and idle buy (label uses InfoProximityArea) must still work from there.
+	for player_variant in _players_near_info.keys():
+		if seen.has(player_variant):
 			continue
-		var controls: Controls = player.get("controls") as Controls
-		if controls == null:
-			continue
+		_handle_ritual_player_input(player_variant as Node, false)
 
-		if controls.is_activate_just_pressed():
-			try_activate()
-		if controls.is_upgrade_just_pressed():
-			_try_upgrade_or_buy(player)
-		if controls.is_ritual_cancel_just_pressed() and _ritual_running and contains_player(player):
-			release_orb(Vector2.ZERO, player)
+
+func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var controls: Controls = player.get("controls") as Controls
+	if controls == null:
+		return
+
+	if in_deposit and controls.is_activate_just_pressed():
+		try_activate()
+	if controls.is_upgrade_just_pressed():
+		_try_upgrade_or_buy(player)
+	if controls.is_ritual_cancel_just_pressed() and _ritual_running:
+		release_orb(Vector2.ZERO, player)
 
 
 func _try_upgrade_or_buy(player: Node) -> void:
@@ -395,7 +407,7 @@ func _try_commit_upgrade(player: Node) -> void:
 			transform_requested.emit(orb_id, player)
 		return
 	orb.bake_socketed_glyphs()
-	_refresh_orb_info(true)
+	release_orb(Vector2.ZERO, player)
 
 
 func _show_ritual_ui() -> void:

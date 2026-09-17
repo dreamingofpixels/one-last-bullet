@@ -197,9 +197,9 @@ func _resolve_y_sort_parent() -> Node:
 	var scene: Node = get_tree().current_scene
 	if scene == null:
 		return get_parent()
-	var y_sort: Node = scene.get_node_or_null("WorldYSort")
+	var y_sort: Node = scene.get_node_or_null("%WorldYSort")
 	if y_sort == null:
-		y_sort = scene.get_node_or_null("%WorldYSort")
+		y_sort = scene.get_node_or_null("WorldYSort")
 	if y_sort != null:
 		return y_sort
 	return get_parent()

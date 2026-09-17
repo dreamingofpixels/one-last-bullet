@@ -2,8 +2,9 @@ class_name LavaGlobe
 extends Node2D
 
 ## Arcing lava projectile from Vulcano: fly → splat → puddle (Burn/s), then free.
-## Node origin is the ground contact (bottom of art) with a small north sort bias
-## so props/entities at the same feet line draw in front.
+## Flies under `%WorldYSort` so the globes y-sort with entities; on landing they
+## reparent to `%GroundEffects` so puddles stay under entities and orbs.
+## Node origin is the ground contact (bottom of art).
 
 const GROUP_NAME := &"lava_puddles"
 const PHYSICS_LAYER_ENEMY := 4
@@ -18,8 +19,6 @@ const FLIGHT_DURATION := 0.55
 const ARC_HEIGHT := 28.0
 ## 32px frames: half-height so the node sits at the art bottom (prop convention).
 const FRAME_HALF_HEIGHT := 16.0
-## Pull y-sort slightly north of the visual base.
-const SORT_BIAS_Y := 8.0
 
 enum Phase { FLYING, SPLATTING, PUDDLE, EXPIRING }
 
@@ -61,26 +60,24 @@ func _ready() -> void:
 	hitbox.monitoring = false
 	hitbox.monitorable = false
 	collision_shape.disabled = true
-	# Hitbox stays on the visual ground contact, south of the biased sort point.
-	collision_shape.position = Vector2(0.0, SORT_BIAS_Y)
 	sprite.animation_finished.connect(_on_animation_finished)
 	if _setup_done:
 		_begin_flight()
 
 
 func _grounded_sprite_offset() -> Vector2:
-	return Vector2(0.0, SORT_BIAS_Y - FRAME_HALF_HEIGHT)
+	return Vector2(0.0, -FRAME_HALF_HEIGHT)
 
 
 func _place_at_landing() -> void:
-	global_position = Vector2(_end.x, _end.y - SORT_BIAS_Y)
+	global_position = _end
 
 
 func _begin_flight() -> void:
 	_phase = Phase.FLYING
 	_flight_elapsed = 0.0
-	_place_at_landing()
-	sprite.offset = _grounded_sprite_offset() + (_start - _end)
+	global_position = _start
+	sprite.offset = _grounded_sprite_offset()
 	sprite.play(ANIM_FLY)
 	set_physics_process(true)
 
@@ -100,9 +97,9 @@ func _update_flight(delta: float) -> void:
 	var t: float = clampf(_flight_elapsed / FLIGHT_DURATION, 0.0, 1.0)
 	var ground: Vector2 = _start.lerp(_end, t)
 	var arc: float = -4.0 * ARC_HEIGHT * t * (1.0 - t)
-	# Sort point stays at landing; visual rides the arc via offset.
-	_place_at_landing()
-	sprite.offset = _grounded_sprite_offset() + (ground - _end) + Vector2(0.0, arc)
+	# Sort point follows the ground track; visual rides the arc via offset.
+	global_position = ground
+	sprite.offset = _grounded_sprite_offset() + Vector2(0.0, arc)
 	if t < 1.0:
 		return
 	_begin_splat()
@@ -110,9 +107,29 @@ func _update_flight(delta: float) -> void:
 
 func _begin_splat() -> void:
 	_phase = Phase.SPLATTING
+	_move_to_floor_layer()
 	_place_at_landing()
 	sprite.offset = _grounded_sprite_offset()
 	sprite.play(ANIM_SPLAT)
+
+
+func _move_to_floor_layer() -> void:
+	var ground: Node = _find_ground_effects()
+	if ground == null or get_parent() == ground:
+		return
+	reparent(ground)
+
+
+func _find_ground_effects() -> Node:
+	if get_tree() == null:
+		return null
+	var scene: Node = get_tree().current_scene
+	if scene == null:
+		return null
+	var ground: Node = scene.get_node_or_null("%GroundEffects")
+	if ground == null:
+		ground = scene.get_node_or_null("GroundEffects")
+	return ground
 
 
 func _on_animation_finished() -> void:

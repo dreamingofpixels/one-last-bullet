@@ -395,6 +395,10 @@ unique_name_in_owner = true
 z_index = 1
 position = Vector2(320, 176)
 
+[node name="GroundEffects" type="Node2D" parent="." unique_id=1989079220]
+unique_name_in_owner = true
+y_sort_enabled = true
+
 [node name="WorldYSort" type="Node2D" parent="." unique_id=1563161946]
 unique_name_in_owner = true
 y_sort_enabled = true
@@ -478,8 +482,10 @@ position = Vector2(400, 72)
 position = Vector2(584, 328)
 
 [node name="Cliffs" type="Node2D" parent="WorldYSort" unique_id=776114261]
+y_sort_enabled = true
 
 [node name="CliffSection1" type="Node2D" parent="WorldYSort/Cliffs" unique_id=492503312]
+y_sort_enabled = true
 
 [node name="Cliff" parent="WorldYSort/Cliffs/CliffSection1" unique_id=1390132895 instance=ExtResource("10_dlb6r")]
 position = Vector2(0, 160)
@@ -593,6 +599,7 @@ collision_size_override = Vector2(16, 32)
 collision_offset_override = Vector2(0, -16)
 
 [node name="CliffSection2" type="Node2D" parent="WorldYSort/Cliffs" unique_id=928987340]
+y_sort_enabled = true
 
 [node name="Cliff5" parent="WorldYSort/Cliffs/CliffSection2" unique_id=1438540998 instance=ExtResource("10_dlb6r")]
 position = Vector2(424, 72)
@@ -647,6 +654,7 @@ collision_size_override = Vector2(32, 16)
 collision_offset_override = Vector2(0, -8)
 
 [node name="CliffSection3" type="Node2D" parent="WorldYSort/Cliffs" unique_id=1201078008]
+y_sort_enabled = true
 position = Vector2(-168, 200)
 
 [node name="Cliff4" parent="WorldYSort/Cliffs/CliffSection3" unique_id=545870865 instance=ExtResource("10_dlb6r")]
@@ -735,7 +743,7 @@ shape = SubResource("RectangleShape2D_right")
 unique_name_in_owner = true
 
 [node name="Glyph" parent="Items" unique_id=1454728676 instance=ExtResource("12_qygx2")]
-position = Vector2(372, 120)
+position = Vector2(533, 295)
 can_sleep = false
 freeze = true
 freeze_mode = 1
@@ -745,7 +753,7 @@ angular_damp = 100.0
 rarity = 1
 
 [node name="Glyph2" parent="Items" unique_id=915524516 instance=ExtResource("12_qygx2")]
-position = Vector2(251, 142)
+position = Vector2(49, 60)
 can_sleep = false
 freeze = true
 freeze_mode = 1
@@ -756,7 +764,7 @@ glyph_id = &"spore"
 rarity = 1
 
 [node name="Glyph3" parent="Items" unique_id=430587660 instance=ExtResource("12_qygx2")]
-position = Vector2(267, 207)
+position = Vector2(457, 77)
 can_sleep = false
 freeze = true
 freeze_mode = 1

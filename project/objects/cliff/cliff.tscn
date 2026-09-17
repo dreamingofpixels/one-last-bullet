@@ -19,19 +19,21 @@ size = Vector2(32, 32)
 size = Vector2(32, 32)
 
 [node name="Cliff" type="StaticBody2D" unique_id=1390132895 groups=["breakables", "navigation_source"]]
+position = Vector2(0, -15)
 collision_mask = 0
 physics_material_override = SubResource("PhysicsMaterial_pq7si")
 script = ExtResource("1_script")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1417950090]
 unique_name_in_owner = true
+position = Vector2(0, 15)
 texture = ExtResource("2_tex")
 offset = Vector2(0, -16)
 vframes = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1362914624]
 unique_name_in_owner = true
-position = Vector2(0, -16)
+position = Vector2(0, -1)
 shape = SubResource("RectangleShape2D_82qs2")
 
 [node name="Components" type="Node2D" parent="." unique_id=120446047]
@@ -52,6 +54,7 @@ sprite = NodePath("../../Sprite2D")
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=1274335967 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true
+position = Vector2(0, 15)
 collision_mask = 0
 script = ExtResource("11_hitbox")
 health_component = NodePath("../HealthComponent")

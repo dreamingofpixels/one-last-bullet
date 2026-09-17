@@ -213,6 +213,9 @@ func _validate_property(property: Dictionary) -> void:
 
 var _state: GlyphState = GlyphState.GROUNDED
 var _carrier: Node2D = null
+var _carry_offset: Vector2 = CARRY_OFFSET
+## RigidBody2D carriers (orbs) do not move children via transform hierarchy — sync manually.
+var _follow_carrier_transform: bool = false
 var _deposited: bool = false
 var _bounce_tween: Tween
 var _deposit_tween: Tween
@@ -323,7 +326,7 @@ func get_carrier() -> Node2D:
 	return _carrier if is_instance_valid(_carrier) else null
 
 
-func pickup(carrier: Node2D) -> bool:
+func pickup(carrier: Node2D, carry_offset: Vector2 = CARRY_OFFSET) -> bool:
 	if not can_be_picked_up() or carrier == null or not is_instance_valid(carrier):
 		return false
 	if carrier.has_method("is_carrying_item") and carrier.is_carrying_item():
@@ -332,26 +335,63 @@ func pickup(carrier: Node2D) -> bool:
 	_stop_bounce()
 	_state = GlyphState.CARRIED
 	_carrier = carrier
+	_carry_offset = carry_offset
 	freeze = true
 	linear_velocity = Vector2.ZERO
 	body_collision.set_deferred("disabled", true)
 	collision_layer = 0
 	collision_mask = 0
 	hitbox_component.set_invulnerable(true)
-	set_physics_process(false)
 
-	presence_area.collision_layer = PHYSICS_LAYER_ITEM
-	presence_area.monitoring = false
-	presence_area.monitorable = true
+	# Orbs flying through DepositArea must not mana-suck a carried glyph via PresenceArea.
+	# RigidBody2D parents do not drive child RigidBody2D transforms — follow in _physics_process
+	# with top_level so we own world position without fighting the parent physics body.
+	_follow_carrier_transform = carrier is RigidBody2D or carrier.is_in_group("orb")
+	if _follow_carrier_transform:
+		presence_area.collision_layer = 0
+		presence_area.monitoring = false
+		presence_area.monitorable = false
+		z_index = 1
+		top_level = true
+		set_physics_process(true)
+	else:
+		presence_area.collision_layer = PHYSICS_LAYER_ITEM
+		presence_area.monitoring = false
+		presence_area.monitorable = true
+		z_index = 0
+		top_level = false
+		set_physics_process(false)
 
 	var keep_global: Vector2 = global_position
 	reparent(carrier, true)
-	global_position = keep_global
-	position = CARRY_OFFSET
+	if _follow_carrier_transform:
+		global_position = carrier.global_position + _carry_offset
+	else:
+		global_position = keep_global
+		position = _carry_offset
 	sprite.position.y = _sprite_rest_y
 
 	if pickup_sound:
 		AudioManager.play_at(pickup_sound, global_position)
+	return true
+
+
+## Place this glyph at `world_pos` under `level_root` without throwing (no inherited velocity).
+func drop_at(world_pos: Vector2, level_root: Node) -> bool:
+	if _state != GlyphState.CARRIED or level_root == null or not is_instance_valid(level_root):
+		return false
+
+	_carrier = null
+	_follow_carrier_transform = false
+	_state = GlyphState.GROUNDED
+	z_index = 0
+	top_level = false
+
+	reparent(level_root, true)
+	global_position = world_pos
+	sprite.position.y = _sprite_rest_y
+
+	_settle_grounded()
 	return true
 
 
@@ -362,7 +402,10 @@ func throw_toward(direction: Vector2, level_root: Node, inherit_velocity: Vector
 	var aim: Vector2 = direction.normalized() if direction.length_squared() > 0.0001 else Vector2.RIGHT
 	var throw_pos: Vector2 = global_position
 	_carrier = null
+	_follow_carrier_transform = false
 	_state = GlyphState.THROWN
+	z_index = 0
+	top_level = false
 
 	reparent(level_root, true)
 	global_position = throw_pos
@@ -388,6 +431,7 @@ func deposit_into(circle: Node) -> void:
 	if not circle.has_method("receive_glyph"):
 		return
 	_deposited = true
+	_follow_carrier_transform = false
 	_stop_bounce()
 	set_physics_process(false)
 
@@ -395,6 +439,8 @@ func deposit_into(circle: Node) -> void:
 		_carrier.clear_carried_item(self)
 	_carrier = null
 	_state = GlyphState.DEPOSITING
+	z_index = 0
+	top_level = false
 
 	call_deferred("_begin_deposit_suck", circle)
 
@@ -449,6 +495,12 @@ func _finish_deposit(circle: Node) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if _state == GlyphState.CARRIED:
+		if _follow_carrier_transform and is_instance_valid(_carrier):
+			global_position = _carrier.global_position + _carry_offset
+		else:
+			set_physics_process(false)
+		return
 	if _state != GlyphState.THROWN:
 		set_physics_process(false)
 		return

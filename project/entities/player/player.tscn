@@ -23,8 +23,8 @@
 [ext_resource type="Script" uid="uid://ceaw37m3x00mu" path="res://entities/player/states/dash.gd" id="16_dash"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
-radius = 6.0
-height = 26.0
+radius = 5.0
+height = 10.0
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hitbox"]
 radius = 6.0
@@ -42,6 +42,7 @@ animation = &"idle_sw"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=565534729]
 unique_name_in_owner = true
+position = Vector2(0, 9)
 shape = SubResource("CapsuleShape2D_body")
 
 [node name="Components" type="Node2D" parent="." unique_id=101523298]
@@ -90,8 +91,8 @@ body_collision_shape = NodePath("../../CollisionShape2D")
 unique_name_in_owner = true
 focus_radius = 48.0
 capture_enabled = false
-dash_vault_enabled = true
 remote_tether_hold_duration = 1.2
+dash_vault_enabled = true
 
 [node name="DirectionalSpriteComponent" parent="Components" unique_id=122017100 node_paths=PackedStringArray("animated_sprite") instance=ExtResource("8_dir")]
 unique_name_in_owner = true
@@ -161,17 +162,17 @@ unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "pickup"
 
-[node name="ActivateAction" type="Node" parent="Controls"]
+[node name="ActivateAction" type="Node" parent="Controls" unique_id=931397227]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "activate"
 
-[node name="UpgradeAction" type="Node" parent="Controls"]
+[node name="UpgradeAction" type="Node" parent="Controls" unique_id=426086742]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "upgrade"
 
-[node name="RitualCancelAction" type="Node" parent="Controls"]
+[node name="RitualCancelAction" type="Node" parent="Controls" unique_id=1099865785]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "ritual_cancel"

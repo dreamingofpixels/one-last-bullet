@@ -57,12 +57,15 @@ static func result_for(orb: BlankOrb, elements: Array[String]) -> Dictionary:
 
 
 ## After two glyphs, return one hint per possible third element (Fire/Water/Air/Earth).
+## Rows with GameData `active == false` are omitted (treated as no recipe).
 static func hints_for(orb: BlankOrb, two_elements: Array[String]) -> Array:
 	var hints: Array = []
 	for element in ELEMENTS:
 		var candidate: Array[String] = two_elements.duplicate()
 		candidate.append(element)
 		var row: Dictionary = result_for(orb, candidate)
+		if not row.is_empty() and row.get("active") == false:
+			row = {}
 		var entry: Dictionary = {
 			"element": element,
 			"row": row,

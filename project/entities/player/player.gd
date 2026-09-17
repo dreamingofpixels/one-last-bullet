@@ -92,7 +92,7 @@ func try_throw_item() -> bool:
 	if not is_carrying_item():
 		return false
 
-	var aim: Vector2 = controls.get_aim_vector(global_position)
+	var aim: Vector2 = controls.get_throw_aim_vector()
 	if aim.length_squared() < 0.0001:
 		aim = directional_sprite.facing_vector()
 	if aim.length_squared() < 0.0001:

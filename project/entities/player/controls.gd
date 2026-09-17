@@ -64,6 +64,22 @@ func get_aim_vector(origin: Vector2) -> Vector2:
 	return Vector2.ZERO
 
 
+## Glyph throw direction: right stick if aimed, else move direction, else zero (caller uses facing).
+func get_throw_aim_vector() -> Vector2:
+	var stick := Input.get_vector(
+		aim_left_action.action,
+		aim_right_action.action,
+		aim_up_action.action,
+		aim_down_action.action
+	)
+	if stick.length() > AIM_DEADZONE:
+		return stick.normalized()
+	var move: Vector2 = get_move_vector()
+	if move.length_squared() > 0.0001:
+		return move.normalized()
+	return Vector2.ZERO
+
+
 func is_attack_just_pressed() -> bool:
 	if attack_action.action.is_empty():
 		return false

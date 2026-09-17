@@ -50,7 +50,7 @@ enum FocusZone {
 @onready var burn_box: AttributeBox = %BurnBox
 @onready var chill_box: AttributeBox = %ChillBox
 @onready var shock_box: AttributeBox = %ShockBox
-@onready var poison_box: AttributeBox = %PoisonBox
+@onready var blight_box: AttributeBox = %BlightBox
 @onready var orb_slots_container: HBoxContainer = %OrbSlotsContainer
 @onready var orb_slot_1: TextureRect = %OrbSlot1
 @onready var orb_slot_2: TextureRect = %OrbSlot2
@@ -113,7 +113,7 @@ func _ready() -> void:
 	_stat_boxes = [
 		damage_box, self_damage_box, crit_chance_box, crit_damage_box,
 		speed_box, weight_box, splash_box, glyph_drop_box,
-		burn_box, chill_box, shock_box, poison_box,
+		burn_box, chill_box, shock_box, blight_box,
 	]
 	_hint_label_settings_normal = hint_1.label_settings
 	if _hint_label_settings_normal != null:
@@ -464,7 +464,7 @@ func _apply_stats_from_dict(stats: Dictionary) -> void:
 	burn_box.value = float(stats.get("burn", 0.0))
 	chill_box.value = float(stats.get("chill", 0.0))
 	shock_box.value = float(stats.get("shock", 0.0))
-	poison_box.value = float(stats.get("poison", 0.0))
+	blight_box.value = float(stats.get("blight", 0.0))
 
 
 func _set_stats_unknown() -> void:

@@ -302,6 +302,7 @@ count = 3
 
 [sub_resource type="Resource" id="EnemyWave_1"]
 script = ExtResource("8_igk5d")
+delay_before = 10.0
 entries = Array[ExtResource("9_v5loy")]([SubResource("EnemySpawnEntry_grunts")])
 
 [sub_resource type="Resource" id="EnemySpawnEntry_brute"]
@@ -751,7 +752,7 @@ freeze_mode = 1
 linear_damp_mode = 1
 angular_damp_mode = 1
 angular_damp = 100.0
-glyph_id = &"shear"
+glyph_id = &"spore"
 rarity = 1
 
 [node name="Glyph3" parent="Items" unique_id=430587660 instance=ExtResource("12_qygx2")]
@@ -762,13 +763,12 @@ freeze_mode = 1
 linear_damp_mode = 1
 angular_damp_mode = 1
 angular_damp = 100.0
-glyph_id = &"shear"
+glyph_id = &"spore"
 rarity = 1
 
 [node name="EnemySpawner" parent="." unique_id=127933936 instance=ExtResource("7_spawner")]
 unique_name_in_owner = true
 waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw"), SubResource("Resource_glss5"), SubResource("Resource_rnks7")])
-spawning_enabled = false
 assemble_duration = 1.5
 telegraph_duration = 0.3
 

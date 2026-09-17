@@ -220,6 +220,9 @@ var _sprite_rest_y: float = 0.0
 
 
 func _ready() -> void:
+	_apply_visuals()
+	if Engine.is_editor_hint():
+		return
 	add_to_group("glyphs")
 	gravity_scale = 0.0
 	lock_rotation = true
@@ -229,7 +232,6 @@ func _ready() -> void:
 	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	angular_damp = 100.0
 	_sprite_rest_y = sprite.position.y
-	_apply_visuals()
 	_set_grounded_physics()
 	set_physics_process(false)
 

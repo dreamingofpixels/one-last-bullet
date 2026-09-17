@@ -13,7 +13,7 @@ config_version=5
 config/name="Too Many Orbs"
 run/main_scene="uid://drul7vfq10oin"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="uid://jdsqjy68dxhr"
 
 [autoload]
 

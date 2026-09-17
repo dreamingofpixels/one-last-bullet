@@ -109,8 +109,13 @@ func _poll_hits() -> void:
 			continue
 		_hit_victims[id] = true
 		var source: Node = _instigator if _instigator != null and is_instance_valid(_instigator) else null
+		var amount: float = _damage
+		if source != null:
+			var source_comp = source.get("COMPONENTS")
+			if source_comp != null and source_comp.has(StatusComponent):
+				amount *= (source_comp[StatusComponent] as StatusComponent).outgoing_damage_multiplier()
 		victim.health_component.take_damage(
-			_damage, HealthComponent.DamageKind.STANDARD, source
+			amount, HealthComponent.DamageKind.STANDARD, source
 		)
 		_apply_hit_knockback(root)
 

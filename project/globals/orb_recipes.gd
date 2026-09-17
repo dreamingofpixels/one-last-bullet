@@ -125,7 +125,7 @@ static func stats_from_row(row: Dictionary) -> Dictionary:
 		"burn": _row_float(row, "burn"),
 		"chill": _row_float(row, "chill"),
 		"shock": _row_float(row, "shock"),
-		"poison": _row_float(row, "poison"),
+		"blight": _row_float(row, "blight"),
 	}
 
 

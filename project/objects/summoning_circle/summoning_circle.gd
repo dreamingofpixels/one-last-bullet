@@ -63,7 +63,7 @@ var _hint_labels: Array[Label] = []
 @onready var burn_box: AttributeBox = %BurnBox
 @onready var chill_box: AttributeBox = %ChillBox
 @onready var shock_box: AttributeBox = %ShockBox
-@onready var poison_box: AttributeBox = %PoisonBox
+@onready var blight_box: AttributeBox = %BlightBox
 @onready var fire_hint: Label = %FireHint
 @onready var water_hint: Label = %WaterHint
 @onready var air_hint: Label = %AirHint
@@ -490,13 +490,13 @@ func _apply_stats(stats: Dictionary) -> void:
 	burn_box.value = float(stats.get("burn", 0.0))
 	chill_box.value = float(stats.get("chill", 0.0))
 	shock_box.value = float(stats.get("shock", 0.0))
-	poison_box.value = float(stats.get("poison", 0.0))
+	blight_box.value = float(stats.get("blight", 0.0))
 
 
 func _flash_stat_deltas(before: Dictionary, after: Dictionary) -> void:
 	var keys: Array[String] = [
 		"damage", "self_damage", "crit_chance", "crit_damage", "speed", "weight",
-		"splash", "glyph_drop", "burn", "chill", "shock", "poison",
+		"splash", "glyph_drop", "burn", "chill", "shock", "blight",
 	]
 	var box_by_key: Dictionary = {
 		"damage": damage_box,
@@ -510,7 +510,7 @@ func _flash_stat_deltas(before: Dictionary, after: Dictionary) -> void:
 		"burn": burn_box,
 		"chill": chill_box,
 		"shock": shock_box,
-		"poison": poison_box,
+		"blight": blight_box,
 	}
 	for key in keys:
 		if not is_equal_approx(float(before.get(key, 0.0)), float(after.get(key, 0.0))):

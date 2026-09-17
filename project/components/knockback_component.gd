@@ -127,7 +127,10 @@ func _deal_bowling_damage(entity: Node) -> void:
 	var comp = entity.get("COMPONENTS")
 	if comp == null or not comp.has(HealthComponent):
 		return
-	(comp[HealthComponent] as HealthComponent).take_damage(_collision_damage)
+	var amount: float = _collision_damage
+	if entity.is_in_group("enemies") and comp.has(StatusComponent):
+		amount *= (comp[StatusComponent] as StatusComponent).incoming_orb_multiplier()
+	(comp[HealthComponent] as HealthComponent).take_damage(amount)
 
 
 func _resolve_entity_root(collider: Node) -> Node:

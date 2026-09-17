@@ -39,7 +39,7 @@ static var bounce_off_entities: bool = false
 @export var burn: int = 0
 @export var chill: int = 0
 @export var shock: int = 0
-@export var poison: int = 0
+@export var blight: int = 0
 @export var glyph_slots: int = 3
 
 const GLYPH_RARITY_COMMON := 0
@@ -510,7 +510,7 @@ func get_stat_snapshot() -> Dictionary:
 		"burn": burn,
 		"chill": chill,
 		"shock": shock,
-		"poison": poison,
+		"blight": blight,
 	}
 
 
@@ -606,6 +606,9 @@ func bake_socketed_glyphs() -> void:
 
 func _apply_glyph_attribute(attr: StringName, value: float) -> bool:
 	var key: String = String(attr)
+	# Legacy GameData name from when Poison was renamed to Blight.
+	if key == "poison":
+		key = "blight"
 	var sync_damage: bool = false
 
 	match key:
@@ -632,8 +635,8 @@ func _apply_glyph_attribute(attr: StringName, value: float) -> bool:
 			chill += int(value)
 		"shock":
 			shock += int(value)
-		"poison":
-			poison += int(value)
+		"blight":
+			blight += int(value)
 		_:
 			return false
 
@@ -803,7 +806,16 @@ func resolve_hitbox_damage(victim: Node) -> Dictionary:
 		amount *= crit_damage
 		kind = HealthComponent.DamageKind.CRIT
 
-	var result: Dictionary = {"amount": amount, "kind": kind}
+	# Pre-blight amount is cached for splash; blight amp applied per victim below.
+	var pre_blight_amount: float = amount
+	if victim.is_in_group("enemies"):
+		amount *= _blight_incoming_multiplier(victim)
+
+	var result: Dictionary = {
+		"amount": amount,
+		"kind": kind,
+		"pre_blight_amount": pre_blight_amount,
+	}
 	_resolved_hit_cache[victim_id] = result
 	return result
 
@@ -1368,8 +1380,8 @@ func _load_stats_from_gamedata() -> void:
 		chill = int(data["chill"])
 	if data.has("shock"):
 		shock = int(data["shock"])
-	if data.has("poison"):
-		poison = int(data["poison"])
+	if data.has("blight"):
+		blight = int(data["blight"])
 
 
 func _sync_damage_component() -> void:
@@ -1381,8 +1393,11 @@ func _apply_splash(direct_victim: Node, resolved: Dictionary) -> void:
 	if splash <= 0.0:
 		return
 
-	var splash_amount: float = splash * float(resolved.get("amount", 0.0))
-	if splash_amount <= 0.0:
+	# Splash is a portion of pre-blight hit damage; each enemy gets their own blight amp.
+	var splash_base: float = splash * float(
+		resolved.get("pre_blight_amount", resolved.get("amount", 0.0))
+	)
+	if splash_base <= 0.0:
 		return
 	if not is_inside_tree():
 		return
@@ -1417,10 +1432,12 @@ func _apply_splash(direct_victim: Node, resolved: Dictionary) -> void:
 		if comp == null or not comp.has(HealthComponent):
 			continue
 
-		var amount: float = splash_amount
+		var amount: float = splash_base
 		var kind: HealthComponent.DamageKind = HealthComponent.DamageKind.STANDARD
 		if victim_root.is_in_group("player"):
 			amount = splash * self_damage
+		elif victim_root.is_in_group("enemies"):
+			amount *= _blight_incoming_multiplier(victim_root)
 		(comp[HealthComponent] as HealthComponent).take_damage(amount, kind, self)
 
 
@@ -1459,11 +1476,18 @@ func _apply_status_stacks(victim: Node) -> void:
 		return
 
 	var status: StatusComponent = comp[StatusComponent] as StatusComponent
-	if poison > 0:
-		status.add_stacks(StatusComponent.StatusId.POISON, poison, self)
+	if blight > 0:
+		status.add_stacks(StatusComponent.StatusId.BLIGHT, blight, self)
 	if burn > 0:
 		status.add_stacks(StatusComponent.StatusId.BURN, burn, self)
 	if chill > 0:
 		status.add_stacks(StatusComponent.StatusId.CHILL, chill, self)
 	if shock > 0:
 		status.add_stacks(StatusComponent.StatusId.SHOCK, shock, self)
+
+
+func _blight_incoming_multiplier(victim: Node) -> float:
+	var comp = victim.get("COMPONENTS")
+	if comp == null or not comp.has(StatusComponent):
+		return 1.0
+	return (comp[StatusComponent] as StatusComponent).incoming_orb_multiplier()

@@ -266,7 +266,12 @@ func _poll_hits() -> void:
 		if victim.health_component == null:
 			continue
 		_hit_this_swing[id] = true
-		victim.health_component.take_damage(damage, HealthComponent.DamageKind.STANDARD, owner)
+		var amount: float = damage
+		if owner != null:
+			var owner_comp = owner.get("COMPONENTS")
+			if owner_comp != null and owner_comp.has(StatusComponent):
+				amount *= (owner_comp[StatusComponent] as StatusComponent).outgoing_damage_multiplier()
+		victim.health_component.take_damage(amount, HealthComponent.DamageKind.STANDARD, owner)
 		_apply_hit_knockback(root)
 
 

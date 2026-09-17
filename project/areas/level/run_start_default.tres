@@ -13,7 +13,7 @@ rarity = 2
 
 [sub_resource type="Resource" id="Resource_aajd0"]
 script = ExtResource("2_glyph_script")
-glyph_id = &"blight"
+glyph_id = &"spore"
 rarity = 1
 
 [resource]

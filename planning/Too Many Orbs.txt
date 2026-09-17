@@ -22,7 +22,7 @@ You start with one orb but can acquire more later on.
 
 Orbs have 12 attributes:
 
-damageself_damagecrit_chancecrit_damageHP dealt to enemies on hit.HP dealt to you on contact.Chance a hit rolls as a crit.Damage multiplier when a hit crits.speedweightsplashglyph_dropHow fast the orb travels.Knockback distance (px). Bowling collisions deal this as damage to both enemies; breakables take +5% damage per point.Percent of resolved hit damage applied to others within 50 px.Chance a glyph drops when this orb gets the kill.burnchillshockpoisonStacks on enemy hit. On death, explodes for 5 × stacks in a radius of 50 × (1 + 5% × stacks) px.Stacks on enemy hit. +5% move and attack-speed slow per stack (capped at 90%).Stacks on enemy hit. At 10 stacks: 50 damage, 2 s stun, then stacks clear.Stacks on enemy hit. 1 damage per stack per second until the enemy dies.
+damageself_damagecrit_chancecrit_damageHP dealt to enemies on hit.HP dealt to you on contact.Chance a hit rolls as a crit.Damage multiplier when a hit crits.speedweightsplashglyph_dropHow fast the orb travels.Knockback distance (px). Bowling collisions deal this as damage to both enemies; breakables take +5% damage per point.Percent of resolved hit damage applied to others within 50 px.Chance a glyph drops when this orb gets the kill.burnchillshockblightStacks on enemy hit. 1 damage per stack per second until the enemy dies.Stacks on enemy hit. +5% move and attack-speed slow per stack (capped at 90%).Stacks on enemy hit. At 10 stacks: 50 damage, 2 s stun, then stacks clear.Stacks on enemy hit. -5% damage dealt and +5% orb damage taken per stack (capped at 90%; orb impact/splash/bowling only).
 
 
 Stage

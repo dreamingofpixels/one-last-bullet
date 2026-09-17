@@ -11,5 +11,5 @@ class_name DamageComponent extends Node2D
 ## 0 = deal damage once per overlap (orb / one-shot contacts).
 @export var contact_damage_interval: float = 0.0
 
-## Tint for floating damage labels (STANDARD white, POISON green, SHADOW black).
+## Tint for floating damage labels (STANDARD white, POISON green unused, SHADOW black, BURN orange).
 @export var damage_kind: HealthComponent.DamageKind = HealthComponent.DamageKind.STANDARD

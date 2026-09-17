@@ -373,15 +373,15 @@ value = 5.0
 value_format = 0
 decimal_places = 0
 
-[node name="PoisonContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow" unique_id=1305230848]
+[node name="BlightContainer" type="HBoxContainer" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow" unique_id=1305230848]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="PoisonBox" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow/PoisonContainer" unique_id=1559502256 instance=ExtResource("5_e8f1m")]
+[node name="BlightBox" parent="OrbInfo/OrbInFocus/StatsContainer/EarthRow/BlightContainer" unique_id=1559502256 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
-icon_id = "poison_icon"
+icon_id = "blight_icon"
 value = 0.0
 value_format = 0
 decimal_places = 0

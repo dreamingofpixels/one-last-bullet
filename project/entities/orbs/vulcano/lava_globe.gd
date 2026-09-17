@@ -2,18 +2,26 @@ class_name LavaGlobe
 extends Node2D
 
 ## Arcing lava projectile from Vulcano: fly → splat → puddle (Burn/s), then free.
+## Node origin is the ground contact (bottom of art) with a small north sort bias
+## so props/entities at the same feet line draw in front.
 
+const GROUP_NAME := &"lava_puddles"
 const PHYSICS_LAYER_ENEMY := 4
 const ANIM_FLY := &"fly"
 const ANIM_SPLAT := &"splat"
 const ANIM_PUDDLE := &"puddle"
+const ANIM_EXPIRE := &"expire"
 const PUDDLE_DURATION := 6.0
 const BURN_TICK_INTERVAL := 1.0
 const BURN_STACKS_PER_TICK := 1
 const FLIGHT_DURATION := 0.55
 const ARC_HEIGHT := 28.0
+## 32px frames: half-height so the node sits at the art bottom (prop convention).
+const FRAME_HALF_HEIGHT := 16.0
+## Pull y-sort slightly north of the visual base.
+const SORT_BIAS_Y := 8.0
 
-enum Phase { FLYING, SPLATTING, PUDDLE }
+enum Phase { FLYING, SPLATTING, PUDDLE, EXPIRING }
 
 @onready var sprite: AnimatedSprite2D = %Sprite
 @onready var hitbox: Area2D = %Hitbox
@@ -38,22 +46,41 @@ func setup(from: Vector2, to: Vector2, source: Node) -> void:
 		_begin_flight()
 
 
+func get_landing_position() -> Vector2:
+	return _end
+
+
+func blocks_landing() -> bool:
+	return _phase != Phase.EXPIRING
+
+
 func _ready() -> void:
+	add_to_group(GROUP_NAME)
 	hitbox.collision_layer = 0
 	hitbox.collision_mask = PHYSICS_LAYER_ENEMY
 	hitbox.monitoring = false
 	hitbox.monitorable = false
 	collision_shape.disabled = true
+	# Hitbox stays on the visual ground contact, south of the biased sort point.
+	collision_shape.position = Vector2(0.0, SORT_BIAS_Y)
 	sprite.animation_finished.connect(_on_animation_finished)
 	if _setup_done:
 		_begin_flight()
 
 
+func _grounded_sprite_offset() -> Vector2:
+	return Vector2(0.0, SORT_BIAS_Y - FRAME_HALF_HEIGHT)
+
+
+func _place_at_landing() -> void:
+	global_position = Vector2(_end.x, _end.y - SORT_BIAS_Y)
+
+
 func _begin_flight() -> void:
 	_phase = Phase.FLYING
 	_flight_elapsed = 0.0
-	global_position = _end
-	sprite.offset = _start - _end
+	_place_at_landing()
+	sprite.offset = _grounded_sprite_offset() + (_start - _end)
 	sprite.play(ANIM_FLY)
 	set_physics_process(true)
 
@@ -64,7 +91,7 @@ func _physics_process(delta: float) -> void:
 			_update_flight(delta)
 		Phase.PUDDLE:
 			_update_puddle(delta)
-		Phase.SPLATTING:
+		Phase.SPLATTING, Phase.EXPIRING:
 			pass
 
 
@@ -73,9 +100,9 @@ func _update_flight(delta: float) -> void:
 	var t: float = clampf(_flight_elapsed / FLIGHT_DURATION, 0.0, 1.0)
 	var ground: Vector2 = _start.lerp(_end, t)
 	var arc: float = -4.0 * ARC_HEIGHT * t * (1.0 - t)
-	# Ground point stays at landing for y-sort; visual rides the arc via offset.
-	global_position = _end
-	sprite.offset = (ground - _end) + Vector2(0.0, arc)
+	# Sort point stays at landing; visual rides the arc via offset.
+	_place_at_landing()
+	sprite.offset = _grounded_sprite_offset() + (ground - _end) + Vector2(0.0, arc)
 	if t < 1.0:
 		return
 	_begin_splat()
@@ -83,31 +110,45 @@ func _update_flight(delta: float) -> void:
 
 func _begin_splat() -> void:
 	_phase = Phase.SPLATTING
-	sprite.offset = Vector2.ZERO
-	global_position = _end
+	_place_at_landing()
+	sprite.offset = _grounded_sprite_offset()
 	sprite.play(ANIM_SPLAT)
 
 
 func _on_animation_finished() -> void:
-	if _phase != Phase.SPLATTING:
-		return
-	_begin_puddle()
+	match _phase:
+		Phase.SPLATTING:
+			_begin_puddle()
+		Phase.EXPIRING:
+			queue_free()
+		_:
+			pass
 
 
 func _begin_puddle() -> void:
 	_phase = Phase.PUDDLE
 	_puddle_remaining = PUDDLE_DURATION
 	_tick_state.clear()
+	_place_at_landing()
+	sprite.offset = _grounded_sprite_offset()
 	sprite.play(ANIM_PUDDLE)
 	hitbox.monitoring = true
 	collision_shape.disabled = false
 	_poll_puddle_victims()
 
 
+func _begin_expire() -> void:
+	_phase = Phase.EXPIRING
+	_tick_state.clear()
+	hitbox.monitoring = false
+	collision_shape.disabled = true
+	sprite.play(ANIM_EXPIRE)
+
+
 func _update_puddle(delta: float) -> void:
 	_puddle_remaining -= delta
 	if _puddle_remaining <= 0.0:
-		queue_free()
+		_begin_expire()
 		return
 	_poll_puddle_victims()
 

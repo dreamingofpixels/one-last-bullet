@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://cfb1kl30bkbmb" path="res://entities/orbs/vulcano/lava_globe.png" id="2_fly"]
 [ext_resource type="Texture2D" uid="uid://f8exfe4p13cl" path="res://entities/orbs/vulcano/lava_globe_to_puddle.png" id="3_splat"]
 [ext_resource type="Texture2D" uid="uid://cgyct4ifywjc7" path="res://entities/orbs/vulcano/lava_puddle.png" id="4_puddle"]
+[ext_resource type="Texture2D" path="res://entities/orbs/vulcano/lava_puddle_expire.png" id="5_expire"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_fly_0"]
 atlas = ExtResource("2_fly")
@@ -69,6 +70,26 @@ region = Rect2(192, 0, 32, 32)
 atlas = ExtResource("3_splat")
 region = Rect2(224, 0, 32, 32)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_expire_0"]
+atlas = ExtResource("5_expire")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_expire_1"]
+atlas = ExtResource("5_expire")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_expire_2"]
+atlas = ExtResource("5_expire")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_expire_3"]
+atlas = ExtResource("5_expire")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_expire_4"]
+atlas = ExtResource("5_expire")
+region = Rect2(128, 0, 32, 32)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_lava"]
 animations = [{
 "frames": [{
@@ -132,6 +153,26 @@ animations = [{
 }],
 "loop": 0,
 "name": &"splat",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_expire_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_expire_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_expire_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_expire_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_expire_4")
+}],
+"loop": 0,
+"name": &"expire",
 "speed": 10.0
 }]
 

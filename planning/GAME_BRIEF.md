@@ -1,4 +1,4 @@
-# A Final Spell — Game Brief
+# Too Many Orbs — Game Brief
 
 ## Summary
 Arcade tavern roguelike. You are a **wizard** whose starting weapon is a **Blank Orb**. Each level starts with the **summoning circle** launching that orb in a **random direction** — it bounces forever, damages enemies on hit, and **hurts you on contact** (player has **3 HP** with brief i-frames after a hit). Steer it by **dashing into** it (vault redirect); each redirect makes it faster and more damaging (to you and enemies). Clear the room; socket **glyphs** into orbs at the circle; survive **10 levels**.

@@ -1,13 +1,13 @@
-# A Final Spell — Project Map
+# Too Many Orbs — Project Map
 
 This is a high-level map of the repo: where things live, how the core systems connect, and the conventions the project uses.
 
 ## Repo layout
 ```
-A Final Spell/
+One Last Bullet/
 ├── planning/
-│   ├── A Final Spell.txt       Source-of-truth design document
-│   ├── A Final Spell.docx      Word export of the design doc
+│   ├── Too Many Orbs.txt       Source-of-truth design document
+│   ├── Too Many Orbs.docx      Word export of the design doc
 │   ├── GAME_BRIEF.md           Living brief
 │   ├── DECISIONS.md            Living decision log
 │   └── PROJECT_MAP.md          Living project map (this file)

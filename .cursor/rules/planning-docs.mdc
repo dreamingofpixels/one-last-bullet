@@ -1,5 +1,5 @@
 ---
-description: Always consult and maintain the A Final Spell planning docs
+description: Always consult and maintain the Too Many Orbs planning docs
 alwaysApply: true
 ---
 
@@ -11,7 +11,7 @@ Before doing substantive work in this repo — answering design questions, propo
 - `planning/DECISIONS.md` — why the codebase looks the way it does (gameplay + technical decisions)
 - `planning/PROJECT_MAP.md` — where things live (autoloads, key scenes/scripts, groups, conventions)
 
-`planning/A Final Spell.txt` is the source-of-truth design document. If it and the planning docs conflict, ask which to trust before acting.
+`planning/Too Many Orbs.txt` is the source-of-truth design document. If it and the planning docs conflict, ask which to trust before acting.
 
 ## When to update the planning docs
 

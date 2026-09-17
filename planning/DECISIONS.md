@@ -1,4 +1,4 @@
-# A Final Spell — Decision Log
+# Too Many Orbs — Decision Log
 
 This is a living log of decisions that shape the game and codebase. Add entries when a choice affects multiple systems or would be costly to reverse.
 
@@ -20,7 +20,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Opening launch: one Blank Orb from the summoning circle
 - **Decision (design)**: Each level starts with the **summoning circle** shooting **one Blank Orb** in a **random direction**. The player starts with that single orb and can **acquire more** later (buy from the ritual menu). Mid-combat steer is **proximity redirect** — each redirect raises that orb's speed and damage (to enemies and the player).
-- **Why**: Source doc (`A Final Spell.txt`) dropped player free-aim and the between-level shop; the circle is both the opening beat and the upgrade station. One orb at start preserves the dodge-your-weapon hook; extra orbs are a purchased escalation.
+- **Why**: Source doc (`Too Many Orbs.txt`) dropped player free-aim and the between-level shop; the circle is both the opening beat and the upgrade station. One orb at start preserves the dodge-your-weapon hook; extra orbs are a purchased escalation.
 - **Alternatives**: Player free-aim from center-bottom — previous source doc; three typed orbs at start (Ghost / Contagion / Conduit) — current prototype, more room pressure but skips the Blank→specialist upgrade fantasy; tether-orbit then release — previous source steer; keep a between-level shop as a second upgrade layer — no longer in the source doc.
 - **Status**: decided (design); prototype still launches Ghost / Contagion / Conduit (see "Opening typed orb volley")
 
@@ -288,6 +288,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Decision**: The game is titled **A Final Spell**. Code, scenes, groups, and physics layer names use **orb** / **BlankOrb** (not bullet).
 - **Why**: The fantasy is one remaining spell, not a gun; the old title no longer matched the orb-of-chaos loop.
 - **Alternatives**: Keep "One Last Bullet" — mismatches wizard/orb fantasy; "Tavern Roguelike" — genre label, not a title; "Orbital" / "Chaos Orb" puns — less clear about the one-spell hook.
+- **Status**: superseded — retitled **Too Many Orbs** (see below)
+
+### Game title: Too Many Orbs
+- **Decision**: The game is titled **Too Many Orbs**. Code, scenes, groups, and physics layer names keep **orb** / **BlankOrb** (not bullet). Disk folder and git remote stay **One Last Bullet** for Cursor history / existing remotes.
+- **Why**: The joke matches the loop — you buy more bouncing hazards that never despawn and hurt you too. Clearer arcade pitch than the one-spell scarcity title.
+- **Alternatives**: Keep "A Final Spell" — previous living title; stronger one-spell hook, weaker multi-orb comedy; "One Last Bullet" — folder/remote leftover, gun fantasy; "Friendly Fireball" / "Just One More Orb" — considered, not chosen.
 - **Status**: decided (in-codebase)
 
 ### Wizard fantasy; Blank Orb (replaces sheriff / one bullet)

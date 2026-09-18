@@ -1,0 +1,72 @@
+[gd_scene format=3 uid="uid://bq8lightningstrike"]
+
+[ext_resource type="Script" uid="uid://cy42lightningstrike" path="res://effects/lightning_strike/lightning_strike.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://blightningstrike7" path="res://effects/lightning_strike/lightning_strike.png" id="2_sheet"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0"]
+atlas = ExtResource("2_sheet")
+region = Rect2(0, 0, 52, 51)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1"]
+atlas = ExtResource("2_sheet")
+region = Rect2(52, 0, 52, 51)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2"]
+atlas = ExtResource("2_sheet")
+region = Rect2(104, 0, 52, 51)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3"]
+atlas = ExtResource("2_sheet")
+region = Rect2(156, 0, 52, 51)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4"]
+atlas = ExtResource("2_sheet")
+region = Rect2(208, 0, 52, 51)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5"]
+atlas = ExtResource("2_sheet")
+region = Rect2(260, 0, 52, 51)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6"]
+atlas = ExtResource("2_sheet")
+region = Rect2(312, 0, 52, 51)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_strike"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6")
+}],
+"loop": false,
+"name": &"strike",
+"speed": 14.0
+}]
+
+[node name="LightningStrike" type="Node2D"]
+z_index = 8
+script = ExtResource("1_script")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+unique_name_in_owner = true
+texture_filter = 1
+sprite_frames = SubResource("SpriteFrames_strike")
+animation = &"strike"
+offset = Vector2(0, -25.5)

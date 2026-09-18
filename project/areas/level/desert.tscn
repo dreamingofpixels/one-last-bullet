@@ -495,24 +495,25 @@ unique_name_in_owner = true
 y_sort_enabled = true
 
 [node name="Glyph" parent="WorldYSort/Items" unique_id=1454728676 instance=ExtResource("12_qygx2")]
-position = Vector2(533, 295)
+position = Vector2(403, 166)
 can_sleep = false
 freeze = true
 freeze_mode = 1
 linear_damp_mode = 1
 angular_damp_mode = 1
 angular_damp = 100.0
-rarity = 1
+glyph_id = &"static"
+rarity = 2
 
 [node name="Glyph2" parent="WorldYSort/Items" unique_id=915524516 instance=ExtResource("12_qygx2")]
-position = Vector2(49, 60)
+position = Vector2(236, 175)
 can_sleep = false
 freeze = true
 freeze_mode = 1
 linear_damp_mode = 1
 angular_damp_mode = 1
 angular_damp = 100.0
-glyph_id = &"spore"
+glyph_id = &"static"
 rarity = 1
 
 [node name="Glyph3" parent="WorldYSort/Items" unique_id=430587660 instance=ExtResource("12_qygx2")]

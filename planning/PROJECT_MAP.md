@@ -26,7 +26,7 @@ One Last Bullet/
     ├── components/             Reusable component scripts + scenes
     │   ├── component_handler.gd / .tscn   Registers children into owner.COMPONENTS
 │   ├── health_component.gd / .tscn    HP; flash + optional i-frames; DestroyComponent on death; floating damage labels via DamageKind; last_damage_source + optional source on take_damage; rest_modulate for lasting status tints (e.g. Disease)
-│   ├── health_bar_component.gd / .tscn  Damage-reveal 18×2 px percentage bar above entities
+    │   ├── health_bar_component.gd / .tscn  Damage-reveal 18×2 px percentage bar + max-4 non-basic status icons above it
 │   ├── damage_component.gd / .tscn    Damage + instigator + optional contact tick interval + damage_kind
     │   ├── hitbox_component.gd / .tscn    Area2D; polls overlaps; frame dedup + contact ticks; optional attacker `should_apply_hitbox_damage` / `resolve_hitbox_damage` / `on_hitbox_hit`
     │   ├── destroy_component.gd / .tscn   Disables collisions, destroy SFX, pixel-fall FX, emits destroyed(node)
@@ -34,7 +34,7 @@ One Last Bullet/
     │   ├── knockback_component.gd / .tscn Decaying shove (CharacterBody2D / RigidBody2D / Node2D); `push_distance` for fixed-distance bowling with collision damage
     │   ├── navigation_component.gd / .tscn  NavigationAgent2D chase + avoidance for enemies
     │   ├── homing_component.gd / .tscn     Steers a heading toward a target (`turn_rate` + optional nav `use_pathing`); orbs apply to aim_direction
-    │   ├── status_component.gd / .tscn   Enemy Burn (1 dmg/stack/s, persistent) + Shock (stun + 50 burst at 10 stacks) + Blight (−5% dealt / +5% orb taken per stack, cap 90%) + Chill (move/attack slow) + Disease (permanent; on death spreads floor(blight/2) within 100 px)
+    │   ├── status_component.gd / .tscn   Enemy Burn / Shock / Blight / Chill / Disease; basic-status GPUParticles2D (stack intensity); Shock 10 → lightning_strike + stun icon; Disease tint + icon
 │   ├── attack_component.gd / .tscn   Player arc swing (parked behind melee_enabled); knocks enemies when melee on; orb deflect gated by flag; proximity redirect consumes cooldown without swing
 │   ├── enemy_attack_component.gd / .tscn  Enemy committed melee: proximity windup → hold frame → rect hitbox; damages player + breakables; optional self-lunge (`lunge_distance`) and victim shove (`hit_knockback_distance`); emits `struck` when the strike goes live; Chill speed_multiplier + stun cancel
 │   ├── orb_tether_component.gd / .tscn  Focus + dash vault / Attack redirect; `dash_vault_enabled` gates vault vs proximity; vault uses remaining-ray early stop + 360° aim; dash-again during hold fires early then starts a real dash (CD); `vault_recatch_cooldown` blocks re-grabbing the same orb; capture gated by capture_enabled; **pickup** glyph grab/throw + ritual socket
@@ -58,6 +58,9 @@ One Last Bullet/
     │   ├── spawn_telegraph_effect.gd Pulsing ground ring at upcoming enemy spawn points
     │   ├── dash_afterimage_effect.gd Spawns fading dash afterimages from AnimatedSprite2D frames
     │   ├── damage_label.tscn / .gd / damage_label_effect.gd  Floating damage numbers (white / burn orange / shadow black)
+    │   ├── lightning_strike/         Shock-10 stun bolt (7-frame sheet + SFX)
+    │   │   ├── lightning_strike.tscn / .gd / lightning_strike.png / .wav / .tres
+    │   │   └── lightning-strike.aseprite
     │   ├── shockwave/                Earth-spike line shockwave (ogre slam)
     │   │   ├── earth_spike.tscn / .gd / earth_spike.png
     │   │   └── line_shockwave.tscn / .gd / .wav / .tres
@@ -108,6 +111,7 @@ One Last Bullet/
 │   │   └── mana_crystal_deposited.ogg / .tres  Glyph deposit SoundEvent (legacy name)
 │   ├── ui/
 │   │   ├── attributes/attribute_box.tscn / .gd   Stat row (icon + value); `@tool` PNG picker from folder
+│   │   ├── statuses/                   Non-basic status icons (stunned_status / disease_status 8×8)
 │   │   ├── inventory/orb_inventory.tscn / .gd    Bottom orb + mana bar (`OrbInventoryBar`; glyphs hidden in inspect)
 │   │   ├── ritual_menu/ritual_menu.tscn / .gd  Paused summoning ritual UI (drag socket / Transform / buy)
 │   │   └── fonts/
@@ -177,7 +181,7 @@ One Last Bullet/
 ### Components
 - `project/components/component_handler.gd` — `extends Node2D`; in `_ready()` registers all child components into `owner.COMPONENTS` keyed by script class
 - `project/components/health_component.gd` — HP; red flash on hit; optional `invulnerable_seconds` + blink on non-fatal hits; `start_invulnerability(seconds)` for shared co-op grace (e.g. opening volley); `take_damage(amount, kind := STANDARD, source := null)` returns bool; stores `last_damage_source`; `DamageKind` (STANDARD / POISON unused / SHADOW / CRIT / BURN) tints floating damage labels; plays `damaged_sound` on non-fatal hits; calls `DestroyComponent.self_destroy()` at ≤ 0; signals `damage_taken`, `health_changed`; sprite via optional export or `DestroyComponent.sprite`; `rest_modulate` / `set_rest_modulate` so lasting status tints (Disease) survive flash/blink tweens
-- `project/components/health_bar_component.gd` — world-space 18×2 px `_draw` bar; fill is `% of max_health` (same pixel width for every entity); hidden until `damage_taken`, then visible for 1.5 s (timer refreshes on each hit); `@export` offset/colors; instanced on player, goblin, ogre, and cactus
+- `project/components/health_bar_component.gd` — world-space 18×2 px `_draw` bar; fill is `% of max_health` (same pixel width for every entity); HP rect hidden until `damage_taken`, then visible for 1.5 s (timer refreshes on each hit); optional non-basic status icons (max 4, newest) above the bar from sibling `StatusComponent` (`statuses_changed`); node stays visible while icons are active; `@export` offset/colors; instanced on player, goblin, ogre, and cactus
 - `project/components/damage_component.gd` — `damage: float`, `instigator: Node` (friendly-fire filter), `contact_damage_interval` (0 = once per overlap), `damage_kind` (label tint; Ghost orb sets SHADOW)
 - `project/components/hitbox_component.gd` — `Area2D`; physics-frame overlap poll of attacker `HitboxComponent`s; frame dedup via `hit_dedup_frames`; contact ticks from `DamageComponent.contact_damage_interval`; skips if instigator == owner; optional attacker hooks `should_apply_hitbox_damage(victim)` / `resolve_hitbox_damage(victim)` / `on_hitbox_hit(victim)` for typed orbs; applies orb damage the same way as other attackers (entities punch-through; breakables stay on body contact); `set_invulnerable(bool)` clears overlap state and toggles monitoring (deferred)
 - `project/components/destroy_component.gd` — disables collisions, emits `destroyed(node)`, optionally plays `destroy_sound` (`self_destroy(play_sound := true)`), plays `DestructionEffect`, frees owner
@@ -185,7 +189,7 @@ One Last Bullet/
 - `project/components/knockback_component.gd` — decaying shove; `apply` / `push_distance` / `is_active` / `cancel`; bowling deals collision damage once per enemy per push via slide collisions; same physics-space guard before `move_and_slide`; instanced on enemies **and** the player (for ogre slam shove; Walk/Idle yield while active; dash cancels)
 - `project/components/navigation_component.gd` — `NavigationAgent2D`; acquires the **nearest** player by group (retarget every ~0.5 s with ~32 px hysteresis so co-op packs do not dither), repaths on a short interval, feeds `velocity_computed` into `MovementComponent.move_velocity()`, enables enemy-enemy avoidance while yielding during knockback, and has a stuck watchdog that forces a repath after short no-progress stalls; `set_chasing(bool)` pauses avoidance + physics so assembling enemies do not slide; enabling chase (or keeping it on) no-ops when the target group is empty so wipe / stun recovery cannot restart pathing
 - `project/components/homing_component.gd` — steers a heading toward a caller-supplied target (`set_target_node` / `set_target_position`); `turn_rate` caps how fast the heading rotates; `use_pathing` toggles navmesh waypoints via level `%Navigation` vs straight seek; `steer(current_dir, delta)` returns the new heading — orbs write it to `aim_direction` (does not move the body or pick targets)
-- `project/components/status_component.gd` — enemy statuses: **Blight** / **Shock** / **Burn** / **Chill** / **Disease** (see DECISIONS); Chill slows `EnemyAttackComponent.speed_multiplier` when present, else stretches `DamageComponent.contact_damage_interval`; Blight multiplies outgoing enemy damage and incoming orb damage; instanced on goblin/ogre with health/nav/movement/destroy + `attack_component` wired
+- `project/components/status_component.gd` — enemy statuses: **Blight** / **Shock** / **Burn** / **Chill** / **Disease** (see DECISIONS); Chill slows `EnemyAttackComponent.speed_multiplier` when present, else stretches `DamageComponent.contact_damage_interval`; Blight multiplies outgoing enemy damage and incoming orb damage; `%BurnParticles` / `%ChillParticles` / `%ShockParticles` / `%BlightParticles` (stack `amount_ratio`); Shock 10 spawns `lightning_strike` into `%WorldYSort` and pushes Stun icon; `get_visible_icon_ids` + `statuses_changed` for HP-bar icons; instanced on goblin/ogre with health/nav/movement/destroy + `attack_component` wired
 - `project/components/attack_component.gd` — player `Area2D` arc; authored `%CollisionPolygon2D`; AnimationPlayer swing; knocks enemies via `KnockbackComponent` when `melee_enabled` (default false on player — parked); orb deflect behind `deflect_orb_enabled` (default false); `consume_cooldown()` for proximity redirect without a swing; hides `%AttackSpriteHint` while a redirect target exists or melee is off; optional `swing_sound` (unassigned)
 - `project/components/enemy_attack_component.gd` — enemy `Area2D` committed melee; mask `player|world`; `_poll_hits` damages `player` and `breakables` once per swing; editor `hitbox_size` / `hitbox_offset` build a per-instance `RectangleShape2D`; proximity → windup → hold → strike; emits `struck` when the strike hitbox goes live; optional self-lunge (`lunge_distance`) and victim radial shove (`hit_knockback_distance`); `set_active` / `cancel` / `speed_multiplier`; cancels in-progress swings when no players remain; editor `@tool` gizmo outline
 - `project/components/orb_tether_component.gd` — focus radius (48 px on player scene); **`dash_vault_enabled`** (true on player) replaces proximity Attack redirect with dash-into-orb vault; **`capture_enabled`** (false on player) gates tap capture + remote channel; **pickup** press order: release owned tether → throw if carrying → **ritual socket/unsocket** if circle has a captured orb → **glyph** pickup → orb capture (if capture on); circle **activate** is on **`activate`** (Square / E); buy / Transform/bake on **`upgrade`** (Triangle / F); …
@@ -254,6 +258,7 @@ One Last Bullet/
 - `project/effects/shockwave/line_shockwave.wav` + `.tres` — SoundEvent for line shockwave start
 - `project/effects/damage_label.tscn` + `damage_label.gd` — world-space floating damage number (`%Label`, `pixel_medium.fnt` size 8); rises ~20 px over 1 s and fades in the last 0.3 s (`ignore_time_scale`)
 - `project/effects/damage_label_effect.gd` — `DamageLabelEffect.spawn_at(origin, amount, kind)`; parents detached label to `current_scene`; colors STANDARD white / POISON green (unused) / SHADOW black / CRIT gold / BURN orange (light outline on black)
+- `project/effects/lightning_strike/lightning_strike.tscn` + `lightning_strike.gd` — one-shot 7-frame bolt (`lightning_strike.png` 364×51 → 52×51 cells); ground splash at node origin; plays `lightning_strike.tres` (`lightning_strike.wav`) via `AudioManager.play_at`; spawned into `%WorldYSort` from `StatusComponent._begin_stun` (no hitbox)
 - `project/effects/time_slow.gdshader` — canvas-item shader: vignette + purple-blue tint; `intensity` uniform (0 = off, 1 = full)
 - `project/effects/time_slow_overlay.tscn` + `time_slow_overlay.gd` — `TimeSlowOverlay` (`CanvasLayer`, layer −1); owns a fullscreen `ColorRect` with the time-slow shader; `begin()` ramps `Engine.time_scale` 1.0 → 0.5 over 0.5 real seconds and drives shader intensity; `end()` snaps both back; instanced in `desert.tscn` HUD (before `StatusLabel`)
 
@@ -261,7 +266,7 @@ One Last Bullet/
 - `project/audio/audio_manager.tscn` — autoload; Music A/B crossfade; `play_music` forces stream loop (MP3/OGG/WAV); 8 global + 16 positional pooled players (oldest-voice steal); `play` / `play_at` / `play_music` / bus volume helpers
 - `project/audio/sound_event.gd` — `SoundEvent` Resource: stream variants, bus, volume_db, pitch range, retrigger cooldown, max voices, avoid_repeat
 - Convention: author a `SoundEvent` `.tres` next to the clip it wraps (same pattern as `LevelObjectVariant`)
-- Wired events: entity destroyed/damaged, dash, orb bounce (`impact_soft`), begin/release tether, item pickup, mana crystal deposit; goblin knife attack (`goblin_knife_attack.tres`); ogre earth shockwave (`line_shockwave.tres`); attack swing export exists but unassigned
+- Wired events: entity destroyed/damaged, dash, orb bounce (`impact_soft`), begin/release tether, item pickup, mana crystal deposit; goblin knife attack (`goblin_knife_attack.tres`); ogre earth shockwave (`line_shockwave.tres`); Shock-10 lightning strike (`lightning_strike.tres`); attack swing export exists but unassigned
 
 ### Data
 - `project/data/game_data.xlsx` — source workbook; `schema` sheet lists column types per data sheet; current sheets: `attribute`, `orbs`, `glyphs`, `attunements`, `motion` (plus unused `objects_OLD` / `input` not in schema)

@@ -1,6 +1,139 @@
 [gd_scene format=3 uid="uid://doae1sw0x8emo"]
 
 [ext_resource type="Script" uid="uid://cy42na576bg8i" path="res://components/status_component.gd" id="1_status"]
+[ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="2_pixel"]
 
-[node name="StatusComponent" type="Node2D" unique_id=2098328047]
+[sub_resource type="Gradient" id="Gradient_burn"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(1, 0.85, 0.25, 1, 1, 0.4, 0.1, 0.9, 0.45, 0.1, 0.05, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_burn"]
+gradient = SubResource("Gradient_burn")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_burn"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_sphere_radius = 10.0
+direction = Vector3(0, -1, 0)
+spread = 28.0
+initial_velocity_min = 18.0
+initial_velocity_max = 36.0
+gravity = Vector3(0, -28, 0)
+scale_min = 1.0
+scale_max = 2.0
+color_ramp = SubResource("GradientTexture1D_burn")
+
+[sub_resource type="Gradient" id="Gradient_chill"]
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(0.85, 0.95, 1, 1, 0.45, 0.75, 1, 0.85, 0.25, 0.45, 0.75, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_chill"]
+gradient = SubResource("Gradient_chill")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_chill"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_sphere_radius = 8.0
+direction = Vector3(0, 1, 0)
+spread = 35.0
+initial_velocity_min = 8.0
+initial_velocity_max = 16.0
+gravity = Vector3(0, 22, 0)
+scale_min = 1.0
+scale_max = 2.0
+color_ramp = SubResource("GradientTexture1D_chill")
+
+[sub_resource type="Gradient" id="Gradient_shock"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 1, 0.85, 1, 1, 0.95, 0.35, 0.9, 0.55, 0.75, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_shock"]
+gradient = SubResource("Gradient_shock")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_shock"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_sphere_radius = 11.0
+direction = Vector3(1, 0, 0)
+spread = 180.0
+initial_velocity_min = 40.0
+initial_velocity_max = 80.0
+gravity = Vector3(0, 0, 0)
+scale_min = 1.0
+scale_max = 2.0
+color_ramp = SubResource("GradientTexture1D_shock")
+
+[sub_resource type="Gradient" id="Gradient_blight"]
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(0.55, 0.95, 0.35, 1, 0.3, 0.7, 0.2, 0.8, 0.15, 0.35, 0.1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_blight"]
+gradient = SubResource("Gradient_blight")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_blight"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_sphere_radius = 9.0
+direction = Vector3(1, 0, 0)
+spread = 180.0
+initial_velocity_min = 6.0
+initial_velocity_max = 12.0
+orbit_velocity_min = 0.35
+orbit_velocity_max = 0.65
+gravity = Vector3(0, 0, 0)
+scale_min = 1.0
+scale_max = 2.5
+color_ramp = SubResource("GradientTexture1D_blight")
+
+[node name="StatusComponent" type="Node2D"]
 script = ExtResource("1_status")
+
+[node name="BurnParticles" type="GPUParticles2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, 4)
+z_index = 1
+texture_filter = 1
+emitting = false
+amount = 8
+lifetime = 0.45
+visibility_rect = Rect2(-40, -40, 80, 80)
+local_coords = true
+process_material = SubResource("ParticleProcessMaterial_burn")
+texture = ExtResource("2_pixel")
+
+[node name="ChillParticles" type="GPUParticles2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -10)
+z_index = 1
+texture_filter = 1
+emitting = false
+amount = 8
+lifetime = 0.7
+visibility_rect = Rect2(-40, -40, 80, 80)
+local_coords = true
+process_material = SubResource("ParticleProcessMaterial_chill")
+texture = ExtResource("2_pixel")
+
+[node name="ShockParticles" type="GPUParticles2D" parent="."]
+unique_name_in_owner = true
+z_index = 1
+texture_filter = 1
+emitting = false
+amount = 8
+lifetime = 0.22
+visibility_rect = Rect2(-40, -40, 80, 80)
+local_coords = true
+process_material = SubResource("ParticleProcessMaterial_shock")
+texture = ExtResource("2_pixel")
+
+[node name="BlightParticles" type="GPUParticles2D" parent="."]
+unique_name_in_owner = true
+z_index = 1
+texture_filter = 1
+emitting = false
+amount = 8
+lifetime = 0.9
+visibility_rect = Rect2(-40, -40, 80, 80)
+local_coords = true
+process_material = SubResource("ParticleProcessMaterial_blight")
+texture = ExtResource("2_pixel")

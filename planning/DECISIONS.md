@@ -90,6 +90,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Alternatives**: Chaining Disease on recipients — runaway clears in packs; fresh 20% Disease roll on spread recipients — still chains sometimes and hard to read; no visual tell — Disease is invisible until death; expire Disease on a timer — fights the "permanent curse until death" status model; keep Rot as poison-only special effect — superseded; spread Poison DoT — superseded when Poison became Blight.
 - **Status**: decided (in-codebase)
 
+### Status visuals: basic particles + non-basic HP-bar icons
+- **Decision**: **Burn / Chill / Shock / Blight** (the four basic statuses) are shown only as motion-separated `GPUParticles2D` auras on `StatusComponent` (rise / fall / jitter / orbit); intensity uses `amount_ratio` from stack count (cap amount 8). They never appear as health-bar icons. **Non-basic** statuses (Stun from Shock 10, Disease, and future ones) use 8×8 icons from `ui/statuses/` drawn above `HealthBarComponent` (max **4**, **newest** kept when overflowing). Disease keeps the only full-body sprite tint. At Shock 10, a one-shot 7-frame `lightning_strike` plays at the victim in `%WorldYSort` (survives a killing burst), Shock particles clear with stacks, and the Stun icon lasts for the 2 s stun.
+- **Why**: Four tints on one sprite muddy into brown and fight Disease / hit-flash; particles separate by motion so all four basics can run together; icons reserve scarce HUD slots for rarer / state statuses the player must read at a glance.
+- **Alternatives**: Multi-color sprite modulate — unreadable when stacked; icons for basics too — clutter on every hit; always-visible icon row — noisy in packs; oldest-wins icon overflow — hides the freshest tell; parent lightning under the enemy — vanishes if the 50 burst kills them.
+- **Status**: decided (in-codebase)
+
 ### Burn stacks persist (DoT; no decay)
 - **Decision**: Burn stacks stay on the enemy until death. Each tick deals damage equal to current stacks every **1 s** (`DamageKind.BURN`); extra stacks do not reset the timer. Death explosion removed — Burn is Fire's lasting DoT (was previously Poison).
 - **Why**: Fire's identity is ongoing damage; Inferno / Vulcano trail text already wants Burn stacks. Moving the DoT off Earth frees Blight for the wither/vuln fantasy.
@@ -402,7 +408,7 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 - **Status**: decided (in-codebase); supersedes "one-hit-kill expressed as max_health = 1.0"; `big_rock` / `animal_skull` multi-hit breakable scenes remain (not currently placed in `desert.tscn`)
 
 ### Damage-reveal percentage health bars
-- **Decision**: Every `HealthComponent` owner (player, enemies, breakables) instances `HealthBarComponent`: an 18×2 px world-space bar drawn with `_draw`, fill width = `% of max_health` (not absolute HP, so a 10-HP brute and a 100-HP boss use the same pixel width). Hidden until `damage_taken`; stays visible for **1.5 s**, refreshing on each hit. Per-scene `offset` places it above the sprite.
+- **Decision**: Every `HealthComponent` owner (player, enemies, breakables) instances `HealthBarComponent`: an 18×2 px world-space bar drawn with `_draw`, fill width = `% of max_health` (not absolute HP, so a 10-HP brute and a 100-HP boss use the same pixel width). HP rect hidden until `damage_taken`; stays visible for **1.5 s**, refreshing on each hit. Non-basic status icons (Stun / Disease) draw above the bar and keep the node visible while active even if the HP reveal has expired. Per-scene `offset` places it above the sprite.
 - **Why**: Upcoming damaging effects can push HP past 100; a percentage bar stays readable without growing. Reveal-on-hit keeps the 640×360 arena uncluttered. Same component on breakables so future multi-hit props get the UI for free.
 - **Alternatives**: Always-visible overhead bars — clutter at higher enemy counts; discrete pips — breaks once max HP is no longer 3; screen-only player HUD — enemies would still need hit confirmation for orb grazes; `ProgressBar`/`ColorRect` nodes — extra nodes and softer pixel alignment vs `_draw`.
 - **Status**: decided (in-codebase)

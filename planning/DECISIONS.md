@@ -399,6 +399,12 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ## Technical decisions (from current codebase)
 
+### InputPrompt: authored animated button + caption
+- **Decision**: Reusable `@tool` scene `ui/input_icons/input_prompt.tscn` (`InputPrompt`) shows a looping 4-frame press anim from a folder PNG (`input_id` inspector enum) plus an adjacent `prompt_text` label (`pixel_medium` size 8). Sheets are fixed **64×16** (4×16×16). Instances are authored or `configure()`d to one sheet — no keyboard/gamepad auto-switch. Not yet bound to summoning-circle prompts.
+- **Why**: Same AttributeBox-style folder picker for new art; prompts like Square+Transform can drop in world or HUD without a device layer first.
+- **Alternatives**: Auto-swap icon from last input device — deferred until co-op / P1 device tracking is needed; hardcode per-action textures in circle scripts — duplicates layout; TextureRect + Timer — heavier than `AnimatedSprite2D` + `SpriteFrames`.
+- **Status**: decided (in-codebase)
+
 ### Engine: Godot 4.7, Forward Plus, canvas_items stretch + integer scale
 - **Decision**: Godot project at `project/` uses Godot **4.7**, Forward Plus, `window/stretch/mode="canvas_items"` with `aspect="expand"`, `scale_mode="integer"`, nearest-neighbour canvas texture filter, snap 2D transforms to pixel, 640x360 base resolution.
 - **Why**: Matches the current `project.godot` scaffold and keeps pixel art crisp.

@@ -111,6 +111,7 @@ One Last Bullet/
 │   │   └── mana_crystal_deposited.ogg / .tres  Glyph deposit SoundEvent (legacy name)
 │   ├── ui/
 │   │   ├── attributes/attribute_box.tscn / .gd   Stat row (icon + value); `@tool` PNG picker from folder
+│   │   ├── input_icons/                Button spritesheets + `InputPrompt` (animated icon + caption)
 │   │   ├── statuses/                   Non-basic status icons (stunned_status / disease_status 8×8)
 │   │   ├── inventory/orb_inventory.tscn / .gd    Bottom orb + mana bar (`OrbInventoryBar`; glyphs hidden in inspect)
 │   │   ├── ritual_menu/ritual_menu.tscn / .gd  Paused summoning ritual UI (drag socket / Transform / buy)
@@ -237,6 +238,7 @@ One Last Bullet/
 - `project/items/glyphs/glyph_rarity.gdshader` — canvas_item: recolors bright/white center-rune pixels to a rarity base tint and blinks toward a darker tint (Common white / Rare jade / Unique purple); per-item duplicated ShaderMaterial
 - `project/items/glyphs/glyph_rarity_particles.tscn` — rising pixel motes; color via node modulate; amount 8 Rare / 16 Unique
 - `project/ui/attributes/attribute_box.tscn` + `.gd` — **`AttributeBox`** (`Control` root + inner `%Content` HBox so focus Outline overlays); `@export icon_id` / value formatting; `flash_value_changed` for live ritual deltas; `get_attribute_id()` for inspect desc lookup
+- `project/ui/input_icons/input_prompt.tscn` + `.gd` — **`InputPrompt`** (`@tool` `Control`: looping 4-frame button sprite + adjacent caption); inspector `input_id` enum from `*.png` in the folder (gamepad / keyboard / mouse sheets, each **64×16**); `prompt_text` / `fps` / `configure()`; not auto device-switched; not wired to the circle yet
 - `project/ui/inventory/orb_inventory.tscn` + `.gd` — **`OrbInventoryBar`**: **5** orb sockets + mana label; glyph sockets hidden via `set_glyph_sockets_visible(false)` in inspect
 - `project/ui/ritual_menu/ritual_menu.tscn` + `.gd` — **`RitualMenu`** (`CanvasLayer`, `PROCESS_MODE_WHEN_PAUSED`); primarily **inspect** mode (Esc): orb info + attribute hover/focus (`GameData` sheet `attribute`); economy / Transform / glyph inventory hidden; legacy `open()` ritual path unused by live circle
 - `project/globals/orb_recipes.gd` — **`OrbRecipes`**: unordered element-multiset lookups over `orbs` / `attunements`; `hints_for` (skips GameData `active == false`) / `result_for` / `is_playable` (`resolved_scene_path`: authored path if the file exists, else `res://entities/orbs/{id}/{id}_orb.tscn`) / `stats_from_row` / `effect_text` / provisional `is_discovered`

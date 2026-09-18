@@ -1,0 +1,93 @@
+[gd_scene format=3 uid="uid://d0m5w5k5yo3ge"]
+
+[ext_resource type="Script" uid="uid://bdtnqlqn63f0a" path="res://ui/input_icons/input_prompt.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cc24cw65d858h" path="res://ui/input_icons/keyboard_e.png" id="2_aa06n"]
+[ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_font"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cqvv4"]
+atlas = ExtResource("2_aa06n")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_20ccu"]
+atlas = ExtResource("2_aa06n")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7epir"]
+atlas = ExtResource("2_aa06n")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dpmby"]
+atlas = ExtResource("2_aa06n")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_vmkdi"]
+animations = [{
+"frames": [],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cqvv4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_20ccu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7epir")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dpmby")
+}],
+"loop": 1,
+"name": &"press",
+"speed": 6.0
+}]
+
+[sub_resource type="LabelSettings" id="LabelSettings_prompt"]
+font = ExtResource("2_font")
+font_size = 8
+
+[node name="InputPrompt" type="Control" unique_id=283143889]
+custom_minimum_size = Vector2(49, 16)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 49.0
+offset_bottom = 16.0
+mouse_filter = 2
+script = ExtResource("1_script")
+input_id = "keyboard_e"
+prompt_text = "Transform"
+
+[node name="Content" type="HBoxContainer" parent="." unique_id=1563770880]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="IconSlot" type="Control" parent="Content" unique_id=3755467]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="Sprite" type="AnimatedSprite2D" parent="Content/IconSlot" unique_id=1357824077]
+unique_name_in_owner = true
+position = Vector2(8, 8)
+sprite_frames = SubResource("SpriteFrames_vmkdi")
+animation = &"press"
+autoplay = "press"
+frame_progress = 0.38313076
+
+[node name="PromptLabel" type="Label" parent="Content" unique_id=1784412474]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Transform"
+label_settings = SubResource("LabelSettings_prompt")
+vertical_alignment = 1

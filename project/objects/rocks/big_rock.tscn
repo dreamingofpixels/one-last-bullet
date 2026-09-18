@@ -11,10 +11,10 @@
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="11_hitbox"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_placeholder"]
-size = Vector2(24, 15)
+size = Vector2(24, 10)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
-size = Vector2(24, 16)
+size = Vector2(24, 17)
 
 [node name="BigRock" type="StaticBody2D" unique_id=1978716231 groups=["navigation_source"]]
 collision_mask = 0
@@ -28,7 +28,7 @@ offset = Vector2(0, -11)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1830841656]
 unique_name_in_owner = true
-position = Vector2(0, -8.5)
+position = Vector2(0, -6)
 shape = SubResource("RectangleShape2D_placeholder")
 
 [node name="Components" type="Node2D" parent="." unique_id=1978678914]
@@ -55,5 +55,5 @@ script = ExtResource("11_hitbox")
 health_component = NodePath("../HealthComponent")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=225461285]
-position = Vector2(0, -8)
+position = Vector2(0, -8.5)
 shape = SubResource("RectangleShape2D_hitbox")

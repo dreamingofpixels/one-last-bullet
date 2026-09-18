@@ -14,6 +14,8 @@ enum Kind {
 
 const CELL_SIZE := 32.0
 const ADJACENCY_SLOP := 4.0
+## Pull the y-sort point north of the visual base so center-origin entities
+## standing just south of the face draw in front (same idea as EarthSpike).
 
 const _SHEET_PATHS: Dictionary = {
 	Kind.CORNER_SW: "res://objects/cliff/desert_cliff_corner_SW.png",
@@ -83,6 +85,7 @@ func _ready() -> void:
 		destroy.destroyed.connect(_on_cliff_destroyed)
 
 	if not Engine.is_editor_hint():
+		_apply_sort_bias()
 		if kind == Kind.VERTICAL_WALL:
 			frame_index = randi() % 2
 		Cliff.refresh_all_frames.call_deferred(get_tree())
@@ -101,6 +104,21 @@ func _validate_property(property: Dictionary) -> void:
 
 func _frame_count() -> int:
 	return int(_FRAME_COUNTS.get(kind, 1))
+
+
+func _apply_sort_bias() -> void:
+	if _sort_bias_applied:
+		return
+	_sort_bias_applied = true
+	position.y -= SORT_BIAS_Y
+	_apply_sheet()
+	var health_bar: HealthBarComponent = COMPONENTS.get(HealthBarComponent)
+	if health_bar != null:
+		health_bar.position.y += SORT_BIAS_Y
+
+
+func _sort_bias_y() -> float:
+	return SORT_BIAS_Y if _sort_bias_applied else 0.0
 
 
 func _setup_physics() -> void:
@@ -225,14 +243,16 @@ func _apply_sheet() -> void:
 
 	var tex_size: Vector2 = texture.get_size()
 	var frame_size := Vector2(tex_size.x / float(sprite.hframes), tex_size.y / float(frame_count))
-	# Origin at bottom-center of the frame art.
-	sprite.offset = Vector2(0.0, -frame_size.y * 0.5)
+	var bias_y: float = _sort_bias_y()
+	# Origin at bottom-center of the frame art; +bias keeps art put after the sort shift.
+	sprite.offset = Vector2(0.0, -frame_size.y * 0.5 + bias_y)
 
 	var box_size: Vector2 = frame_size
 	var box_offset := Vector2(0.0, -frame_size.y * 0.5)
 	if collision_size_override.x > 0.0 and collision_size_override.y > 0.0:
 		box_size = collision_size_override
 		box_offset = collision_offset_override
+	box_offset.y += bias_y
 
 	var body_rect := RectangleShape2D.new()
 	body_rect.size = box_size

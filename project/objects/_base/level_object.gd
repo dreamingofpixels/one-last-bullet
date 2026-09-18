@@ -2,11 +2,16 @@ class_name LevelObject
 extends StaticBody2D
 
 const PHYSICS_LAYER_WORLD := 1
+## Pull the y-sort point north of the visual base so center-origin entities
+## standing just south of the prop draw in front (same idea as Cliff).
+const SORT_BIAS_Y := 16.0
 
 @export var variants: Array[LevelObjectVariant] = []
 
 @onready var sprite: Sprite2D = %Sprite2D
 @onready var collision_shape: CollisionShape2D = %CollisionShape2D
+
+var _sort_bias_applied := false
 
 
 func _ready() -> void:
@@ -23,6 +28,7 @@ func _ready() -> void:
 		return
 
 	_apply_variant(variants[randi() % variants.size()])
+	_apply_sort_bias()
 
 
 func _apply_variant(variant: LevelObjectVariant) -> void:
@@ -38,3 +44,12 @@ func _apply_variant(variant: LevelObjectVariant) -> void:
 	rect.size = variant.collision_size
 	collision_shape.shape = rect
 	collision_shape.position = variant.collision_offset
+
+
+func _apply_sort_bias() -> void:
+	if Engine.is_editor_hint() or _sort_bias_applied:
+		return
+	_sort_bias_applied = true
+	position.y -= SORT_BIAS_Y
+	sprite.offset.y += SORT_BIAS_Y
+	collision_shape.position.y += SORT_BIAS_Y

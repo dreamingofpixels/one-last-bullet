@@ -2,12 +2,22 @@
 
 [ext_resource type="Script" uid="uid://cy8ydoya7icaq" path="res://items/glyphs/glyph.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://d3j5dd818skwc" path="res://items/glyphs/coal_glyph.png" id="2_tex"]
+[ext_resource type="Shader" uid="uid://0qd6bd0bt7ad" path="res://items/glyphs/glyph_rarity.gdshader" id="2_txdp4"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="3_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="4_health"]
 [ext_resource type="Script" uid="uid://bdmx6uq67orb7" path="res://components/destroy_component.gd" id="5_destroy"]
 [ext_resource type="PackedScene" path="res://components/health_bar_component.tscn" id="6_hbar"]
 [ext_resource type="Script" uid="uid://t3v6kklbjijn" path="res://components/hitbox_component.gd" id="7_hitbox"]
 [ext_resource type="PackedScene" path="res://items/glyphs/glyph_rarity_particles.tscn" id="8_particles"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_t76yi"]
+shader = ExtResource("2_txdp4")
+shader_parameter/center_radius = 0.28
+shader_parameter/luma_cutoff = 0.82
+shader_parameter/glow = 1.0
+shader_parameter/pulse = 1.0
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 4.0
@@ -21,6 +31,7 @@ radius = 5.0
 height = 14.0
 
 [node name="Glyph" type="RigidBody2D" unique_id=1454728676]
+y_sort_enabled = true
 collision_layer = 32
 gravity_scale = 0.0
 lock_rotation = true
@@ -31,6 +42,7 @@ deposit_suck_speed = 120.0
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1754144645]
 unique_name_in_owner = true
 texture_filter = 1
+material = SubResource("ShaderMaterial_t76yi")
 texture = ExtResource("2_tex")
 
 [node name="RarityParticles" parent="Sprite2D" unique_id=1762908896 instance=ExtResource("8_particles")]

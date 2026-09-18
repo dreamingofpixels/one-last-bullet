@@ -315,7 +315,7 @@ func _launch_opening_orbs() -> void:
 		var orb: RigidBody2D = scene.instantiate() as RigidBody2D
 		if orb == null:
 			continue
-		add_child(orb)
+		players_root.add_child(orb)
 		orb.global_position = origin
 		_connect_orb_signals(orb)
 		orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
@@ -581,7 +581,7 @@ func _on_transform_requested(orb_id: StringName, by: Node = null) -> void:
 		return
 
 	var spawn_pos: Vector2 = summoning_circle.get_launch_origin()
-	add_child(new_orb)
+	players_root.add_child(new_orb)
 	new_orb.global_position = spawn_pos
 	_connect_orb_signals(new_orb)
 	summoning_circle.commit_transformed_orb(new_orb, by)
@@ -607,7 +607,7 @@ func _spawn_blank_orb_at_circle() -> void:
 	if _live_orbs().size() >= SummoningCircle.MAX_ORBS:
 		return
 	var orb: BlankOrb = BLANK_ORB_SCENE.instantiate() as BlankOrb
-	add_child(orb)
+	players_root.add_child(orb)
 	orb.global_position = summoning_circle.get_launch_origin()
 	_connect_orb_signals(orb)
 	summoning_circle.grant_capture_grace(orb)

@@ -403,83 +403,128 @@ y_sort_enabled = true
 unique_name_in_owner = true
 y_sort_enabled = true
 
-[node name="Cactus1" parent="WorldYSort" unique_id=1722540073 instance=ExtResource("5_cactus")]
+[node name="Cactai" type="Node2D" parent="WorldYSort" unique_id=1383763096]
+y_sort_enabled = true
+
+[node name="Cactus1" parent="WorldYSort/Cactai" unique_id=1722540073 instance=ExtResource("5_cactus")]
 position = Vector2(112, 255)
 
-[node name="Cactus2" parent="WorldYSort" unique_id=1778698042 instance=ExtResource("5_cactus")]
+[node name="Cactus2" parent="WorldYSort/Cactai" unique_id=1778698042 instance=ExtResource("5_cactus")]
 position = Vector2(536, 32)
 
-[node name="Cactus6" parent="WorldYSort" unique_id=1313735517 instance=ExtResource("5_cactus")]
+[node name="Cactus6" parent="WorldYSort/Cactai" unique_id=1313735517 instance=ExtResource("5_cactus")]
 position = Vector2(552, 96)
 
-[node name="Cactus7" parent="WorldYSort" unique_id=2131684748 instance=ExtResource("5_cactus")]
+[node name="Cactus7" parent="WorldYSort/Cactai" unique_id=2131684748 instance=ExtResource("5_cactus")]
 position = Vector2(600, 160)
 
-[node name="Cactus8" parent="WorldYSort" unique_id=2144183271 instance=ExtResource("5_cactus")]
+[node name="Cactus8" parent="WorldYSort/Cactai" unique_id=2144183271 instance=ExtResource("5_cactus")]
 position = Vector2(24, 40)
 
-[node name="Cactus3" parent="WorldYSort" unique_id=1895136550 instance=ExtResource("5_cactus")]
+[node name="Cactus3" parent="WorldYSort/Cactai" unique_id=1895136550 instance=ExtResource("5_cactus")]
 position = Vector2(280, 100)
 
-[node name="Cactus5" parent="WorldYSort" unique_id=2067504609 instance=ExtResource("5_cactus")]
+[node name="Cactus5" parent="WorldYSort/Cactai" unique_id=2067504609 instance=ExtResource("5_cactus")]
 position = Vector2(605, 327)
 
-[node name="Cactus4" parent="WorldYSort" unique_id=812608539 instance=ExtResource("5_cactus")]
+[node name="Cactus4" parent="WorldYSort/Cactai" unique_id=812608539 instance=ExtResource("5_cactus")]
 position = Vector2(612, 47)
 
-[node name="Cactus9" parent="WorldYSort" unique_id=794793165 instance=ExtResource("5_cactus")]
+[node name="Cactus9" parent="WorldYSort/Cactai" unique_id=794793165 instance=ExtResource("5_cactus")]
 position = Vector2(144, 224)
 
-[node name="Cactus10" parent="WorldYSort" unique_id=1050414726 instance=ExtResource("5_cactus")]
+[node name="Cactus10" parent="WorldYSort/Cactai" unique_id=1050414726 instance=ExtResource("5_cactus")]
 position = Vector2(152, 288)
 
-[node name="Cactus11" parent="WorldYSort" unique_id=69842972 instance=ExtResource("5_cactus")]
+[node name="Cactus11" parent="WorldYSort/Cactai" unique_id=69842972 instance=ExtResource("5_cactus")]
 position = Vector2(160, 248)
 
-[node name="BigRock" parent="WorldYSort" unique_id=1978716231 instance=ExtResource("5_4ykq2")]
+[node name="Rocks" type="Node2D" parent="WorldYSort" unique_id=429900017]
+y_sort_enabled = true
+
+[node name="BigRock" parent="WorldYSort/Rocks" unique_id=1978716231 instance=ExtResource("5_4ykq2")]
 position = Vector2(128, 344)
 
-[node name="BigRock2" parent="WorldYSort" unique_id=1021144464 instance=ExtResource("5_4ykq2")]
+[node name="BigRock2" parent="WorldYSort/Rocks" unique_id=1021144464 instance=ExtResource("5_4ykq2")]
 position = Vector2(456, 320)
 
-[node name="BigRock3" parent="WorldYSort" unique_id=952171354 instance=ExtResource("5_4ykq2")]
+[node name="BigRock3" parent="WorldYSort/Rocks" unique_id=952171354 instance=ExtResource("5_4ykq2")]
 position = Vector2(424, 24)
 
-[node name="BigRock4" parent="WorldYSort" unique_id=1955602185 instance=ExtResource("5_4ykq2")]
+[node name="BigRock4" parent="WorldYSort/Rocks" unique_id=1955602185 instance=ExtResource("5_4ykq2")]
 position = Vector2(296, 48)
 
-[node name="BigRock5" parent="WorldYSort" unique_id=191806002 instance=ExtResource("5_4ykq2")]
+[node name="BigRock5" parent="WorldYSort/Rocks" unique_id=191806002 instance=ExtResource("5_4ykq2")]
 position = Vector2(528, 128)
 
-[node name="BigRock10" parent="WorldYSort" unique_id=1683889156 instance=ExtResource("5_4ykq2")]
+[node name="BigRock10" parent="WorldYSort/Rocks" unique_id=1683889156 instance=ExtResource("5_4ykq2")]
 position = Vector2(152, 80)
 
-[node name="BigRock11" parent="WorldYSort" unique_id=414153712 instance=ExtResource("5_4ykq2")]
+[node name="BigRock11" parent="WorldYSort/Rocks" unique_id=414153712 instance=ExtResource("5_4ykq2")]
 position = Vector2(160, 96)
 
-[node name="BigRock12" parent="WorldYSort" unique_id=1097417405 instance=ExtResource("5_4ykq2")]
+[node name="BigRock12" parent="WorldYSort/Rocks" unique_id=1097417405 instance=ExtResource("5_4ykq2")]
 position = Vector2(40, 288)
 
-[node name="BigRock6" parent="WorldYSort" unique_id=549727229 instance=ExtResource("5_4ykq2")]
+[node name="BigRock6" parent="WorldYSort/Rocks" unique_id=549727229 instance=ExtResource("5_4ykq2")]
 position = Vector2(400, 216)
 
-[node name="BigRock7" parent="WorldYSort" unique_id=1375967798 instance=ExtResource("5_4ykq2")]
+[node name="BigRock7" parent="WorldYSort/Rocks" unique_id=1375967798 instance=ExtResource("5_4ykq2")]
 position = Vector2(392, 232)
 
-[node name="BigRock14" parent="WorldYSort" unique_id=1594919807 instance=ExtResource("5_4ykq2")]
+[node name="BigRock14" parent="WorldYSort/Rocks" unique_id=1594919807 instance=ExtResource("5_4ykq2")]
 position = Vector2(408, 328)
 
-[node name="BigRock15" parent="WorldYSort" unique_id=2035806106 instance=ExtResource("5_4ykq2")]
+[node name="BigRock15" parent="WorldYSort/Rocks" unique_id=2035806106 instance=ExtResource("5_4ykq2")]
 position = Vector2(32, 224)
 
-[node name="AnimalSkull" parent="WorldYSort" unique_id=1710110375 instance=ExtResource("6_mc6if")]
+[node name="AnimalSkulls" type="Node2D" parent="WorldYSort" unique_id=385483561]
+y_sort_enabled = true
+
+[node name="AnimalSkull" parent="WorldYSort/AnimalSkulls" unique_id=1710110375 instance=ExtResource("6_mc6if")]
 position = Vector2(296, 104)
 
-[node name="AnimalSkull2" parent="WorldYSort" unique_id=1791471896 instance=ExtResource("6_mc6if")]
+[node name="AnimalSkull2" parent="WorldYSort/AnimalSkulls" unique_id=1791471896 instance=ExtResource("6_mc6if")]
 position = Vector2(400, 72)
 
-[node name="AnimalSkull3" parent="WorldYSort" unique_id=128727609 instance=ExtResource("6_mc6if")]
+[node name="AnimalSkull3" parent="WorldYSort/AnimalSkulls" unique_id=128727609 instance=ExtResource("6_mc6if")]
 position = Vector2(584, 328)
+
+[node name="Items" type="Node2D" parent="WorldYSort" unique_id=1034323593]
+unique_name_in_owner = true
+y_sort_enabled = true
+
+[node name="Glyph" parent="WorldYSort/Items" unique_id=1454728676 instance=ExtResource("12_qygx2")]
+position = Vector2(533, 295)
+can_sleep = false
+freeze = true
+freeze_mode = 1
+linear_damp_mode = 1
+angular_damp_mode = 1
+angular_damp = 100.0
+rarity = 1
+
+[node name="Glyph2" parent="WorldYSort/Items" unique_id=915524516 instance=ExtResource("12_qygx2")]
+position = Vector2(49, 60)
+can_sleep = false
+freeze = true
+freeze_mode = 1
+linear_damp_mode = 1
+angular_damp_mode = 1
+angular_damp = 100.0
+glyph_id = &"spore"
+rarity = 1
+
+[node name="Glyph3" parent="WorldYSort/Items" unique_id=430587660 instance=ExtResource("12_qygx2")]
+position = Vector2(457, 77)
+can_sleep = false
+freeze = true
+freeze_mode = 1
+linear_damp_mode = 1
+angular_damp_mode = 1
+angular_damp = 100.0
+glyph_id = &"spore"
+rarity = 1
 
 [node name="Cliffs" type="Node2D" parent="WorldYSort" unique_id=776114261]
 y_sort_enabled = true
@@ -738,41 +783,6 @@ shape = SubResource("RectangleShape2D_left")
 [node name="Right" type="CollisionShape2D" parent="Walls" unique_id=155082613]
 position = Vector2(648, 180)
 shape = SubResource("RectangleShape2D_right")
-
-[node name="Items" type="Node2D" parent="." unique_id=1034323593]
-unique_name_in_owner = true
-
-[node name="Glyph" parent="Items" unique_id=1454728676 instance=ExtResource("12_qygx2")]
-position = Vector2(533, 295)
-can_sleep = false
-freeze = true
-freeze_mode = 1
-linear_damp_mode = 1
-angular_damp_mode = 1
-angular_damp = 100.0
-rarity = 1
-
-[node name="Glyph2" parent="Items" unique_id=915524516 instance=ExtResource("12_qygx2")]
-position = Vector2(49, 60)
-can_sleep = false
-freeze = true
-freeze_mode = 1
-linear_damp_mode = 1
-angular_damp_mode = 1
-angular_damp = 100.0
-glyph_id = &"spore"
-rarity = 1
-
-[node name="Glyph3" parent="Items" unique_id=430587660 instance=ExtResource("12_qygx2")]
-position = Vector2(457, 77)
-can_sleep = false
-freeze = true
-freeze_mode = 1
-linear_damp_mode = 1
-angular_damp_mode = 1
-angular_damp = 100.0
-glyph_id = &"spore"
-rarity = 1
 
 [node name="EnemySpawner" parent="." unique_id=127933936 instance=ExtResource("7_spawner")]
 unique_name_in_owner = true

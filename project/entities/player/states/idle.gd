@@ -47,6 +47,3 @@ func handle_input(event: InputEvent) -> void:
 		):
 			emit_signal("finished", "dash")
 			return
-
-	# Attack parked: glyph throw is on pickup; vault early-fire is on dash-again.
-	# Melee / proximity redirect remain behind AttackComponent / OrbTetherComponent flags.

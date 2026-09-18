@@ -6,7 +6,6 @@
 [resource]
 script = ExtResource("1_script")
 streams = Array[AudioStream]([ExtResource("2_stream")])
-volume_db = 0.0
 pitch_min = 0.95
 pitch_max = 1.05
 max_voices = 4

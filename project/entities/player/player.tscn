@@ -151,11 +151,6 @@ unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "aim_right"
 
-[node name="AttackAction" type="Node" parent="Controls" unique_id=1429299997]
-unique_name_in_owner = true
-script = ExtResource("10_action")
-action = "attack"
-
 [node name="PickupAction" type="Node" parent="Controls" unique_id=1421936632]
 unique_name_in_owner = true
 script = ExtResource("10_action")

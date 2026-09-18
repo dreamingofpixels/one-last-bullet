@@ -351,7 +351,7 @@ func _poll_ritual_input() -> void:
 		_handle_ritual_player_input(player_variant as Node, true)
 		seen[player_variant] = true
 	# Glyph sockets sit outside DepositArea (~33 px vs radius 22). Transform / bake /
-	# cancel and idle buy (label uses InfoProximityArea) must still work from there.
+	# cancel / waiting-disarm and idle buy (label uses InfoProximityArea) must still work from there.
 	for player_variant in _players_near_info.keys():
 		if seen.has(player_variant):
 			continue
@@ -365,20 +365,21 @@ func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
 	if controls == null:
 		return
 
-	if in_deposit and controls.is_activate_just_pressed():
-		try_activate()
-	if controls.is_upgrade_just_pressed():
-		_try_upgrade_or_buy(player)
-	if controls.is_ritual_cancel_just_pressed() and _ritual_running:
-		release_orb(Vector2.ZERO, player)
-
-
-func _try_upgrade_or_buy(player: Node) -> void:
-	# Triangle / F: buy blank anytime outside ritual; Transform/bake during ritual.
-	if not _ritual_running:
+	# Triangle / F: arm from DepositArea; Transform/bake from InfoProximityArea during capture.
+	if controls.is_activate_just_pressed():
+		if in_deposit:
+			try_activate()
+		if _ritual_running:
+			_try_commit_upgrade(player)
+	# Square / E: buy blank while idle or waiting.
+	if controls.is_upgrade_just_pressed() and not _ritual_running:
 		_try_buy_blank_orb()
-		return
-	_try_commit_upgrade(player)
+	# Circle / C: disarm waiting (no mana refund) or release captured orb.
+	if controls.is_ritual_cancel_just_pressed():
+		if _ritual_running:
+			release_orb(Vector2.ZERO, player)
+		elif _active:
+			deactivate()
 
 
 func _try_buy_blank_orb() -> void:

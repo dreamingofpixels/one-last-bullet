@@ -17,7 +17,6 @@ var player_index: int = 1
 @onready var aim_down_action: PlayerAction = %AimDownAction
 @onready var aim_left_action: PlayerAction = %AimLeftAction
 @onready var aim_right_action: PlayerAction = %AimRightAction
-@onready var attack_action: PlayerAction = %AttackAction
 @onready var pickup_action: PlayerAction = %PickupAction
 @onready var activate_action: PlayerAction = %ActivateAction
 @onready var upgrade_action: PlayerAction = %UpgradeAction
@@ -78,12 +77,6 @@ func get_throw_aim_vector() -> Vector2:
 	if move.length_squared() > 0.0001:
 		return move.normalized()
 	return Vector2.ZERO
-
-
-func is_attack_just_pressed() -> bool:
-	if attack_action.action.is_empty():
-		return false
-	return Input.is_action_just_pressed(attack_action.action)
 
 
 func is_pickup_just_pressed() -> bool:

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://d0m5w5k5yo3ge"]
 
 [ext_resource type="Script" uid="uid://bdtnqlqn63f0a" path="res://ui/input_icons/input_prompt.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cc24cw65d858h" path="res://ui/input_icons/keyboard_e.png" id="2_aa06n"]
+[ext_resource type="Texture2D" uid="uid://gpuruyedewuj" path="res://ui/input_icons/keyboard_space_down.png" id="2_aa06n"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="2_font"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_cqvv4"]
@@ -57,7 +57,7 @@ offset_right = 49.0
 offset_bottom = 16.0
 mouse_filter = 2
 script = ExtResource("1_script")
-input_id = "keyboard_e"
+input_id = "keyboard_space_down"
 prompt_text = "Transform"
 
 [node name="Content" type="HBoxContainer" parent="." unique_id=1563770880]
@@ -83,7 +83,7 @@ position = Vector2(8, 8)
 sprite_frames = SubResource("SpriteFrames_vmkdi")
 animation = &"press"
 autoplay = "press"
-frame_progress = 0.38313076
+frame_progress = 0.37361443
 
 [node name="PromptLabel" type="Label" parent="Content" unique_id=1784412474]
 unique_name_in_owner = true

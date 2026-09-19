@@ -7,6 +7,14 @@ const FRAME_SIZE := 16
 const FRAME_COUNT := 4
 const ANIM_PRESS := &"press"
 
+## Keyboard/mouse vs gamepad sheet basenames per logical action.
+const ACTION_ICONS: Dictionary = {
+	&"upgrade": {&"kb": "keyboard_e_down", &"pad": "square_down"},
+	&"activate": {&"kb": "keyboard_space_down", &"pad": "triangle_down"},
+	&"ritual_cancel": {&"kb": "keyboard_q_down", &"pad": "circle_down"},
+	&"pickup": {&"kb": "mouse_right_click", &"pad": "L2_down"},
+}
+
 @export var input_id: String = "square_down":
 	set(value):
 		input_id = value
@@ -36,6 +44,18 @@ func _ready() -> void:
 func configure(p_input_id: String, p_text: String) -> void:
 	input_id = p_input_id
 	prompt_text = p_text
+
+
+func configure_action(action: StringName, text: String, keyboard_mouse: bool) -> void:
+	var icons: Variant = ACTION_ICONS.get(action)
+	if icons == null or typeof(icons) != TYPE_DICTIONARY:
+		push_warning("InputPrompt: unknown action %s" % String(action))
+		configure("square_down", text)
+		return
+	var table: Dictionary = icons as Dictionary
+	var key: StringName = &"kb" if keyboard_mouse else &"pad"
+	var sheet: String = String(table.get(key, "square_down"))
+	configure(sheet, text)
 
 
 func _validate_property(property: Dictionary) -> void:

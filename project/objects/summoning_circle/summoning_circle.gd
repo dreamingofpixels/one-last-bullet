@@ -34,7 +34,7 @@ var _active: bool = false
 var _ritual_running: bool = false
 var _captured_orb: RigidBody2D = null
 var _players_inside: Dictionary = {}
-## Players inside InfoProximityArea (larger than DepositArea); drives OrbInfo and BuyBlankOrb visibility.
+## Players inside InfoProximityArea (larger than DepositArea); drives OrbInfo and input prompts.
 var _players_near_info: Dictionary = {}
 var _blink_tween: Tween
 var _capture_tween: Tween
@@ -43,6 +43,8 @@ var _glyph_sockets: Array[Sprite2D] = []
 var _glyph_icons: Array[Sprite2D] = []
 ## Ordered Fire / Water / Air / Earth to match OrbRecipes.ELEMENTS.
 var _hint_labels: Array[Label] = []
+## Cache so _refresh_input_prompts does not rebuild SpriteFrames every frame.
+var _prompt_cache_key: String = ""
 
 @onready var deposit_area: Area2D = %DepositArea
 @onready var info_proximity_area: Area2D = %InfoProximityArea
@@ -75,7 +77,11 @@ var _hint_labels: Array[Label] = []
 @onready var glyph_icon_1: Sprite2D = %GlyphIcon1
 @onready var glyph_icon_2: Sprite2D = %GlyphIcon2
 @onready var glyph_icon_3: Sprite2D = %GlyphIcon3
-@onready var buy_blank_orb_label: Label = %BuyBlankOrb
+@onready var prompt_stack: VBoxContainer = %PromptStack
+@onready var prompt_buy: InputPrompt = %PromptBuy
+@onready var prompt_activate: InputPrompt = %PromptActivate
+@onready var prompt_cancel: InputPrompt = %PromptCancel
+@onready var prompt_commit: InputPrompt = %PromptCommit
 
 
 func _ready() -> void:
@@ -88,7 +94,7 @@ func _ready() -> void:
 	glyph_slots.visible = false
 	_hide_hints()
 	_refresh_mana_label()
-	_refresh_buy_label()
+	_refresh_input_prompts()
 	deposit_area.body_entered.connect(_on_deposit_area_body_entered)
 	deposit_area.body_exited.connect(_on_deposit_area_body_exited)
 	deposit_area.area_entered.connect(_on_deposit_area_area_entered)
@@ -101,8 +107,7 @@ func _process(_delta: float) -> void:
 	_poll_ritual_input()
 	if _ritual_running:
 		_refresh_orb_info(false)
-	else:
-		_refresh_buy_label()
+	_refresh_input_prompts()
 
 
 ## Apply editor-authored starting mana; starting glyphs convert straight to mana.
@@ -118,7 +123,7 @@ func apply_start_config(mana: float, entries: Array) -> void:
 			continue
 		mana_pool += float(MANA_BY_RARITY.get(rarity, 5.0))
 	_refresh_mana_label()
-	_refresh_buy_label()
+	_refresh_input_prompts()
 	mana_deposited.emit(0.0, mana_pool)
 
 
@@ -153,7 +158,7 @@ func deposit(amount: float) -> void:
 		return
 	mana_pool += amount
 	_refresh_mana_label()
-	_refresh_buy_label()
+	_refresh_input_prompts()
 	mana_deposited.emit(amount, mana_pool)
 
 
@@ -162,7 +167,7 @@ func spend(amount: float) -> bool:
 		return false
 	mana_pool -= amount
 	_refresh_mana_label()
-	_refresh_buy_label()
+	_refresh_input_prompts()
 	mana_spent.emit(amount, mana_pool)
 	return true
 
@@ -342,7 +347,7 @@ func grant_capture_grace(orb: Node, seconds: float = CAPTURE_GRACE_SECONDS) -> v
 
 
 func notify_orb_count_changed() -> void:
-	_refresh_buy_label()
+	_refresh_input_prompts()
 
 
 func _poll_ritual_input() -> void:
@@ -351,7 +356,7 @@ func _poll_ritual_input() -> void:
 		_handle_ritual_player_input(player_variant as Node, true)
 		seen[player_variant] = true
 	# Glyph sockets sit outside DepositArea (~33 px vs radius 22). Transform / bake /
-	# cancel / waiting-disarm and idle buy (label uses InfoProximityArea) must still work from there.
+	# cancel / waiting-disarm (prompts use InfoProximityArea) must still work from there.
 	for player_variant in _players_near_info.keys():
 		if seen.has(player_variant):
 			continue
@@ -371,8 +376,8 @@ func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
 			try_activate()
 		if _ritual_running:
 			_try_commit_upgrade(player)
-	# Square / E: buy blank while idle or waiting.
-	if controls.is_upgrade_just_pressed() and not _ritual_running:
+	# Square / E: buy blank while idle or waiting (same DepositArea range as activate).
+	if in_deposit and controls.is_upgrade_just_pressed() and not _ritual_running:
 		_try_buy_blank_orb()
 	# Circle / C: disarm waiting (no mana refund) or release captured orb.
 	if controls.is_ritual_cancel_just_pressed():
@@ -393,7 +398,7 @@ func _try_buy_blank_orb() -> void:
 		# Zero orbs → free first blank (cost formula is count × 20).
 		pass
 	new_blank_orb_requested.emit()
-	_refresh_buy_label()
+	_refresh_input_prompts()
 
 
 func _try_commit_upgrade(player: Node) -> void:
@@ -412,7 +417,6 @@ func _try_commit_upgrade(player: Node) -> void:
 
 
 func _show_ritual_ui() -> void:
-	buy_blank_orb_label.visible = false
 	glyph_slots.visible = true
 	_update_ritual_ui_proximity()
 	_refresh_orb_info(true)
@@ -422,15 +426,15 @@ func _hide_ritual_ui() -> void:
 	orb_info.visible = false
 	glyph_slots.visible = false
 	_hide_hints()
-	_refresh_buy_label()
+	_refresh_input_prompts()
 
 
-## OrbInfo (ritual) and BuyBlankOrb (idle) only while a player is in InfoProximityArea.
+## OrbInfo (ritual) and input prompts only while a player is in InfoProximityArea.
 func _update_ritual_ui_proximity() -> void:
 	orb_info.visible = _ritual_running and not _players_near_info.is_empty()
 	if orb_info.visible:
 		_refresh_orb_info(true)
-	_refresh_buy_label()
+	_refresh_input_prompts()
 
 
 func _refresh_orb_info(_force_slots: bool = true) -> void:
@@ -598,16 +602,130 @@ func _live_orb_count() -> int:
 	return count
 
 
-func _refresh_buy_label() -> void:
-	if _ritual_running or _players_near_info.is_empty():
-		buy_blank_orb_label.visible = false
+func _refresh_input_prompts() -> void:
+	if _players_near_info.is_empty():
+		if not _prompt_cache_key.is_empty():
+			_prompt_cache_key = ""
+			_hide_input_prompts()
 		return
-	var live_count: int = _live_orb_count()
-	if live_count >= MAX_ORBS:
-		buy_blank_orb_label.visible = false
+
+	var keyboard_mouse: bool = _prompt_prefers_keyboard_mouse()
+	var show_buy: bool = (
+		not _ritual_running
+		and _live_orb_count() < MAX_ORBS
+		and _any_near_info_in_deposit()
+	)
+	var show_activate: bool = (
+		not _ritual_running
+		and not _active
+		and _any_near_info_in_deposit()
+	)
+	var show_cancel: bool = _active or _ritual_running
+	var cancel_text: String = "Release" if _ritual_running else "Cancel"
+	var show_commit: bool = false
+	var commit_text: String = "Bake"
+	if _ritual_running:
+		var orb: BlankOrb = get_captured_orb() as BlankOrb
+		if orb != null and orb.socketed_count() >= 3:
+			show_commit = true
+			if not _playable_transform_row(orb).is_empty():
+				commit_text = "Transform"
+
+	var activate_cost: float = get_activation_cost()
+	var buy_cost: int = int(get_blank_orb_cost())
+	var cache_key: String = "%s|%s|%s|%s|%s|%s|%d|%d|%s" % [
+		keyboard_mouse,
+		show_buy,
+		show_activate,
+		show_cancel,
+		show_commit,
+		cancel_text,
+		buy_cost,
+		int(activate_cost),
+		commit_text,
+	]
+	if cache_key == _prompt_cache_key:
 		return
-	buy_blank_orb_label.visible = true
-	buy_blank_orb_label.text = "Buy Blank Orb\n(%d mana)" % int(get_blank_orb_cost())
+	_prompt_cache_key = cache_key
+
+	var any_visible: bool = false
+
+	if show_buy:
+		prompt_buy.visible = true
+		prompt_buy.configure_action(
+			&"upgrade",
+			"Buy Blank Orb (%d mana)" % buy_cost,
+			keyboard_mouse
+		)
+		any_visible = true
+	else:
+		prompt_buy.visible = false
+
+	if show_activate:
+		var activate_text: String = "Activate"
+		if activate_cost > 0.0:
+			activate_text = "Activate\n(%d mana)" % int(activate_cost)
+		prompt_activate.visible = true
+		prompt_activate.configure_action(&"activate", activate_text, keyboard_mouse)
+		any_visible = true
+	else:
+		prompt_activate.visible = false
+
+	if show_cancel:
+		prompt_cancel.visible = true
+		prompt_cancel.configure_action(&"ritual_cancel", cancel_text, keyboard_mouse)
+		any_visible = true
+	else:
+		prompt_cancel.visible = false
+
+	if show_commit:
+		prompt_commit.visible = true
+		prompt_commit.configure_action(&"activate", commit_text, keyboard_mouse)
+		any_visible = true
+	else:
+		prompt_commit.visible = false
+
+	prompt_stack.visible = any_visible
+
+
+func _hide_input_prompts() -> void:
+	prompt_stack.visible = false
+	prompt_buy.visible = false
+	prompt_activate.visible = false
+	prompt_cancel.visible = false
+	prompt_commit.visible = false
+
+
+func _prompt_prefers_keyboard_mouse() -> bool:
+	var nearest: Node = _nearest_player_near_info()
+	if nearest == null:
+		return true
+	var controls: Controls = nearest.get("controls") as Controls
+	if controls == null:
+		return true
+	return controls.prefers_keyboard_mouse()
+
+
+func _nearest_player_near_info() -> Node:
+	var origin: Vector2 = global_position
+	var best: Node = null
+	var best_dist_sq: float = INF
+	for player_variant in _players_near_info.keys():
+		var player: Node = player_variant as Node
+		if player == null or not is_instance_valid(player) or not (player is Node2D):
+			continue
+		var dist_sq: float = origin.distance_squared_to((player as Node2D).global_position)
+		if dist_sq < best_dist_sq:
+			best_dist_sq = dist_sq
+			best = player
+	return best
+
+
+func _any_near_info_in_deposit() -> bool:
+	for player_variant in _players_near_info.keys():
+		if _players_inside.has(player_variant):
+			return true
+	return false
 
 
 func _refresh_mana_label() -> void:

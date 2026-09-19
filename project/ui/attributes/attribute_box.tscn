@@ -6,7 +6,7 @@
 
 [sub_resource type="LabelSettings" id="LabelSettings_3ekyw"]
 font = ExtResource("2_2tpu1")
-font_size = 12
+font_size = 10
 
 [node name="AttributeBox" type="Control" unique_id=101354778]
 custom_minimum_size = Vector2(35, 16)

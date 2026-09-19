@@ -5,9 +5,16 @@ class_name Controls extends Node
 ## player_index 1 = keyboard + mouse + gamepad device 0.
 ## player_index 2 = gamepad device 1, etc.
 
+enum InputScheme {
+	KEYBOARD_MOUSE,
+	GAMEPAD,
+}
+
 const AIM_DEADZONE: float = 0.2
+const SCHEME_STICK_DEADZONE: float = 0.35
 
 var player_index: int = 1
+var input_scheme: InputScheme = InputScheme.KEYBOARD_MOUSE
 
 @onready var move_up_action: PlayerAction = %MoveUpAction
 @onready var move_down_action: PlayerAction = %MoveDownAction
@@ -30,6 +37,40 @@ func apply_player_index(index: int) -> void:
 	for child in get_children():
 		if child is PlayerAction:
 			child.action += suffix
+	if index == 1:
+		input_scheme = InputScheme.KEYBOARD_MOUSE
+	else:
+		input_scheme = InputScheme.GAMEPAD
+
+
+func _input(event: InputEvent) -> void:
+	_update_scheme_from_event(event)
+
+
+func _update_scheme_from_event(event: InputEvent) -> void:
+	if event is InputEventKey or event is InputEventMouseButton:
+		if player_index != 1:
+			return
+		if not event.is_pressed():
+			return
+		input_scheme = InputScheme.KEYBOARD_MOUSE
+		return
+
+	var device_id: int = player_index - 1
+	if event is InputEventJoypadButton:
+		var joy_button: InputEventJoypadButton = event as InputEventJoypadButton
+		if joy_button.device != device_id or not joy_button.pressed:
+			return
+		input_scheme = InputScheme.GAMEPAD
+		return
+
+	if event is InputEventJoypadMotion:
+		var joy_motion: InputEventJoypadMotion = event as InputEventJoypadMotion
+		if joy_motion.device != device_id:
+			return
+		if absf(joy_motion.axis_value) < SCHEME_STICK_DEADZONE:
+			return
+		input_scheme = InputScheme.GAMEPAD
 
 
 ## Returns the normalized movement direction from WASD or left stick.
@@ -124,3 +165,8 @@ func is_ritual_cancel_just_pressed() -> bool:
 ## True when this player aims with the mouse (P1). Gamepad-only players must not use mouse GUI gates.
 func uses_mouse() -> bool:
 	return player_index == 1
+
+
+## True when prompts should show keyboard/mouse icons for this player.
+func prefers_keyboard_mouse() -> bool:
+	return input_scheme == InputScheme.KEYBOARD_MOUSE

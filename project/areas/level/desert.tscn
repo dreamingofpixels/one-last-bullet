@@ -458,7 +458,7 @@ position = Vector2(296, 48)
 position = Vector2(528, 128)
 
 [node name="BigRock10" parent="WorldYSort/Rocks" unique_id=1683889156 instance=ExtResource("5_4ykq2")]
-position = Vector2(152, 80)
+position = Vector2(192, 95)
 
 [node name="BigRock11" parent="WorldYSort/Rocks" unique_id=414153712 instance=ExtResource("5_4ykq2")]
 position = Vector2(160, 96)
@@ -788,6 +788,7 @@ shape = SubResource("RectangleShape2D_right")
 [node name="EnemySpawner" parent="." unique_id=127933936 instance=ExtResource("7_spawner")]
 unique_name_in_owner = true
 waves = Array[ExtResource("8_igk5d")]([SubResource("EnemyWave_1"), SubResource("Resource_obfif"), SubResource("Resource_egukw"), SubResource("Resource_glss5"), SubResource("Resource_rnks7")])
+spawning_enabled = false
 assemble_duration = 1.5
 telegraph_duration = 0.3
 

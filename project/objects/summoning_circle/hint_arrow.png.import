@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://biyotohg42ckr"
-path="res://.godot/imported/keyboard_q.png-04f5066acdd11853c7b1f532bab3596e.ctex"
+uid="uid://cu676vqehm8hp"
+path="res://.godot/imported/hint_arrow.png-886ef79158db9672ac92a090ebff48e6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://ui/input_icons/keyboard_q.png"
-dest_files=["res://.godot/imported/keyboard_q.png-04f5066acdd11853c7b1f532bab3596e.ctex"]
+source_file="res://objects/summoning_circle/hint_arrow.png"
+dest_files=["res://.godot/imported/hint_arrow.png-886ef79158db9672ac92a090ebff48e6.ctex"]
 
 [params]
 

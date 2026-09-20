@@ -309,7 +309,6 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_top = 8.0
-offset_right = 8.0
 offset_bottom = -14.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -796,7 +795,6 @@ unique_name_in_owner = true
 visible = false
 
 [node name="Prompt" type="Control" parent="." unique_id=632496195]
-visible = false
 layout_mode = 3
 anchors_preset = 0
 offset_left = -32.0
@@ -806,6 +804,7 @@ offset_bottom = 72.0
 
 [node name="PromptStack" type="VBoxContainer" parent="Prompt" unique_id=1948476340]
 unique_name_in_owner = true
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5

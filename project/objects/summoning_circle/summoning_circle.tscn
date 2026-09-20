@@ -8,7 +8,11 @@
 [ext_resource type="PackedScene" uid="uid://dyxsux8amgcwk" path="res://ui/attributes/attribute_box.tscn" id="5_e8f1m"]
 [ext_resource type="Texture2D" uid="uid://0j51kyfa86bi" path="res://ui/panels/panel.png" id="6_o7k1j"]
 [ext_resource type="Texture2D" uid="uid://bodj13cjxk3wq" path="res://items/glyphs/glyph_socket.png" id="6_pjoiy"]
+[ext_resource type="Texture2D" uid="uid://bhw54eiu1hlln" path="res://ui/panels/attribute_stripes/fire_stripe.png" id="7_p34yu"]
 [ext_resource type="PackedScene" uid="uid://d0m5w5k5yo3ge" path="res://ui/input_icons/input_prompt.tscn" id="7_prompt"]
+[ext_resource type="Texture2D" uid="uid://chy06wl0beo0o" path="res://ui/panels/attribute_stripes/water_stripe.png" id="9_74jjp"]
+[ext_resource type="Texture2D" uid="uid://ckyj6p3tyadtc" path="res://ui/panels/attribute_stripes/air_stripe.png" id="10_4awwu"]
+[ext_resource type="Texture2D" uid="uid://ess0ne6ng7q0" path="res://ui/panels/attribute_stripes/earth_stripe.png" id="11_tnsfc"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_deposit"]
 radius = 22.0
@@ -64,6 +68,34 @@ texture_margin_bottom = 73.0
 
 [sub_resource type="LabelSettings" id="LabelSettings_pukvj"]
 font_size = 12
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_qa2gp"]
+texture = ExtResource("7_p34yu")
+texture_margin_left = 1.0
+texture_margin_top = 1.0
+texture_margin_right = 1.0
+texture_margin_bottom = 1.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_msylq"]
+texture = ExtResource("9_74jjp")
+texture_margin_left = 1.0
+texture_margin_top = 1.0
+texture_margin_right = 1.0
+texture_margin_bottom = 1.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_eka2a"]
+texture = ExtResource("10_4awwu")
+texture_margin_left = 1.0
+texture_margin_top = 1.0
+texture_margin_right = 1.0
+texture_margin_bottom = 1.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_67v4r"]
+texture = ExtResource("11_tnsfc")
+texture_margin_left = 1.0
+texture_margin_top = 1.0
+texture_margin_right = 1.0
+texture_margin_bottom = 1.0
 
 [sub_resource type="LabelSettings" id="LabelSettings_qa2gp"]
 font_size = 12
@@ -140,9 +172,9 @@ offset_bottom = 128.0
 
 [node name="Name" type="Control" parent="OrbInfo" unique_id=249067736]
 anchors_preset = 0
-offset_left = 104.0
-offset_top = 43.0
-offset_right = 328.0
+offset_left = 152.0
+offset_top = 35.0
+offset_right = 280.0
 offset_bottom = 99.0
 
 [node name="EffectPanel" type="Panel" parent="OrbInfo/Name" unique_id=1524657839]
@@ -172,6 +204,7 @@ layout_mode = 2
 
 [node name="OrbNameLabel" type="Label" parent="OrbInfo/Name/MarginContainer/HBoxContainer" unique_id=1488119001]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -182,6 +215,7 @@ vertical_alignment = 1
 
 [node name="HintArrow" type="TextureRect" parent="OrbInfo/Name/MarginContainer/HBoxContainer" unique_id=1818224070]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -254,8 +288,8 @@ anchor_right = 0.60300004
 anchor_bottom = 1.3390001
 offset_left = 8.327988
 offset_top = -280.07303
-offset_right = 144.32799
-offset_bottom = -192.07303
+offset_right = 152.32799
+offset_bottom = -184.07303
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -274,18 +308,17 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -7.5
-offset_right = 7.5
+offset_top = 8.0
+offset_right = 8.0
+offset_bottom = -14.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 18
+theme_override_constants/margin_left = 15
 
 [node name="StatsContainer" type="VBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer" unique_id=231378692]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
 theme_override_constants/separation = 1
 
 [node name="Label" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=1328912402]
@@ -294,15 +327,29 @@ text = "ATTRIBUTES"
 label_settings = SubResource("LabelSettings_pukvj")
 horizontal_alignment = 1
 
-[node name="FireRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=1432138893]
+[node name="FireStripe" type="Panel" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=207770211]
+self_modulate = Color(1, 1, 1, 0.8039216)
+custom_minimum_size = Vector2(0, 14)
+custom_maximum_size = Vector2(115, -1)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxTexture_qa2gp")
+
+[node name="FireRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe" unique_id=1432138893]
 custom_minimum_size = Vector2(0, 14)
 custom_maximum_size = Vector2(-1, 14)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 6
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="FireHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireRow" unique_id=519550453]
+[node name="FireHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe/FireRow" unique_id=519550453]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(55, 0)
@@ -313,11 +360,11 @@ label_settings = SubResource("LabelSettings_o7k1j")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DamageContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireRow" unique_id=636875060]
+[node name="DamageContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe/FireRow" unique_id=636875060]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="DamageBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireRow/DamageContainer" unique_id=558950410 instance=ExtResource("5_e8f1m")]
+[node name="DamageBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe/FireRow/DamageContainer" unique_id=558950410 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
@@ -326,11 +373,11 @@ icon_id = "damage_icon"
 value = 10.4
 value_format = 0
 
-[node name="SplashContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireRow" unique_id=1285927449]
+[node name="SplashContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe/FireRow" unique_id=1285927449]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="SplashBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireRow/SplashContainer" unique_id=1570272957 instance=ExtResource("5_e8f1m")]
+[node name="SplashBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe/FireRow/SplashContainer" unique_id=1570272957 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
@@ -338,28 +385,42 @@ icon_id = "splash_icon"
 value = 0.03
 decimal_places = 0
 
-[node name="BurnContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireRow" unique_id=1602426894]
+[node name="BurnContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe/FireRow" unique_id=1602426894]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="BurnBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireRow/BurnContainer" unique_id=516724155 instance=ExtResource("5_e8f1m")]
+[node name="BurnBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/FireStripe/FireRow/BurnContainer" unique_id=516724155 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(35, 0)
+custom_minimum_size = Vector2(22, 0)
 layout_mode = 2
 icon_id = "burn_icon"
 value = 0.0
 value_format = 0
 decimal_places = 0
 
-[node name="WaterRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=804258990]
+[node name="WaterStripe" type="Panel" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=1997742771]
+self_modulate = Color(1, 1, 1, 0.8039216)
+custom_minimum_size = Vector2(0, 14)
+custom_maximum_size = Vector2(115, -1)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxTexture_msylq")
+
+[node name="WaterRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe" unique_id=804258990]
 custom_minimum_size = Vector2(0, 14)
 custom_maximum_size = Vector2(-1, 14)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 6
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="WaterHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterRow" unique_id=1407496237]
+[node name="WaterHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe/WaterRow" unique_id=1407496237]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(55, 12)
@@ -370,11 +431,11 @@ label_settings = SubResource("LabelSettings_o7k1j")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SelfDamageContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterRow" unique_id=202392096]
+[node name="SelfDamageContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe/WaterRow" unique_id=202392096]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="SelfDamageBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterRow/SelfDamageContainer" unique_id=145874812 instance=ExtResource("5_e8f1m")]
+[node name="SelfDamageBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe/WaterRow/SelfDamageContainer" unique_id=145874812 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
@@ -382,11 +443,11 @@ icon_id = "self_damage_icon"
 value = 8.4
 value_format = 0
 
-[node name="GlyphDropContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterRow" unique_id=1200900673]
+[node name="GlyphDropContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe/WaterRow" unique_id=1200900673]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="GlyphDropBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterRow/GlyphDropContainer" unique_id=119513089 instance=ExtResource("5_e8f1m")]
+[node name="GlyphDropBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe/WaterRow/GlyphDropContainer" unique_id=119513089 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
@@ -394,28 +455,42 @@ icon_id = "glyph_drop_icon"
 value = 0.05
 decimal_places = 0
 
-[node name="ChillContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterRow" unique_id=517654787]
+[node name="ChillContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe/WaterRow" unique_id=517654787]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="ChillBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterRow/ChillContainer" unique_id=1862266612 instance=ExtResource("5_e8f1m")]
+[node name="ChillBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/WaterStripe/WaterRow/ChillContainer" unique_id=1862266612 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(35, 0)
+custom_minimum_size = Vector2(22, 0)
 layout_mode = 2
 icon_id = "chill_icon"
 value = 1.0
 value_format = 0
 decimal_places = 0
 
-[node name="AirRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=1970371857]
+[node name="AirStripe" type="Panel" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=339000154]
+self_modulate = Color(1, 1, 1, 0.8039216)
+custom_minimum_size = Vector2(0, 14)
+custom_maximum_size = Vector2(115, -1)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxTexture_eka2a")
+
+[node name="AirRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe" unique_id=1970371857]
 custom_minimum_size = Vector2(0, 14)
 custom_maximum_size = Vector2(-1, 14)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 6
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="AirHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirRow" unique_id=464072133]
+[node name="AirHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe/AirRow" unique_id=464072133]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(55, 12)
@@ -426,21 +501,21 @@ label_settings = SubResource("LabelSettings_o7k1j")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CritChanceContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirRow" unique_id=1263515902]
+[node name="CritChanceContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe/AirRow" unique_id=1263515902]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="CritChanceBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirRow/CritChanceContainer" unique_id=1615897189 instance=ExtResource("5_e8f1m")]
+[node name="CritChanceBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe/AirRow/CritChanceContainer" unique_id=1615897189 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
 value = 0.01
 
-[node name="SpeedContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirRow" unique_id=2135269501]
+[node name="SpeedContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe/AirRow" unique_id=2135269501]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="SpeedBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirRow/SpeedContainer" unique_id=63534021 instance=ExtResource("5_e8f1m")]
+[node name="SpeedBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe/AirRow/SpeedContainer" unique_id=63534021 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
@@ -449,28 +524,44 @@ value = 100.0
 value_format = 0
 decimal_places = 0
 
-[node name="ShockContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirRow" unique_id=1574632125]
+[node name="ShockContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe/AirRow" unique_id=1574632125]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="ShockBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirRow/ShockContainer" unique_id=766443359 instance=ExtResource("5_e8f1m")]
+[node name="ShockBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/AirStripe/AirRow/ShockContainer" unique_id=766443359 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(35, 0)
+custom_minimum_size = Vector2(22, 0)
 layout_mode = 2
 icon_id = "shock_icon"
 value = 0.0
 value_format = 0
 decimal_places = 0
 
-[node name="EarthRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=521318967]
+[node name="EarthStripe" type="Panel" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer" unique_id=539488237]
+self_modulate = Color(1, 1, 1, 0.8039216)
+custom_minimum_size = Vector2(0, 14)
+custom_maximum_size = Vector2(115, -1)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxTexture_67v4r")
+
+[node name="EarthRow" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe" unique_id=521318967]
 custom_minimum_size = Vector2(0, 14)
 custom_maximum_size = Vector2(-1, 14)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.015000001
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.275
+offset_right = 6.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 6
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="EarthHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthRow" unique_id=404427638]
+[node name="EarthHint" type="Label" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe/EarthRow" unique_id=404427638]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(55, 12)
@@ -481,11 +572,11 @@ label_settings = SubResource("LabelSettings_o7k1j")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CritDamageContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthRow" unique_id=1984149242]
+[node name="CritDamageContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe/EarthRow" unique_id=1984149242]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="CritDamageBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthRow/CritDamageContainer" unique_id=1325005410 instance=ExtResource("5_e8f1m")]
+[node name="CritDamageBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe/EarthRow/CritDamageContainer" unique_id=1325005410 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
@@ -493,11 +584,11 @@ icon_id = "crit_damage_icon"
 value = 2.0
 decimal_places = 0
 
-[node name="WeightContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthRow" unique_id=1192855692]
+[node name="WeightContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe/EarthRow" unique_id=1192855692]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="WeightBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthRow/WeightContainer" unique_id=1781662311 instance=ExtResource("5_e8f1m")]
+[node name="WeightBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe/EarthRow/WeightContainer" unique_id=1781662311 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
@@ -506,13 +597,13 @@ value = 5.0
 value_format = 0
 decimal_places = 0
 
-[node name="BlightContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthRow" unique_id=1305230848]
+[node name="BlightContainer" type="HBoxContainer" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe/EarthRow" unique_id=1305230848]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="BlightBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthRow/BlightContainer" unique_id=1559502256 instance=ExtResource("5_e8f1m")]
+[node name="BlightBox" parent="OrbInfo/Attributes/AttributePanel/MarginContainer/StatsContainer/EarthStripe/EarthRow/BlightContainer" unique_id=1559502256 instance=ExtResource("5_e8f1m")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(35, 0)
+custom_minimum_size = Vector2(22, 0)
 layout_mode = 2
 icon_id = "blight_icon"
 value = 0.0
@@ -524,7 +615,7 @@ anchors_preset = 0
 offset_left = -56.0
 offset_top = 131.0
 offset_right = 168.0
-offset_bottom = 219.0
+offset_bottom = 227.0
 
 [node name="EffectPanel" type="Panel" parent="OrbInfo/Effects" unique_id=49526542]
 self_modulate = Color(1, 1, 1, 0.8039216)
@@ -705,6 +796,7 @@ unique_name_in_owner = true
 visible = false
 
 [node name="Prompt" type="Control" parent="." unique_id=632496195]
+visible = false
 layout_mode = 3
 anchors_preset = 0
 offset_left = -32.0

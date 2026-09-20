@@ -488,8 +488,10 @@ func _displayed_stat_snapshot(orb: BlankOrb) -> Dictionary:
 	return OrbRecipes.stats_from_row(preview)
 
 
-## Two socketed glyphs: show Transform name (or ???) on Name-row HintContainer, tinted by missing element.
+## Two socketed glyphs: hide the orb name and show Transform names (or ???) on HintContainer.
+## Name shows at 0 / 1 / 3 glyphs. HintArrow stays hidden for now.
 func _refresh_hints(orb: BlankOrb) -> void:
+	hint_arrow.visible = false
 	if orb == null or orb.socketed_count() != 2:
 		_hide_hints()
 		return
@@ -505,7 +507,7 @@ func _refresh_hints(orb: BlankOrb) -> void:
 		else:
 			name_hint.text = "???"
 			name_hint.modulate = Color.WHITE
-	hint_arrow.visible = true
+	orb_name_label.visible = false
 	transform_section.visible = true
 
 
@@ -519,6 +521,7 @@ func _hide_hints() -> void:
 		name_hint.modulate = Color.WHITE
 	hint_arrow.visible = false
 	transform_section.visible = false
+	orb_name_label.visible = true
 
 
 func _hint_modulate_for(element: String) -> Color:

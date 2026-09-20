@@ -2,9 +2,8 @@
 
 [ext_resource type="Script" uid="uid://cvhq56d5emxov" path="res://areas/level/run_start_config.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://cdq7ikjwt54nh" path="res://areas/level/glyph_entry_config.gd" id="2_glyph_script"]
-[ext_resource type="PackedScene" uid="uid://bpoisonorb001" path="res://entities/orbs/contagion/contagion_orb.tscn" id="3_pk5o5"]
-[ext_resource type="PackedScene" uid="uid://dspii872lxf65" path="res://entities/orbs/conduit/conduit_orb.tscn" id="4_5akwq"]
+[ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/orbs/blank/blank_orb.tscn" id="3_fgehs"]
 
 [resource]
 script = ExtResource("1_script")
-starting_orbs = Array[PackedScene]([ExtResource("3_pk5o5"), ExtResource("4_5akwq")])
+starting_orbs = Array[PackedScene]([ExtResource("3_fgehs")])

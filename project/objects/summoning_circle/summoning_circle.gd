@@ -19,6 +19,13 @@ const MANA_BY_RARITY: Dictionary = {
 	Glyph.Rarity.UNIQUE: 20.0,
 }
 const CAPTURE_GRACE_SECONDS := 0.35
+## Name-row hint tints match each element's glyph fill.
+var HINT_ELEMENT_MODULATE: Dictionary = {
+	"Fire": Color.html("#a53030"),
+	"Water": Color.html("#4f8fba"),
+	"Air": Color.html("#c7cfcc"),
+	"Earth": Color.html("#ad7757"),
+}
 
 @export var activation_step: float = 5.0
 @export var blink_color: Color = Color(0.55, 0.4, 0.95, 1.0)
@@ -41,8 +48,10 @@ var _capture_tween: Tween
 var _capture_grace_orbs: Dictionary = {}
 var _glyph_sockets: Array[Sprite2D] = []
 var _glyph_icons: Array[Sprite2D] = []
-## Ordered Fire / Water / Air / Earth to match OrbRecipes.ELEMENTS.
+## Attribute-row Fire/Water/Air/Earth hints — kept in the scene, hidden for now.
 var _hint_labels: Array[Label] = []
+## Name-row HintContainer (%Hint1–%Hint4), same element order as OrbRecipes.ELEMENTS.
+var _name_hint_labels: Array[Label] = []
 ## Cache so _refresh_input_prompts does not rebuild SpriteFrames every frame.
 var _prompt_cache_key: String = ""
 
@@ -53,6 +62,12 @@ var _prompt_cache_key: String = ""
 @onready var arcane_particles: GPUParticles2D = %ArcaneParticles
 @onready var orb_info: Control = %OrbInfo
 @onready var orb_name_label: Label = %OrbNameLabel
+@onready var hint_arrow: TextureRect = %HintArrow
+@onready var transform_section: VBoxContainer = %TransformSection
+@onready var hint_1: Label = %Hint1
+@onready var hint_2: Label = %Hint2
+@onready var hint_3: Label = %Hint3
+@onready var hint_4: Label = %Hint4
 @onready var effect_label: Label = %EffectLabel
 @onready var damage_box: AttributeBox = %DamageBox
 @onready var self_damage_box: AttributeBox = %SelfDamageBox
@@ -90,6 +105,7 @@ func _ready() -> void:
 	_glyph_sockets = [glyph_socket_1, glyph_socket_2, glyph_socket_3]
 	_glyph_icons = [glyph_icon_1, glyph_icon_2, glyph_icon_3]
 	_hint_labels = [fire_hint, water_hint, air_hint, earth_hint]
+	_name_hint_labels = [hint_1, hint_2, hint_3, hint_4]
 	orb_info.visible = false
 	glyph_slots.visible = false
 	_hide_hints()
@@ -472,27 +488,42 @@ func _displayed_stat_snapshot(orb: BlankOrb) -> Dictionary:
 	return OrbRecipes.stats_from_row(preview)
 
 
-## Two socketed glyphs: show Transform name (or ???) on the row for each possible third element.
+## Two socketed glyphs: show Transform name (or ???) on Name-row HintContainer, tinted by missing element.
 func _refresh_hints(orb: BlankOrb) -> void:
 	if orb == null or orb.socketed_count() != 2:
 		_hide_hints()
 		return
 	var elements: Array[String] = OrbRecipes.elements_from_socketed(orb.socketed_glyphs)
 	var hints: Array = OrbRecipes.hints_for(orb, elements)
-	for i in _hint_labels.size():
-		var hint_label: Label = _hint_labels[i]
-		hint_label.visible = true
+	for i in _name_hint_labels.size():
+		var name_hint: Label = _name_hint_labels[i]
+		name_hint.visible = true
 		if i < hints.size():
-			var hint: Dictionary = hints[i]
-			hint_label.text = String(hint.get("label", "???")).to_upper()
+			var name_entry: Dictionary = hints[i]
+			name_hint.text = String(name_entry.get("label", "???")).to_upper()
+			name_hint.modulate = _hint_modulate_for(String(name_entry.get("element", "")))
 		else:
-			hint_label.text = "???"
+			name_hint.text = "???"
+			name_hint.modulate = Color.WHITE
+	hint_arrow.visible = true
+	transform_section.visible = true
 
 
 func _hide_hints() -> void:
 	for hint_label in _hint_labels:
 		hint_label.visible = false
 		hint_label.text = "???"
+	for name_hint in _name_hint_labels:
+		name_hint.visible = false
+		name_hint.text = "???"
+		name_hint.modulate = Color.WHITE
+	hint_arrow.visible = false
+	transform_section.visible = false
+
+
+func _hint_modulate_for(element: String) -> Color:
+	var tint: Color = HINT_ELEMENT_MODULATE.get(element, Color.WHITE) as Color
+	return tint
 
 
 func _apply_stats(stats: Dictionary) -> void:

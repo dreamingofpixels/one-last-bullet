@@ -22,14 +22,18 @@ func update(_delta: float) -> void:
 		or owner.orb_tether_component.is_tethering()
 		or owner.orb_tether_component.is_channeling()
 		or owner.orb_tether_component.is_vaulting()
-		or owner.orb_tether_component.is_attack_charging()
 	):
+		return
+	if owner.orb_tether_component.is_attack_charging():
+		owner.sync_body_facing()
 		return
 	# Poll held keys — is_action_pressed only fires on the rising edge, so returning
 	# here after attack while still holding WASD would otherwise soft-lock movement.
 	if controls.get_move_vector() != Vector2.ZERO:
 		emit_signal("finished", "walk")
 		return
+	if owner.orb_tether_component.attack_bat_enabled:
+		owner.sync_body_facing()
 	if not owner.is_attack_busy():
 		owner.directional_sprite.play(&"idle")
 

@@ -93,7 +93,6 @@ unique_name_in_owner = true
 focus_radius = 48.0
 capture_enabled = false
 remote_tether_hold_duration = 1.2
-orb_redirect_mode = 1
 
 [node name="DirectionalSpriteComponent" parent="Components" unique_id=122017100 node_paths=PackedStringArray("animated_sprite") instance=ExtResource("8_dir")]
 unique_name_in_owner = true

@@ -29,8 +29,11 @@ func update(_delta: float) -> void:
 	var dir := controls.get_move_vector()
 	owner.movement_component.move(dir)
 
-	if not owner.is_attack_busy():
+	if owner.orb_tether_component.attack_bat_enabled:
+		owner.sync_body_facing()
+	elif not owner.is_attack_busy():
 		owner.directional_sprite.face(dir)
+	if not owner.is_attack_busy():
 		owner.directional_sprite.play(&"moving")
 
 	if dir == Vector2.ZERO:

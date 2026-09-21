@@ -31,7 +31,7 @@ enum OrbRedirectMode {
 ## After releasing a vaulted orb, ignore that same orb for vault catch (stops dash-away re-grab).
 @export var vault_recatch_cooldown: float = 0.35
 ## Hold Attack this long then release for a 360° bat (attack_around); shorter release = swing polygon.
-@export var attack_charge_hold_seconds: float = 0.5
+@export var attack_charge_hold_seconds: float = 0.4
 ## Orb-only freeze after a connecting bat before deflect (player stays free).
 @export var attack_bat_hold_seconds: float = 0.15
 ## Radius of the charged 360° bat (independent of glyph focus_radius).
@@ -454,6 +454,8 @@ func _update_attack_charge(delta: float) -> void:
 		return
 
 	_attack_charge_elapsed += delta
+	if owner.has_method("sync_body_facing"):
+		owner.sync_body_facing()
 	# Keep charge pose while held.
 	if owner.directional_sprite != null and not owner.directional_sprite.is_playing_action(&"attack_around"):
 		if owner.has_method("play_attack_around_visual"):
@@ -1052,7 +1054,7 @@ func _clear_redirect_preview() -> void:
 	_redirect_preview_orb = null
 
 
-## Launch direction for the attack bat: explicit aim, else move/facing, else last aim.
+## Attack-bat aim: right stick (mouse on keyboard/mouse scheme). Neutral stick keeps last aim.
 func get_bat_aim() -> Vector2:
 	if not is_instance_valid(owner):
 		return _last_redirect_aim
@@ -1060,10 +1062,6 @@ func get_bat_aim() -> Vector2:
 	var explicit: Vector2 = controls.get_explicit_aim_vector(owner.global_position)
 	if explicit.length_squared() > 0.0001:
 		_last_redirect_aim = explicit.normalized()
-		return _last_redirect_aim
-	var forward: Vector2 = _get_attack_forward()
-	if forward.length_squared() > 0.0001:
-		_last_redirect_aim = forward.normalized()
 	return _last_redirect_aim
 
 
@@ -1075,21 +1073,6 @@ func _get_redirect_aim() -> Vector2:
 	if aim.length_squared() > 0.0001:
 		_last_redirect_aim = aim.normalized()
 	return _last_redirect_aim
-
-
-## Movement direction when walking; otherwise sprite facing (standing still).
-func _get_attack_forward() -> Vector2:
-	if not is_instance_valid(owner):
-		return Vector2.RIGHT
-	var controls: Controls = owner.controls
-	var move: Vector2 = controls.get_move_vector()
-	if move.length_squared() > 0.0001:
-		return move.normalized()
-	if owner.directional_sprite != null:
-		var facing: Vector2 = owner.directional_sprite.facing_vector()
-		if facing.length_squared() > 0.0001:
-			return facing.normalized()
-	return Vector2.RIGHT
 
 
 ## True when the flying orb's body circle overlaps the AttackComponent swing polygon.

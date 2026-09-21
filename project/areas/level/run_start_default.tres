@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cvhq56d5emxov" path="res://areas/level/run_start_config.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://cdq7ikjwt54nh" path="res://areas/level/glyph_entry_config.gd" id="2_glyph_script"]
-[ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/orbs/blank/blank_orb.tscn" id="3_fgehs"]
+[ext_resource type="PackedScene" uid="uid://cnovaorb00001" path="res://entities/orbs/nova/nova_orb.tscn" id="3_fgehs"]
 
 [resource]
 script = ExtResource("1_script")

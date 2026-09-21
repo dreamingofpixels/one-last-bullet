@@ -61,6 +61,8 @@ One Last Bullet/
     │   ├── lightning_strike/         Shock-10 stun bolt (7-frame sheet + SFX)
     │   │   ├── lightning_strike.tscn / .gd / lightning_strike.png / .wav / .tres
     │   │   └── lightning-strike.aseprite
+    │   ├── frost_nova/               Nova orb pulse (13-frame sheet)
+    │   │   └── frost_nova.tscn / .gd / frost_nova.png
     │   ├── shockwave/                Earth-spike line shockwave (ogre slam)
     │   │   ├── earth_spike.tscn / .gd / earth_spike.png
     │   │   └── line_shockwave.tscn / .gd / .wav / .tres
@@ -78,6 +80,7 @@ One Last Bullet/
     │   │   ├── conduit/conduit_orb.tscn / .gd      Impact + current beam (Line2D / capsule Area2D) within 130 px of closest player
     │   │   ├── vulcano/vulcano_orb.tscn / .gd / lava_globe.tscn / .gd   Rooted slide→park; spews lava globes → 5 s Burn puddles
     │   │   ├── runic/runic_orb.tscn / .gd / runic.png              Glyph seeker; HomingComponent fetch → drop near circle
+    │   │   ├── nova/nova_orb.tscn / .gd / nova.png                 Frost-nova pulse every 3 s; 5 Chill in radius
     │   │   ├── orb_in_focus.png / aim_arrow.gd
     │   │   └── orb_sfx/         bounce / begin_tether / release_tether clips + SoundEvents
     │   ├── player/
@@ -218,6 +221,7 @@ One Last Bullet/
 - `project/entities/orbs/vulcano/vulcano_orb.tscn` + `vulcano_orb.gd` (`class_name VulcanoOrb`) — volcanic art; opts out of constant-speed flight (`_keeps_constant_flight_speed`); slides with damp then parks (hitbox off; body on **world|orb** so entities cannot walk through); while parked spews `lava_globe.tscn` into `%WorldYSort` (landings avoid other `lava_puddles` ~22 px and world-layer bodies)
 - `project/entities/orbs/vulcano/lava_globe.tscn` + `lava_globe.gd` (`class_name LavaGlobe`) — group `lava_puddles`; fly → splat → puddle → expire; flies under `%WorldYSort` then reparents to `%GroundEffects` on splat so puddles stay under entities and orbs; puddle Area2D applies 1 Burn/s to enemies then disables on expire; source = owning Vulcano
 - `project/entities/orbs/runic/runic_orb.tscn` + `runic_orb.gd` (`class_name RunicOrb`) — blue/teal trail; `%HomingComponent` seeks pickable floor glyphs (skips delivered ring ~28–48 px from circle); picks up without damage; drops on ~34 px ring via `Glyph.drop_at`; enemy body bounce mask; idle bounce when no glyphs
+- `project/entities/orbs/nova/nova_orb.tscn` + `nova_orb.gd` (`class_name NovaOrb`) — icy cyan trail; while flying pulses frost nova every `nova_interval` (default 3 s): child `frost_nova` FX + `nova_chill` (default 5) Chill to enemies in `nova_radius` (default 48 px); pauses while circle-captured; vault hold still pulses; on-hit GameData chill separate
 - `project/entities/orbs/aim_arrow.gd` — three pulsing chevrons outside the orb along player aim (`set_redirect_preview`); used by vault hold and (when vault off) proximity redirect
 - `project/entities/enemies/goblin/goblin_knife.tscn` + `goblin_knife.gd` — animated chaser (`AnimatedSprite2D` idle / running / attacking); Health max 25 / HealthBar / Destroy / Movement (left-facing `sprite_flip_inverted`) / Knockback / Navigation / Status / HitboxComponent / **EnemyAttackComponent** (committed lunge, `goblin_knife_attack.tres`); no `DamageComponent` (passive contact removed); locomotion anim yields while attacking
 - `project/entities/enemies/ogre/ogre.tscn` + `ogre.gd` — animated chaser (idle / running / attacking from `ogre_spritesheet.png`, 64×64 frames); Health max 60 / HealthBar / Destroy / Movement / Knockback / Navigation / Status / HitboxComponent / **EnemyAttackComponent** planted slam (`lunge_distance` 0, large centered hitbox, `hit_knockback_distance` 40); on `struck` spawns eight `LineShockwave` rays (cardinals + diagonals) with spikes parented to `%WorldYSort`; no `DamageComponent`; locomotion yields while attacking
@@ -261,6 +265,7 @@ One Last Bullet/
 - `project/effects/damage_label.tscn` + `damage_label.gd` — world-space floating damage number (`%Label`, `pixel_medium.fnt` size 8); rises ~20 px over 1 s and fades in the last 0.3 s (`ignore_time_scale`)
 - `project/effects/damage_label_effect.gd` — `DamageLabelEffect.spawn_at(origin, amount, kind)`; parents detached label to `current_scene`; colors STANDARD white / POISON green (unused) / SHADOW black / CRIT gold / BURN orange (light outline on black)
 - `project/effects/lightning_strike/lightning_strike.tscn` + `lightning_strike.gd` — one-shot 7-frame bolt (`lightning_strike.png` 364×51 → 52×51 cells); ground splash at node origin; plays `lightning_strike.tres` (`lightning_strike.wav`) via `AudioManager.play_at`; spawned into `%WorldYSort` from `StatusComponent._begin_stun` (no hitbox)
+- `project/effects/frost_nova/frost_nova.tscn` + `frost_nova.gd` — one-shot 13-frame burst (`frost_nova.png` 1248×96 → 96×96 cells); parented under Nova orb so the ring follows; `setup(anim_fps, visual_scale, sound)` then frees on `animation_finished`
 - `project/effects/time_slow.gdshader` — canvas-item shader: vignette + purple-blue tint; `intensity` uniform (0 = off, 1 = full)
 - `project/effects/time_slow_overlay.tscn` + `time_slow_overlay.gd` — `TimeSlowOverlay` (`CanvasLayer`, layer −1); owns a fullscreen `ColorRect` with the time-slow shader; `begin()` ramps `Engine.time_scale` 1.0 → 0.5 over 0.5 real seconds and drives shader intensity; `end()` snaps both back; instanced in `desert.tscn` HUD (before `StatusLabel`)
 

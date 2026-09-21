@@ -1,0 +1,113 @@
+[gd_scene format=3 uid="uid://cfrostnova001"]
+
+[ext_resource type="Script" path="res://effects/frost_nova/frost_nova.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://effects/frost_nova/frost_nova.png" id="2_sheet"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0"]
+atlas = ExtResource("2_sheet")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1"]
+atlas = ExtResource("2_sheet")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2"]
+atlas = ExtResource("2_sheet")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3"]
+atlas = ExtResource("2_sheet")
+region = Rect2(288, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4"]
+atlas = ExtResource("2_sheet")
+region = Rect2(384, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5"]
+atlas = ExtResource("2_sheet")
+region = Rect2(480, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6"]
+atlas = ExtResource("2_sheet")
+region = Rect2(576, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7"]
+atlas = ExtResource("2_sheet")
+region = Rect2(672, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8"]
+atlas = ExtResource("2_sheet")
+region = Rect2(768, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_9"]
+atlas = ExtResource("2_sheet")
+region = Rect2(864, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_10"]
+atlas = ExtResource("2_sheet")
+region = Rect2(960, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_11"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1056, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_12"]
+atlas = ExtResource("2_sheet")
+region = Rect2(1152, 0, 96, 96)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_burst"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_9")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_10")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_11")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_12")
+}],
+"loop": false,
+"name": &"burst",
+"speed": 13.0
+}]
+
+[node name="FrostNova" type="Node2D"]
+z_index = 6
+script = ExtResource("1_script")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+unique_name_in_owner = true
+texture_filter = 1
+sprite_frames = SubResource("SpriteFrames_burst")
+animation = &"burst"

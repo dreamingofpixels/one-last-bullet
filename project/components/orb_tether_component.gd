@@ -3,10 +3,16 @@ class_name OrbTetherComponent extends Node2D
 ## Proximity focus + tether capture/release for orbs in the `orb` group.
 ## Also handles remote tether channeling (hold 2s to snap distant orb).
 ## Opening sling still uses bind_orb(); mid-combat uses closest-in-group targeting.
-## When dash_vault_enabled, mid-combat steer is dash-into-orb vault instead of proximity Attack.
+## Mid-combat steer is mutually exclusive via orb_redirect_mode: Attack bat (R1 / F) or dash vault.
 
 const PHYSICS_LAYER_WORLD := 1
 const PHYSICS_LAYER_WALL := 16
+
+## Playtest A/B: pick one mid-combat orb redirect style.
+enum OrbRedirectMode {
+	ATTACK_BAT, ## R1 / F — 180° front-cone bat along aim
+	DASH_VAULT, ## R2 into orb — vault hold then aim
+}
 
 @export var focus_radius: float = 32.0
 @export var min_tether_radius: float = 24.0
@@ -15,8 +21,8 @@ const PHYSICS_LAYER_WALL := 16
 ## When false, skip orb capture and remote channel; keep glyph pickup, focus, and Attack redirect.
 @export var capture_enabled: bool = true
 @export var remote_tether_hold_duration: float = 2.0
-## When true, dash-into-orb vault replaces proximity Attack redirect (code for both kept).
-@export var dash_vault_enabled: bool = false
+## Mutual exclusive mid-combat redirect. Level can override via its orb_redirect_mode export.
+@export var orb_redirect_mode: OrbRedirectMode = OrbRedirectMode.DASH_VAULT
 @export var vault_catch_radius: float = 28.0
 @export var vault_hold_duration: float = 0.5
 @export var vault_landing_gap: float = 2.0
@@ -24,6 +30,16 @@ const PHYSICS_LAYER_WALL := 16
 @export var vault_aim_half_angle_degrees: float = 180.0
 ## After releasing a vaulted orb, ignore that same orb for vault catch (stops dash-away re-grab).
 @export var vault_recatch_cooldown: float = 0.35
+
+## True when mid-combat steer is dash-into-orb vault (read by DashComponent).
+var dash_vault_enabled: bool:
+	get:
+		return orb_redirect_mode == OrbRedirectMode.DASH_VAULT
+
+## True when mid-combat steer is the R1 / F Attack bat.
+var attack_bat_enabled: bool:
+	get:
+		return orb_redirect_mode == OrbRedirectMode.ATTACK_BAT
 
 ## Channel visual tuning.
 @export var channel_ring_offset: Vector2 = Vector2(0, -18)
@@ -144,6 +160,11 @@ func _process(delta: float) -> void:
 				if distance_for_input > focus_radius:
 					_start_remote_channel(remote_target)
 
+	# --- Attack bat (R1 / F): redirect flying orbs in the front half-circle ---
+	if controls.is_attack_just_pressed():
+		if try_attack_bat():
+			return
+
 	# --- Focus overlay + redirect aim arrow on closest in-range flying orb ---
 	_update_focus_overlays()
 	_update_redirect_preview()
@@ -170,7 +191,7 @@ func get_channel_progress() -> float:
 	return clampf(_channel_elapsed / remote_tether_hold_duration, 0.0, 1.0)
 
 
-## True when Attack will redirect (proximity target, or vault-held orb).
+## True when Attack will bat (proximity cone target) or vault-held orb can early-fire.
 func has_redirect_target() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
 		return false
@@ -178,7 +199,9 @@ func has_redirect_target() -> bool:
 		return false
 	if dash_vault_enabled:
 		return _vaulting and is_instance_valid(_vault_orb)
-	return _find_closest_flying_orb(true) != null
+	if attack_bat_enabled:
+		return _find_closest_orb_in_attack_cone() != null
+	return false
 
 
 ## Legacy entry point kept for player states that may still call it (release path).
@@ -186,6 +209,45 @@ func try_tether_press() -> bool:
 	if not tether_enabled:
 		return false
 	return _try_immediate_tether()
+
+
+## Bat flying orbs in the 180° front half-circle along explicit aim (right stick / mouse).
+## Only when orb_redirect_mode is ATTACK_BAT. Does not refund dash cooldown.
+func try_attack_bat() -> bool:
+	if not attack_bat_enabled:
+		return false
+	if not tether_enabled or is_tethering() or _channeling or _vaulting:
+		return false
+	if owner.has_method("is_assembling") and owner.is_assembling():
+		return false
+	if owner.dash_component.is_dashing():
+		return false
+	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
+		return false
+	if not owner.attack_component.can_attack():
+		return false
+
+	var targets: Array[RigidBody2D] = _find_orbs_in_attack_cone()
+	if targets.is_empty():
+		return false
+
+	var aim: Vector2 = _get_bat_aim()
+	var hit_any: bool = false
+	for orb in targets:
+		if orb == null or not is_instance_valid(orb) or not orb.has_method("deflect"):
+			continue
+		orb.deflect(aim, owner)
+		hit_any = true
+
+	if not hit_any:
+		return false
+
+	_clear_redirect_preview()
+	owner.attack_component.consume_cooldown()
+	owner.attack_component.play_swing_visual(aim)
+	if owner.has_method("play_attack_visual"):
+		owner.play_attack_visual(aim)
+	return true
 
 
 ## Redirect: vault early-fire when dash_vault_enabled, else closest in-range flying orb.
@@ -649,8 +711,12 @@ func _update_focus_overlays() -> void:
 
 
 func _update_redirect_preview() -> void:
-	# Vault mode: no proximity chevron; vault window owns its own preview.
-	if dash_vault_enabled:
+	# Vault window owns its own preview while holding; skip proximity chevron then.
+	if _vaulting:
+		return
+
+	# Attack-bat chevron only in ATTACK_BAT mode.
+	if not attack_bat_enabled:
 		_clear_redirect_preview()
 		return
 
@@ -664,7 +730,12 @@ func _update_redirect_preview() -> void:
 		_clear_redirect_preview()
 		return
 
-	var closest := _find_closest_flying_orb(true)
+	var controls: Controls = owner.controls
+	if not controls.is_explicitly_aiming():
+		_clear_redirect_preview()
+		return
+
+	var closest := _find_closest_orb_in_attack_cone()
 	if closest == null or not closest.has_method("set_redirect_preview"):
 		_clear_redirect_preview()
 		return
@@ -679,7 +750,7 @@ func _update_redirect_preview() -> void:
 		_redirect_preview_orb.clear_redirect_preview(owner)
 
 	_redirect_preview_orb = closest
-	closest.set_redirect_preview(_get_redirect_aim(), owner)
+	closest.set_redirect_preview(_get_bat_aim(), owner)
 
 
 func _clear_redirect_preview() -> void:
@@ -692,6 +763,21 @@ func _clear_redirect_preview() -> void:
 	_redirect_preview_orb = null
 
 
+## Launch direction for the attack bat: explicit aim, else cone forward, else last aim.
+func _get_bat_aim() -> Vector2:
+	if not is_instance_valid(owner):
+		return _last_redirect_aim
+	var controls: Controls = owner.controls
+	var explicit: Vector2 = controls.get_explicit_aim_vector(owner.global_position)
+	if explicit.length_squared() > 0.0001:
+		_last_redirect_aim = explicit.normalized()
+		return _last_redirect_aim
+	var forward: Vector2 = _get_attack_forward()
+	if forward.length_squared() > 0.0001:
+		_last_redirect_aim = forward.normalized()
+	return _last_redirect_aim
+
+
 func _get_redirect_aim() -> Vector2:
 	if not is_instance_valid(owner):
 		return _last_redirect_aim
@@ -700,6 +786,60 @@ func _get_redirect_aim() -> Vector2:
 	if aim.length_squared() > 0.0001:
 		_last_redirect_aim = aim.normalized()
 	return _last_redirect_aim
+
+
+## Movement direction when walking; otherwise sprite facing (standing still).
+func _get_attack_forward() -> Vector2:
+	if not is_instance_valid(owner):
+		return Vector2.RIGHT
+	var controls: Controls = owner.controls
+	var move: Vector2 = controls.get_move_vector()
+	if move.length_squared() > 0.0001:
+		return move.normalized()
+	if owner.directional_sprite != null:
+		var facing: Vector2 = owner.directional_sprite.facing_vector()
+		if facing.length_squared() > 0.0001:
+			return facing.normalized()
+	return Vector2.RIGHT
+
+
+## True when the orb is within focus_radius and in the 180° half-circle in front of the player.
+func _orb_in_attack_cone(orb: RigidBody2D) -> bool:
+	if orb == null or not is_instance_valid(orb):
+		return false
+	var to_orb: Vector2 = orb.global_position - owner.global_position
+	var dist_sq: float = to_orb.length_squared()
+	if dist_sq > focus_radius * focus_radius:
+		return false
+	if dist_sq < 0.0001:
+		return true
+	var forward: Vector2 = _get_attack_forward()
+	return to_orb.normalized().dot(forward) >= 0.0
+
+
+func _find_orbs_in_attack_cone() -> Array[RigidBody2D]:
+	var result: Array[RigidBody2D] = []
+	for node in get_tree().get_nodes_in_group("orb"):
+		var orb := node as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			continue
+		if not _is_orb_flying(orb):
+			continue
+		if _orb_in_attack_cone(orb):
+			result.append(orb)
+	return result
+
+
+func _find_closest_orb_in_attack_cone() -> RigidBody2D:
+	var origin: Vector2 = owner.global_position
+	var best: RigidBody2D = null
+	var best_dist_sq: float = INF
+	for orb in _find_orbs_in_attack_cone():
+		var dist_sq: float = origin.distance_squared_to(orb.global_position)
+		if dist_sq < best_dist_sq:
+			best_dist_sq = dist_sq
+			best = orb
+	return best
 
 
 func _clear_all_focus() -> void:

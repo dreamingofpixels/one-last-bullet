@@ -28,6 +28,7 @@ var input_scheme: InputScheme = InputScheme.KEYBOARD_MOUSE
 @onready var activate_action: PlayerAction = %ActivateAction
 @onready var upgrade_action: PlayerAction = %UpgradeAction
 @onready var ritual_cancel_action: PlayerAction = %RitualCancelAction
+@onready var attack_action: PlayerAction = %AttackAction
 @onready var dash_action: PlayerAction = %DashAction
 
 
@@ -104,6 +105,40 @@ func get_aim_vector(origin: Vector2) -> Vector2:
 	return Vector2.ZERO
 
 
+## Explicit bat/redirect aim: right stick past deadzone, else mouse only while on keyboard/mouse scheme.
+## No mouse fallback while the last input scheme is gamepad (same idea as throw).
+func get_explicit_aim_vector(origin: Vector2) -> Vector2:
+	var stick := Input.get_vector(
+		aim_left_action.action,
+		aim_right_action.action,
+		aim_up_action.action,
+		aim_down_action.action
+	)
+	if stick.length() > AIM_DEADZONE:
+		return stick.normalized()
+	if input_scheme != InputScheme.KEYBOARD_MOUSE or player_index != 1:
+		return Vector2.ZERO
+	var vp := get_viewport()
+	var world_mouse := vp.get_canvas_transform().affine_inverse() * vp.get_mouse_position()
+	var to_mouse := world_mouse - origin
+	if to_mouse.length_squared() > 0.0001:
+		return to_mouse.normalized()
+	return Vector2.ZERO
+
+
+## True when the player is actively aiming (stick past deadzone, or P1 on keyboard/mouse scheme).
+func is_explicitly_aiming() -> bool:
+	var stick := Input.get_vector(
+		aim_left_action.action,
+		aim_right_action.action,
+		aim_up_action.action,
+		aim_down_action.action
+	)
+	if stick.length() > AIM_DEADZONE:
+		return true
+	return input_scheme == InputScheme.KEYBOARD_MOUSE and player_index == 1
+
+
 ## Glyph throw direction: right stick if aimed, else move direction, else zero (caller uses facing).
 func get_throw_aim_vector() -> Vector2:
 	var stick := Input.get_vector(
@@ -142,6 +177,12 @@ func is_dash_just_pressed() -> bool:
 	if dash_action.action.is_empty():
 		return false
 	return Input.is_action_just_pressed(dash_action.action)
+
+
+func is_attack_just_pressed() -> bool:
+	if attack_action.action.is_empty():
+		return false
+	return Input.is_action_just_pressed(attack_action.action)
 
 
 func is_activate_just_pressed() -> bool:

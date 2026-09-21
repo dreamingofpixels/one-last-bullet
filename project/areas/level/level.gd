@@ -31,6 +31,10 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 @export var new_orb_cost: float = 20.0
 ## When true, flying orbs bounce off players/enemies; when false, they punch through.
 @export var bounce_orbs_off_entities: bool = false
+## Playtest A/B: Attack bat (R1/F) vs dash vault (R2 into orb). Applied to all players.
+@export var orb_redirect_mode: OrbTetherComponent.OrbRedirectMode = (
+	OrbTetherComponent.OrbRedirectMode.DASH_VAULT
+)
 ## Editor-authored starting mana, orbs, and circle glyph inventory.
 @export var run_start: RunStartConfig
 
@@ -57,6 +61,7 @@ func _ready() -> void:
 	randomize()
 	status_label.text = "Assemble..."
 	BlankOrb.set_bounce_off_entities(bounce_orbs_off_entities)
+	_apply_orb_redirect_mode()
 	_apply_run_start_config()
 
 	if level_music:
@@ -228,8 +233,22 @@ func _try_add_player_2() -> CharacterBody2D:
 	p.player_index = 2
 	players_root.add_child(p)
 	p.global_position = _pick_join_spawn_position()
+	_apply_orb_redirect_mode_to_player(p)
 	_connect_player_destroy(p)
 	return p
+
+
+func _apply_orb_redirect_mode() -> void:
+	for p in Players.all(get_tree()):
+		_apply_orb_redirect_mode_to_player(p)
+
+
+func _apply_orb_redirect_mode_to_player(p: Node) -> void:
+	if p == null or not is_instance_valid(p):
+		return
+	var tether: Variant = p.get("orb_tether_component")
+	if tether is OrbTetherComponent:
+		(tether as OrbTetherComponent).orb_redirect_mode = orb_redirect_mode
 
 
 func _assemble_all_players() -> void:

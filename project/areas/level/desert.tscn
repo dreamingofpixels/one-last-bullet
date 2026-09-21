@@ -375,6 +375,7 @@ script = ExtResource("2_level")
 level_music = ExtResource("2_ynou2")
 glyph_drop_chance = 0.5
 bounce_orbs_off_entities = true
+orb_redirect_mode = 0
 run_start = ExtResource("17_runstart")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=652304502]

@@ -8,7 +8,8 @@ const PHYSICS_LAYER_ORB := 8
 
 @export var knockback_force: float = 220.0
 @export var attack_cooldown: float = 0.35
-## When false, Attack never swings (sprite/hitbox/knockback dormant). Redirect uses consume_cooldown().
+## When false, Attack never swings for melee (sprite/hitbox/knockback dormant).
+## Orb-bat playtest still calls play_swing_visual() for the arc art without enabling melee.
 @export var melee_enabled: bool = false
 ## When false, the arc still knocks enemies but does not deflect the orb (tether steering is active instead).
 @export var deflect_orb_enabled: bool = false
@@ -85,6 +86,16 @@ func start(aim_direction: Vector2) -> void:
 		return
 	if not can_attack():
 		return
+	_begin_swing(aim_direction)
+
+
+## Play the arc swing sprite/animation without enabling melee hitbox or knockback.
+## Used by the Attack bat redirect. Caller owns cooldown via consume_cooldown().
+func play_swing_visual(aim_direction: Vector2) -> void:
+	_begin_swing(aim_direction)
+
+
+func _begin_swing(aim_direction: Vector2) -> void:
 	_aim_direction = aim_direction.normalized() if aim_direction.length_squared() > 0.0001 else Vector2.RIGHT
 	_attacking = true
 	_hit_orb = false
@@ -107,7 +118,7 @@ func can_attack() -> bool:
 	return not _attacking and Time.get_ticks_msec() >= _cooldown_until_msec
 
 
-## Start the attack cooldown without playing a swing (used by proximity orb redirect).
+## Start the attack cooldown without playing a swing (used by proximity / bat redirect).
 func consume_cooldown() -> void:
 	_cooldown_until_msec = Time.get_ticks_msec() + int(attack_cooldown * 1000.0)
 	attack_sprite_hint.visible = false
@@ -194,4 +205,6 @@ func _on_animation_finished(anim_name: StringName) -> void:
 	set_hitbox_active(false)
 	attack_sprite.visible = false
 	_attacking = false
-	_cooldown_until_msec = Time.get_ticks_msec() + int(attack_cooldown * 1000.0)
+	# Melee start() relies on finish for cooldown; bat already called consume_cooldown().
+	if melee_enabled:
+		_cooldown_until_msec = Time.get_ticks_msec() + int(attack_cooldown * 1000.0)

@@ -185,6 +185,18 @@ func is_attack_just_pressed() -> bool:
 	return Input.is_action_just_pressed(attack_action.action)
 
 
+func is_attack_pressed() -> bool:
+	if attack_action.action.is_empty():
+		return false
+	return Input.is_action_pressed(attack_action.action)
+
+
+func is_attack_just_released() -> bool:
+	if attack_action.action.is_empty():
+		return false
+	return Input.is_action_just_released(attack_action.action)
+
+
 func is_activate_just_pressed() -> bool:
 	if activate_action.action.is_empty():
 		return false

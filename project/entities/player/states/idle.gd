@@ -2,7 +2,7 @@ extends State
 
 
 func enter() -> void:
-	if not owner.directional_sprite.is_playing_action(&"attacking"):
+	if not owner.is_attack_busy():
 		owner.directional_sprite.play(&"idle")
 
 
@@ -29,7 +29,7 @@ func update(_delta: float) -> void:
 	if controls.get_move_vector() != Vector2.ZERO:
 		emit_signal("finished", "walk")
 		return
-	if not owner.directional_sprite.is_playing_action(&"attacking"):
+	if not owner.is_attack_busy():
 		owner.directional_sprite.play(&"idle")
 
 

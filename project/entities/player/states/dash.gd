@@ -2,6 +2,8 @@ extends State
 
 
 func enter() -> void:
+	if owner.orb_tether_component.is_attack_charging():
+		owner.orb_tether_component.cancel_attack_charge()
 	owner.dash_component.start(owner.directional_sprite.facing_vector())
 
 

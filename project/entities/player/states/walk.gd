@@ -2,7 +2,7 @@ extends State
 
 
 func enter() -> void:
-	if not owner.directional_sprite.is_playing_action(&"attacking"):
+	if not owner.is_attack_busy():
 		owner.directional_sprite.play(&"moving")
 
 
@@ -28,8 +28,10 @@ func update(_delta: float) -> void:
 	var dir := controls.get_move_vector()
 	owner.movement_component.move(dir)
 
-	var attacking: bool = owner.directional_sprite.is_playing_action(&"attacking")
-	if not attacking:
+	# Face while charging so the bat cone tracks movement; do not overwrite attack clips.
+	if owner.orb_tether_component.is_attack_charging():
+		owner.directional_sprite.face(dir)
+	elif not owner.is_attack_busy():
 		owner.directional_sprite.face(dir)
 		owner.directional_sprite.play(&"moving")
 

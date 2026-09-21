@@ -375,7 +375,6 @@ script = ExtResource("2_level")
 level_music = ExtResource("2_ynou2")
 glyph_drop_chance = 0.5
 bounce_orbs_off_entities = true
-orb_redirect_mode = 0
 run_start = ExtResource("17_runstart")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=652304502]
@@ -764,6 +763,7 @@ collision_offset_override = Vector2(0, -8)
 [node name="Player1" parent="WorldYSort" unique_id=735883009 instance=ExtResource("3_player")]
 unique_name_in_owner = true
 position = Vector2(320, 288)
+character = 1
 
 [node name="Walls" type="StaticBody2D" parent="." unique_id=1771153190 groups=["navigation_source"]]
 collision_layer = 17

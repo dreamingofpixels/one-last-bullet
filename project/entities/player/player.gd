@@ -4,7 +4,14 @@ extends CharacterBody2D
 ## 2 = gamepad device 1. Set this before adding to the scene tree.
 @export var player_index: int = 1
 
+enum CharacterId { WIZARD, DWARF }
+
+## Body + redirect fantasy. Wizard = dash vault; dwarf = Attack bat (incl. hold-to-spin).
+@export var character: CharacterId = CharacterId.WIZARD
+
 const STUCK_FRAMES_BEFORE_UNSTICK := 6
+const WIZARD_FRAMES := preload("res://entities/player/player_frames.tres")
+const DWARF_FRAMES := preload("res://entities/player/dwarf/dwarf_frames.tres")
 
 var COMPONENTS: Dictionary = {}
 
@@ -28,6 +35,7 @@ var _stuck_frames: int = 0
 func _ready() -> void:
 	add_to_group("player")
 	controls.apply_player_index(player_index)
+	_apply_character()
 	player_sprite.visible = false
 	_set_spawn_inert(true)
 
@@ -111,8 +119,34 @@ func try_throw_item() -> bool:
 	return true
 
 
-## Face aim and play the body attacking clip (glyph throw / future melee).
+## Face aim and play the body attacking clip (glyph throw / Attack bat front swing).
 func play_attack_visual(aim: Vector2 = Vector2.ZERO) -> void:
+	_face_aim(aim)
+	directional_sprite.play(&"attacking", true)
+
+
+## Face aim and play the 360° spin clip (dwarf hold-to-release Attack bat).
+func play_attack_around_visual(aim: Vector2 = Vector2.ZERO) -> void:
+	_face_aim(aim)
+	directional_sprite.play(&"attack_around", true)
+
+
+## True while charging Attack hold, or while a body attack clip is active (incl. paused charge pose).
+func is_attack_busy() -> bool:
+	if orb_tether_component.is_attack_charging():
+		return true
+	return (
+		directional_sprite.is_playing_action(&"attacking")
+		or directional_sprite.is_playing_action(&"attack_around")
+	)
+
+
+## True for dwarf (body hammer clips are the Attack swing; no wizard arc sprite).
+func uses_body_attack_swing() -> bool:
+	return character == CharacterId.DWARF
+
+
+func _face_aim(aim: Vector2) -> void:
 	var dir: Vector2 = aim
 	if dir.length_squared() < 0.0001:
 		dir = controls.get_aim_vector(global_position)
@@ -121,7 +155,20 @@ func play_attack_visual(aim: Vector2 = Vector2.ZERO) -> void:
 	if dir.length_squared() < 0.0001:
 		dir = Vector2.RIGHT
 	directional_sprite.face(dir)
-	directional_sprite.play(&"attacking", true)
+
+
+func _apply_character() -> void:
+	match character:
+		CharacterId.DWARF:
+			player_sprite.sprite_frames = DWARF_FRAMES
+			# Sheet faces SE; invert so logical west matches the art after flip.
+			directional_sprite.set_flip_h_inverted(true)
+			orb_tether_component.orb_redirect_mode = OrbTetherComponent.OrbRedirectMode.ATTACK_BAT
+		_:
+			player_sprite.sprite_frames = WIZARD_FRAMES
+			directional_sprite.set_flip_h_inverted(false)
+			orb_tether_component.orb_redirect_mode = OrbTetherComponent.OrbRedirectMode.DASH_VAULT
+	directional_sprite.play(&"idle", true)
 
 
 func _set_spawn_inert(inert: bool) -> void:

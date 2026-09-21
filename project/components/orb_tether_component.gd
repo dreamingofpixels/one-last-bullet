@@ -21,7 +21,7 @@ enum OrbRedirectMode {
 ## When false, skip orb capture and remote channel; keep glyph pickup, focus, and Attack redirect.
 @export var capture_enabled: bool = true
 @export var remote_tether_hold_duration: float = 2.0
-## Mutual exclusive mid-combat redirect. Level can override via its orb_redirect_mode export.
+## Mutual exclusive mid-combat redirect (set per player character: wizard vault / dwarf bat).
 @export var orb_redirect_mode: OrbRedirectMode = OrbRedirectMode.DASH_VAULT
 @export var vault_catch_radius: float = 28.0
 @export var vault_hold_duration: float = 0.5
@@ -30,6 +30,8 @@ enum OrbRedirectMode {
 @export var vault_aim_half_angle_degrees: float = 180.0
 ## After releasing a vaulted orb, ignore that same orb for vault catch (stops dash-away re-grab).
 @export var vault_recatch_cooldown: float = 0.35
+## Hold Attack this long then release for a 360° bat (attack_around); shorter release = front cone.
+@export var attack_charge_hold_seconds: float = 0.5
 
 ## True when mid-combat steer is dash-into-orb vault (read by DashComponent).
 var dash_vault_enabled: bool:
@@ -72,6 +74,9 @@ var _vault_commit_dir: Vector2 = Vector2.RIGHT
 ## Same orb cannot be vault-caught again until this wall-clock time (dash-away re-grab guard).
 var _vault_recatch_orb: RigidBody2D = null
 var _vault_recatch_until_msec: int = 0
+## Attack-bat charge: hold R1 / F on attack_around frame 0 until release.
+var _attack_charging: bool = false
+var _attack_charge_elapsed: float = 0.0
 
 
 func _ready() -> void:
@@ -83,6 +88,7 @@ func _ready() -> void:
 func _on_tree_exiting() -> void:
 	if _vaulting:
 		_fire_vault(false)
+	_cancel_attack_charge()
 	_clear_redirect_preview()
 	_clear_this_player_focus()
 
@@ -118,11 +124,13 @@ func _process(delta: float) -> void:
 
 	# --- Dash-vault aim window ---
 	if _vaulting:
+		_cancel_attack_charge()
 		_update_vault(delta)
 		return
 
 	# --- Handle channeling state ---
 	if _channeling:
+		_cancel_attack_charge()
 		_clear_redirect_preview()
 		var channel_orb := _get_channel_orb()
 		# Cancel: button released, target invalid / not flying, or tether disabled.
@@ -145,6 +153,13 @@ func _process(delta: float) -> void:
 				queue_redraw()
 		return
 
+	# --- Attack-bat charge hold (R1 / F) ---
+	if _attack_charging:
+		_update_attack_charge(delta)
+		_update_focus_overlays()
+		_update_redirect_preview()
+		return
+
 	# --- Tether input (centralized) — must run before flying guards so release works while tethered ---
 	if controls.is_pickup_just_pressed():
 		if _try_immediate_tether():
@@ -160,9 +175,9 @@ func _process(delta: float) -> void:
 				if distance_for_input > focus_radius:
 					_start_remote_channel(remote_target)
 
-	# --- Attack bat (R1 / F): redirect flying orbs in the front half-circle ---
+	# --- Attack bat (R1 / F): begin charge hold (front cone or 360° on release) ---
 	if controls.is_attack_just_pressed():
-		if try_attack_bat():
+		if _try_begin_attack_charge():
 			return
 
 	# --- Focus overlay + redirect aim arrow on closest in-range flying orb ---
@@ -183,6 +198,10 @@ func is_channeling() -> bool:
 
 func is_vaulting() -> bool:
 	return _vaulting
+
+
+func is_attack_charging() -> bool:
+	return _attack_charging
 
 
 func get_channel_progress() -> float:
@@ -211,11 +230,41 @@ func try_tether_press() -> bool:
 	return _try_immediate_tether()
 
 
-## Bat flying orbs in the 180° front half-circle along explicit aim (right stick / mouse).
-## Only when orb_redirect_mode is ATTACK_BAT. Does not refund dash cooldown.
-func try_attack_bat() -> bool:
+## Bat flying orbs along explicit aim. front_cone=true → 180°; false → full 360° in focus_radius.
+## Plays body clip even with no orbs in range. Does not refund dash cooldown.
+func try_attack_bat(front_cone: bool = true) -> bool:
 	if not attack_bat_enabled:
 		return false
+	if not _can_start_attack_bat():
+		return false
+
+	var aim: Vector2 = _get_bat_aim()
+	var targets: Array[RigidBody2D] = (
+		_find_orbs_in_attack_cone() if front_cone else _find_flying_orbs_in_focus()
+	)
+	for orb in targets:
+		if orb == null or not is_instance_valid(orb) or not orb.has_method("deflect"):
+			continue
+		orb.deflect(aim, owner)
+
+	_clear_redirect_preview()
+	owner.attack_component.consume_cooldown()
+	# Dwarf hammer clips are the swing; skip wizard arc sprite.
+	var use_body_only: bool = owner.has_method("uses_body_attack_swing") and owner.uses_body_attack_swing()
+	if not use_body_only:
+		owner.attack_component.play_swing_visual(aim)
+	if front_cone:
+		if owner.has_method("play_attack_visual"):
+			owner.play_attack_visual(aim)
+	else:
+		if owner.has_method("play_attack_around_visual"):
+			owner.play_attack_around_visual(aim)
+		elif owner.has_method("play_attack_visual"):
+			owner.play_attack_visual(aim)
+	return true
+
+
+func _can_start_attack_bat() -> bool:
 	if not tether_enabled or is_tethering() or _channeling or _vaulting:
 		return false
 	if owner.has_method("is_assembling") and owner.is_assembling():
@@ -226,28 +275,86 @@ func try_attack_bat() -> bool:
 		return false
 	if not owner.attack_component.can_attack():
 		return false
-
-	var targets: Array[RigidBody2D] = _find_orbs_in_attack_cone()
-	if targets.is_empty():
-		return false
-
-	var aim: Vector2 = _get_bat_aim()
-	var hit_any: bool = false
-	for orb in targets:
-		if orb == null or not is_instance_valid(orb) or not orb.has_method("deflect"):
-			continue
-		orb.deflect(aim, owner)
-		hit_any = true
-
-	if not hit_any:
-		return false
-
-	_clear_redirect_preview()
-	owner.attack_component.consume_cooldown()
-	owner.attack_component.play_swing_visual(aim)
-	if owner.has_method("play_attack_visual"):
-		owner.play_attack_visual(aim)
 	return true
+
+
+func _try_begin_attack_charge() -> bool:
+	if not attack_bat_enabled:
+		return false
+	if not _can_start_attack_bat():
+		return false
+	_attack_charging = true
+	_attack_charge_elapsed = 0.0
+	# Hold pose = first frame of attack_around (spin wind-up).
+	if owner.has_method("play_attack_around_visual"):
+		owner.play_attack_around_visual(_get_bat_aim())
+	owner.directional_sprite.pause_hold_at_frame(0)
+	return true
+
+
+func _update_attack_charge(delta: float) -> void:
+	var controls: Controls = owner.controls
+	if not _can_continue_attack_charge():
+		_cancel_attack_charge()
+		return
+
+	_attack_charge_elapsed += delta
+	# Keep charge pose while held.
+	if owner.directional_sprite != null and not owner.directional_sprite.is_playing_action(&"attack_around"):
+		if owner.has_method("play_attack_around_visual"):
+			owner.play_attack_around_visual(_get_bat_aim())
+		owner.directional_sprite.pause_hold_at_frame(0)
+
+	if controls.is_attack_just_released() or not controls.is_attack_pressed():
+		var full_circle: bool = _attack_charge_elapsed >= attack_charge_hold_seconds
+		_attack_charging = false
+		_attack_charge_elapsed = 0.0
+		try_attack_bat(not full_circle)
+		return
+
+
+func _can_continue_attack_charge() -> bool:
+	if not attack_bat_enabled or not tether_enabled:
+		return false
+	if is_tethering() or _channeling or _vaulting:
+		return false
+	if owner.has_method("is_assembling") and owner.is_assembling():
+		return false
+	if owner.dash_component.is_dashing():
+		return false
+	if owner.has_method("is_carrying_item") and owner.is_carrying_item():
+		return false
+	return true
+
+
+func _cancel_attack_charge() -> void:
+	if not _attack_charging:
+		return
+	_attack_charging = false
+	_attack_charge_elapsed = 0.0
+	# Drop back to idle/moving; states will re-assert locomotion next frame.
+	if owner.directional_sprite != null and owner.directional_sprite.is_playing_action(&"attack_around"):
+		owner.directional_sprite.play(&"idle", true)
+
+
+## Public alias so Dash / other states can abort a held Attack charge.
+func cancel_attack_charge() -> void:
+	_cancel_attack_charge()
+
+
+func _find_flying_orbs_in_focus() -> Array[RigidBody2D]:
+	var result: Array[RigidBody2D] = []
+	var origin: Vector2 = owner.global_position
+	var radius_sq: float = focus_radius * focus_radius
+	for node in get_tree().get_nodes_in_group("orb"):
+		var orb := node as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			continue
+		if not _is_orb_flying(orb):
+			continue
+		if origin.distance_squared_to(orb.global_position) <= radius_sq:
+			result.append(orb)
+	return result
 
 
 ## Redirect: vault early-fire when dash_vault_enabled, else closest in-range flying orb.

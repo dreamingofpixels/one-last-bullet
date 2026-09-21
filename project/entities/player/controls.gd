@@ -10,7 +10,7 @@ enum InputScheme {
 	GAMEPAD,
 }
 
-const AIM_DEADZONE: float = 0.2
+const AIM_DEADZONE: float = 0.4
 const SCHEME_STICK_DEADZONE: float = 0.35
 
 var player_index: int = 1
@@ -84,16 +84,22 @@ func get_move_vector() -> Vector2:
 	)
 
 
-## Returns the aim direction vector.
-## Gamepad right-stick if deflected past deadzone; otherwise mouse (P1 only) or zero.
-func get_aim_vector(origin: Vector2) -> Vector2:
-	var stick := Input.get_vector(
+## Right-stick vector with a circular AIM_DEADZONE (zero while the stick is recentering).
+func _get_aim_stick() -> Vector2:
+	return Input.get_vector(
 		aim_left_action.action,
 		aim_right_action.action,
 		aim_up_action.action,
-		aim_down_action.action
+		aim_down_action.action,
+		AIM_DEADZONE
 	)
-	if stick.length() > AIM_DEADZONE:
+
+
+## Returns the aim direction vector.
+## Gamepad right-stick if deflected past deadzone; otherwise mouse (P1 only) or zero.
+func get_aim_vector(origin: Vector2) -> Vector2:
+	var stick: Vector2 = _get_aim_stick()
+	if stick.length_squared() > 0.0001:
 		return stick.normalized()
 	if player_index == 1:
 		# Convert screen-space mouse to world space via the viewport's canvas transform.
@@ -123,40 +129,24 @@ func get_explicit_aim_vector(origin: Vector2) -> Vector2:
 
 ## Right-stick aim only (past AIM_DEADZONE). No mouse fallback — used for spin bat override.
 func get_stick_aim_vector() -> Vector2:
-	var stick := Input.get_vector(
-		aim_left_action.action,
-		aim_right_action.action,
-		aim_up_action.action,
-		aim_down_action.action
-	)
-	if stick.length() > AIM_DEADZONE:
+	var stick: Vector2 = _get_aim_stick()
+	if stick.length_squared() > 0.0001:
 		return stick.normalized()
 	return Vector2.ZERO
 
 
 ## True when the player is actively aiming (stick past deadzone, or P1 on keyboard/mouse scheme).
 func is_explicitly_aiming() -> bool:
-	var stick := Input.get_vector(
-		aim_left_action.action,
-		aim_right_action.action,
-		aim_up_action.action,
-		aim_down_action.action
-	)
-	if stick.length() > AIM_DEADZONE:
+	if _get_aim_stick().length_squared() > 0.0001:
 		return true
 	return input_scheme == InputScheme.KEYBOARD_MOUSE and player_index == 1
 
 
 ## Glyph throw direction: right stick if aimed, else move direction, else zero (caller uses facing).
 func get_throw_aim_vector() -> Vector2:
-	var stick := Input.get_vector(
-		aim_left_action.action,
-		aim_right_action.action,
-		aim_up_action.action,
-		aim_down_action.action
-	)
-	if stick.length() > AIM_DEADZONE:
-		return stick.normalized()
+	var stick: Vector2 = get_stick_aim_vector()
+	if stick.length_squared() > 0.0001:
+		return stick
 	var move: Vector2 = get_move_vector()
 	if move.length_squared() > 0.0001:
 		return move.normalized()

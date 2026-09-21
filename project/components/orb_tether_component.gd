@@ -396,8 +396,6 @@ func _fire_bat_hold_at(index: int) -> void:
 	var launch: Vector2 = _resolve_bat_hold_launch(entry)
 	var instigator: Node = owner if is_instance_valid(owner) else null
 	orb.deflect(launch, instigator)
-	if orb.has_method("play_bat_launch_stretch"):
-		orb.play_bat_launch_stretch(launch)
 	if orb.has_method("clear_redirect_preview"):
 		orb.clear_redirect_preview(owner)
 	if attack_bat_redirect_sound:

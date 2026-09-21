@@ -362,25 +362,6 @@ func begin_bat_hold(player: Node2D, inbound: Vector2) -> bool:
 	return true
 
 
-## Stretch along launch after bat deflect, then ease back to identity.
-func play_bat_launch_stretch(launch_dir: Vector2) -> void:
-	_kill_bat_squash_tween()
-	var dir: Vector2 = (
-		launch_dir.normalized() if launch_dir.length_squared() > 0.0001 else Vector2.RIGHT
-	)
-	orb_sprite.rotation = dir.angle()
-	orb_sprite.scale = Vector2(1.28, 0.78)
-	_bat_squash_tween = create_tween()
-	_bat_squash_tween.set_trans(Tween.TRANS_QUAD)
-	_bat_squash_tween.set_ease(Tween.EASE_OUT)
-	_bat_squash_tween.tween_property(orb_sprite, "scale", Vector2.ONE, 0.12)
-	_bat_squash_tween.parallel().tween_property(orb_sprite, "rotation", 0.0, 0.12)
-	_bat_squash_tween.tween_callback(func() -> void:
-		_bat_squash_tween = null
-		_reset_orb_sprite_xform()
-	)
-
-
 func is_vault_held() -> bool:
 	return _vault_hold
 
@@ -411,7 +392,7 @@ func _apply_bat_squash(inbound: Vector2) -> void:
 		inbound.normalized() if inbound.length_squared() > 0.0001 else Vector2.RIGHT
 	)
 	orb_sprite.rotation = dir.angle()
-	orb_sprite.scale = Vector2(0.72, 1.22)
+	orb_sprite.scale = Vector2(0.88, 1.10)
 
 
 func _clear_bat_flash_visual() -> void:

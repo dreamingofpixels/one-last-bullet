@@ -32,6 +32,10 @@ enum OrbRedirectMode {
 @export var vault_recatch_cooldown: float = 0.35
 ## Hold Attack this long then release for a 360° bat (attack_around); shorter release = front cone.
 @export var attack_charge_hold_seconds: float = 0.5
+## Axe whoosh on every Attack bat (including misses).
+@export var attack_bat_sound: SoundEvent = preload("res://entities/player/dwarf/axe_swing.tres")
+## Hit SFX at each orb that gets batted (not vault launch).
+@export var attack_bat_redirect_sound: SoundEvent = preload("res://entities/player/dwarf/orb_redirect.tres")
 
 ## True when mid-combat steer is dash-into-orb vault (read by DashComponent).
 var dash_vault_enabled: bool:
@@ -242,10 +246,14 @@ func try_attack_bat(front_cone: bool = true) -> bool:
 	var targets: Array[RigidBody2D] = (
 		_find_orbs_in_attack_cone() if front_cone else _find_flying_orbs_in_focus()
 	)
+	if attack_bat_sound and owner is Node2D:
+		AudioManager.play_at(attack_bat_sound, (owner as Node2D).global_position)
 	for orb in targets:
 		if orb == null or not is_instance_valid(orb) or not orb.has_method("deflect"):
 			continue
 		orb.deflect(aim, owner)
+		if attack_bat_redirect_sound:
+			AudioManager.play_at(attack_bat_redirect_sound, orb.global_position)
 
 	_clear_redirect_preview()
 	owner.attack_component.consume_cooldown()
@@ -333,7 +341,10 @@ func _cancel_attack_charge() -> void:
 	_attack_charging = false
 	_attack_charge_elapsed = 0.0
 	# Drop back to idle/moving; states will re-assert locomotion next frame.
-	if owner.directional_sprite != null and owner.directional_sprite.is_playing_action(&"attack_around"):
+	# Skip sprite restore during player/level teardown (_on_tree_exiting).
+	if not is_instance_valid(owner) or owner.directional_sprite == null:
+		return
+	if owner.directional_sprite.is_playing_action(&"attack_around"):
 		owner.directional_sprite.play(&"idle", true)
 
 

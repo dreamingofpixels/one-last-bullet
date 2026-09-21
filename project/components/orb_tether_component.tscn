@@ -1,6 +1,10 @@
-[gd_scene format=3 uid="uid://o4pbxn2a23t6"]
+[gd_scene load_steps=4 format=3 uid="uid://o4pbxn2a23t6"]
 
 [ext_resource type="Script" uid="uid://ba7kkxdhsfpsl" path="res://components/orb_tether_component.gd" id="1_tether"]
+[ext_resource type="Resource" path="res://entities/player/dwarf/axe_swing.tres" id="2_swing"]
+[ext_resource type="Resource" path="res://entities/player/dwarf/orb_redirect.tres" id="3_redirect"]
 
 [node name="OrbTetherComponent" type="Node2D" unique_id=571598597]
 script = ExtResource("1_tether")
+attack_bat_sound = ExtResource("2_swing")
+attack_bat_redirect_sound = ExtResource("3_redirect")

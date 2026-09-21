@@ -32,6 +32,8 @@ enum OrbRedirectMode {
 @export var vault_recatch_cooldown: float = 0.35
 ## Hold Attack this long then release for a 360° bat (attack_around); shorter release = swing polygon.
 @export var attack_charge_hold_seconds: float = 0.5
+## Orb-only freeze after a connecting bat before deflect (player stays free).
+@export var attack_bat_hold_seconds: float = 0.15
 ## Radius of the charged 360° bat (independent of glyph focus_radius).
 @export var attack_spin_radius: float = 32.0
 ## Axe whoosh on every Attack bat (including misses).
@@ -83,6 +85,8 @@ var _vault_recatch_until_msec: int = 0
 ## Attack-bat charge: hold R1 / F on attack_around frame 0 until release.
 var _attack_charging: bool = false
 var _attack_charge_elapsed: float = 0.0
+## Connecting bat hitstop entries: {orb, elapsed, default_dir, front_cone}.
+var _bat_holds: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -94,6 +98,7 @@ func _ready() -> void:
 func _on_tree_exiting() -> void:
 	if _vaulting:
 		_fire_vault(false)
+	_fire_all_bat_holds()
 	_cancel_attack_charge()
 	_clear_redirect_preview()
 	_clear_this_player_focus()
@@ -127,6 +132,9 @@ func begin_opening_tether(radius: float = -1.0) -> void:
 
 func _process(delta: float) -> void:
 	var controls: Controls = owner.controls
+
+	# Bat hitstop continues even while vaulting / charging; resolves independently.
+	_update_bat_holds(delta)
 
 	# --- Dash-vault aim window ---
 	if _vaulting:
@@ -243,6 +251,7 @@ func try_tether_press() -> bool:
 
 ## Bat flying orbs. front_cone=true → swing polygon along aim; false → 360° spin with radial bounce.
 ## Plays body clip even with no orbs in range. Does not refund dash cooldown.
+## Connecting hits freeze briefly (attack_bat_hold_seconds) before deflect + redirect SFX.
 func try_attack_bat(front_cone: bool = true) -> bool:
 	if not attack_bat_enabled:
 		return false
@@ -255,15 +264,33 @@ func try_attack_bat(front_cone: bool = true) -> bool:
 	)
 	if attack_bat_sound and owner is Node2D:
 		AudioManager.play_at(attack_bat_sound, (owner as Node2D).global_position)
-	for orb in targets:
-		if orb == null or not is_instance_valid(orb) or not orb.has_method("deflect"):
-			continue
-		var launch: Vector2 = aim if front_cone else _get_spin_bounce_direction(orb)
-		orb.deflect(launch, owner)
-		if attack_bat_redirect_sound:
-			AudioManager.play_at(attack_bat_redirect_sound, orb.global_position)
 
-	_clear_redirect_preview()
+	var hit_any: bool = false
+	for orb in targets:
+		if orb == null or not is_instance_valid(orb):
+			continue
+		if not orb.has_method("begin_bat_hold"):
+			continue
+		# Snapshot launch before freeze zeros velocity (spin bounce needs inbound speed).
+		var default_dir: Vector2 = aim if front_cone else _get_spin_bounce_direction(orb)
+		var inbound: Vector2 = (
+			-aim if front_cone else (orb.linear_velocity if orb.linear_velocity.length_squared() > 0.0001 else -(orb.global_position - owner.global_position))
+		)
+		if not orb.begin_bat_hold(owner, inbound):
+			continue
+		_bat_holds.append({
+			"orb": orb,
+			"elapsed": 0.0,
+			"default_dir": default_dir,
+			"front_cone": front_cone,
+		})
+		if orb.has_method("set_redirect_preview"):
+			orb.set_redirect_preview(default_dir, owner)
+		hit_any = true
+
+	if hit_any and owner.attack_component.has_method("flash_bat_hit"):
+		owner.attack_component.flash_bat_hit()
+
 	owner.attack_component.consume_cooldown()
 	# Dwarf hammer clips are the swing; skip wizard arc sprite.
 	var use_body_only: bool = owner.has_method("uses_body_attack_swing") and owner.uses_body_attack_swing()
@@ -302,6 +329,96 @@ func _get_spin_bounce_direction(orb: RigidBody2D) -> Vector2:
 	if bounced.dot(normal) < 0.0:
 		return normal
 	return bounced.normalized()
+
+
+func _update_bat_holds(delta: float) -> void:
+	if _bat_holds.is_empty():
+		return
+	var hold_duration: float = maxf(attack_bat_hold_seconds, 0.0)
+	var i: int = 0
+	while i < _bat_holds.size():
+		var entry: Dictionary = _bat_holds[i]
+		var orb: RigidBody2D = entry.get("orb") as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			_bat_holds.remove_at(i)
+			continue
+		# Capture / possess / other clear — drop without deflect.
+		if not orb.has_method("is_vault_held") or not orb.is_vault_held():
+			if orb.has_method("clear_redirect_preview"):
+				orb.clear_redirect_preview(owner)
+			_bat_holds.remove_at(i)
+			continue
+
+		var elapsed: float = float(entry.get("elapsed", 0.0)) + delta
+		entry["elapsed"] = elapsed
+		_bat_holds[i] = entry
+
+		var launch: Vector2 = _resolve_bat_hold_launch(entry)
+		if orb.has_method("set_redirect_preview"):
+			orb.set_redirect_preview(launch, owner)
+
+		if elapsed >= hold_duration:
+			_fire_bat_hold_at(i)
+			continue
+		i += 1
+
+
+func _resolve_bat_hold_launch(entry: Dictionary) -> Vector2:
+	var front_cone: bool = bool(entry.get("front_cone", true))
+	var default_dir: Vector2 = entry.get("default_dir", Vector2.RIGHT) as Vector2
+	if front_cone:
+		return get_bat_aim()
+	# Spin: stick override only (mouse must not steal bounce).
+	if is_instance_valid(owner) and owner.controls != null:
+		var stick: Vector2 = owner.controls.get_stick_aim_vector()
+		if stick.length_squared() > 0.0001:
+			return stick
+	if default_dir.length_squared() > 0.0001:
+		return default_dir.normalized()
+	return Vector2.RIGHT
+
+
+func _fire_bat_hold_at(index: int) -> void:
+	if index < 0 or index >= _bat_holds.size():
+		return
+	var entry: Dictionary = _bat_holds[index]
+	_bat_holds.remove_at(index)
+	var orb: RigidBody2D = entry.get("orb") as RigidBody2D
+	if orb == null or not is_instance_valid(orb):
+		return
+	if not orb.has_method("is_vault_held") or not orb.is_vault_held():
+		if orb.has_method("clear_redirect_preview"):
+			orb.clear_redirect_preview(owner)
+		return
+	if not orb.has_method("deflect"):
+		return
+
+	var launch: Vector2 = _resolve_bat_hold_launch(entry)
+	var instigator: Node = owner if is_instance_valid(owner) else null
+	orb.deflect(launch, instigator)
+	if orb.has_method("play_bat_launch_stretch"):
+		orb.play_bat_launch_stretch(launch)
+	if orb.has_method("clear_redirect_preview"):
+		orb.clear_redirect_preview(owner)
+	if attack_bat_redirect_sound:
+		var pitch: float = _bat_redirect_pitch_for(orb)
+		AudioManager.play_at(attack_bat_redirect_sound, orb.global_position, pitch)
+
+
+func _fire_all_bat_holds() -> void:
+	while not _bat_holds.is_empty():
+		_fire_bat_hold_at(0)
+
+
+func _bat_redirect_pitch_for(orb: RigidBody2D) -> float:
+	var speed: float = 100.0
+	var max_speed: float = 1500.0
+	if orb.get("speed") != null:
+		speed = float(orb.speed)
+	if orb.get("max_speed") != null:
+		max_speed = maxf(float(orb.max_speed), 1.0)
+	var t: float = clampf((speed - 100.0) / (max_speed - 100.0), 0.0, 1.0)
+	return lerpf(0.92, 1.45, t)
 
 
 func _can_start_attack_bat() -> bool:
@@ -408,6 +525,8 @@ func _find_flying_orbs_in_spin_radius() -> Array[RigidBody2D]:
 		if orb == null or not is_instance_valid(orb):
 			continue
 		if not _is_orb_flying(orb):
+			continue
+		if orb.has_method("is_vault_held") and orb.is_vault_held():
 			continue
 		var orb_radius: float = 8.0
 		if orb.has_method("get_collision_radius"):
@@ -883,6 +1002,10 @@ func _update_redirect_preview() -> void:
 	if _vaulting:
 		return
 
+	# Bat hitstop owns chevrons on held orbs; do not clear or steal them.
+	if not _bat_holds.is_empty():
+		return
+
 	# Attack-bat chevron only in ATTACK_BAT mode.
 	if not attack_bat_enabled:
 		_clear_redirect_preview()
@@ -989,6 +1112,8 @@ func _find_orbs_in_attack_polygon() -> Array[RigidBody2D]:
 			continue
 		if not _is_orb_flying(orb):
 			continue
+		if orb.has_method("is_vault_held") and orb.is_vault_held():
+			continue
 		if _orb_in_attack_polygon(orb):
 			result.append(orb)
 	return result
@@ -1020,6 +1145,8 @@ func _find_closest_flying_orb(require_in_focus: bool) -> RigidBody2D:
 		if orb == null or not is_instance_valid(orb):
 			continue
 		if not _is_orb_flying(orb):
+			continue
+		if orb.has_method("is_vault_held") and orb.is_vault_held():
 			continue
 		var dist_sq: float = origin.distance_squared_to(orb.global_position)
 		if require_in_focus and dist_sq > focus_radius * focus_radius:

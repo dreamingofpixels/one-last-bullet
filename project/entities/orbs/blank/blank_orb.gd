@@ -112,6 +112,9 @@ var _capture_tween: Tween
 ## Dash-vault: frozen in place while still FLYING; first holder owns aim chevron.
 var _vault_hold: bool = false
 var _vault_holder: Node2D = null
+## Attack-bat hitstop: white flash while vault-held from a bat (not wizard vault).
+var _bat_flash: bool = false
+var _bat_squash_tween: Tween
 
 
 func _ready() -> void:
@@ -349,6 +352,35 @@ func begin_vault_hold(player: Node2D) -> bool:
 	return true
 
 
+## Attack-bat hitstop: vault freeze + white flash + contact squash. Wizard vault skips this.
+func begin_bat_hold(player: Node2D, inbound: Vector2) -> bool:
+	if not begin_vault_hold(player):
+		return false
+	_bat_flash = true
+	orb_sprite.modulate = Color.WHITE
+	_apply_bat_squash(inbound)
+	return true
+
+
+## Stretch along launch after bat deflect, then ease back to identity.
+func play_bat_launch_stretch(launch_dir: Vector2) -> void:
+	_kill_bat_squash_tween()
+	var dir: Vector2 = (
+		launch_dir.normalized() if launch_dir.length_squared() > 0.0001 else Vector2.RIGHT
+	)
+	orb_sprite.rotation = dir.angle()
+	orb_sprite.scale = Vector2(1.28, 0.78)
+	_bat_squash_tween = create_tween()
+	_bat_squash_tween.set_trans(Tween.TRANS_QUAD)
+	_bat_squash_tween.set_ease(Tween.EASE_OUT)
+	_bat_squash_tween.tween_property(orb_sprite, "scale", Vector2.ONE, 0.12)
+	_bat_squash_tween.parallel().tween_property(orb_sprite, "rotation", 0.0, 0.12)
+	_bat_squash_tween.tween_callback(func() -> void:
+		_bat_squash_tween = null
+		_reset_orb_sprite_xform()
+	)
+
+
 func is_vault_held() -> bool:
 	return _vault_hold
 
@@ -366,8 +398,38 @@ func get_collision_radius() -> float:
 
 
 func _clear_vault_hold() -> void:
+	var was_bat_flash: bool = _bat_flash
 	_vault_hold = false
 	_vault_holder = null
+	if was_bat_flash:
+		_clear_bat_flash_visual()
+
+
+func _apply_bat_squash(inbound: Vector2) -> void:
+	_kill_bat_squash_tween()
+	var dir: Vector2 = (
+		inbound.normalized() if inbound.length_squared() > 0.0001 else Vector2.RIGHT
+	)
+	orb_sprite.rotation = dir.angle()
+	orb_sprite.scale = Vector2(0.72, 1.22)
+
+
+func _clear_bat_flash_visual() -> void:
+	_bat_flash = false
+	_kill_bat_squash_tween()
+	_reset_orb_sprite_xform()
+	_update_grace_visual()
+
+
+func _kill_bat_squash_tween() -> void:
+	if _bat_squash_tween != null and _bat_squash_tween.is_valid():
+		_bat_squash_tween.kill()
+	_bat_squash_tween = null
+
+
+func _reset_orb_sprite_xform() -> void:
+	orb_sprite.scale = Vector2.ONE
+	orb_sprite.rotation = 0.0
 
 
 func begin_tether(player: Node2D, radius: float) -> void:
@@ -954,6 +1016,9 @@ func _get_grace_remaining_fraction() -> float:
 
 
 func _update_grace_visual() -> void:
+	if _bat_flash:
+		orb_sprite.modulate = Color.WHITE
+		return
 	var fraction: float = _get_grace_remaining_fraction()
 	if fraction <= 0.0:
 		orb_sprite.modulate = base_modulate

@@ -30,7 +30,7 @@ func _ready() -> void:
 	_build_pool(world_pool, WORLD_POOL_SIZE, true)
 
 
-func play(event: SoundEvent) -> AudioStreamPlayer:
+func play(event: SoundEvent, pitch_scale: float = -1.0) -> AudioStreamPlayer:
 	if event == null:
 		return null
 	if not _can_play(event):
@@ -44,13 +44,13 @@ func play(event: SoundEvent) -> AudioStreamPlayer:
 	if player == null:
 		return null
 
-	_configure_player(player, event, stream)
+	_configure_player(player, event, stream, pitch_scale)
 	player.play()
 	_register_play(event, player)
 	return player
 
 
-func play_at(event: SoundEvent, position: Vector2) -> AudioStreamPlayer2D:
+func play_at(event: SoundEvent, position: Vector2, pitch_scale: float = -1.0) -> AudioStreamPlayer2D:
 	if event == null:
 		return null
 	if not _can_play(event):
@@ -65,7 +65,7 @@ func play_at(event: SoundEvent, position: Vector2) -> AudioStreamPlayer2D:
 		return null
 
 	player.global_position = position
-	_configure_player(player, event, stream)
+	_configure_player(player, event, stream, pitch_scale)
 	player.play()
 	_register_play(event, player)
 	return player
@@ -234,10 +234,15 @@ func _can_play(event: SoundEvent) -> bool:
 	return true
 
 
-func _configure_player(player: Node, event: SoundEvent, stream: AudioStream) -> void:
+func _configure_player(
+	player: Node, event: SoundEvent, stream: AudioStream, pitch_scale: float = -1.0
+) -> void:
 	player.stream = stream
 	player.volume_db = event.volume_db
-	player.pitch_scale = event.random_pitch()
+	if pitch_scale > 0.0:
+		player.pitch_scale = pitch_scale
+	else:
+		player.pitch_scale = event.random_pitch()
 	player.bus = event.bus
 
 

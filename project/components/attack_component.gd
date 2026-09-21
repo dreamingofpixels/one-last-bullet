@@ -11,6 +11,9 @@ const BAT_OVERLAY_OUTLINE := Color(1.0, 0.35, 0.2, 0.85)
 const SPIN_OVERLAY_FILL := Color(1.0, 0.55, 0.15, 0.22)
 const SPIN_OVERLAY_OUTLINE := Color(1.0, 0.55, 0.15, 0.9)
 const SPIN_OVERLAY_SEGMENTS := 48
+const BAT_HIT_FLASH_DURATION := 0.15
+const BAT_HIT_FLASH_FILL := Color(1.0, 1.0, 1.0, 0.55)
+const BAT_HIT_FLASH_OUTLINE := Color(1.0, 1.0, 1.0, 1.0)
 
 @export var knockback_force: float = 220.0
 @export var attack_cooldown: float = 0.35
@@ -40,6 +43,9 @@ var _hit_enemies: Dictionary = {}
 var _show_bat_overlay: bool = false
 var _show_spin_overlay: bool = false
 var _spin_overlay_active: bool = false
+## 1 = full white hit flash; decays to 0 over BAT_HIT_FLASH_DURATION.
+var _bat_hit_flash: float = 0.0
+var _bat_hit_flash_elapsed: float = 0.0
 
 
 func _ready() -> void:
@@ -66,9 +72,24 @@ func _ready() -> void:
 	attack_animation.animation_finished.connect(_on_animation_finished)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _bat_hit_flash > 0.0:
+		_bat_hit_flash_elapsed += delta
+		_bat_hit_flash = 1.0 - clampf(
+			_bat_hit_flash_elapsed / BAT_HIT_FLASH_DURATION, 0.0, 1.0
+		)
+		if _bat_hit_flash <= 0.0:
+			_bat_hit_flash = 0.0
+			_bat_hit_flash_elapsed = 0.0
 	_update_bat_overlay_and_aim()
 	_update_melee_hint()
+
+
+## Flash the wedge / spin overlay white for one beat after a connecting bat.
+func flash_bat_hit() -> void:
+	_bat_hit_flash = 1.0
+	_bat_hit_flash_elapsed = 0.0
+	queue_redraw()
 
 
 ## True when world_pos lies inside the authored swing polygon.
@@ -182,9 +203,11 @@ func _draw_wedge_overlay() -> void:
 	var drawn := PackedVector2Array()
 	for p in pts:
 		drawn.append(p + offset)
-	draw_colored_polygon(drawn, BAT_OVERLAY_FILL)
+	var fill: Color = BAT_OVERLAY_FILL.lerp(BAT_HIT_FLASH_FILL, _bat_hit_flash)
+	var outline: Color = BAT_OVERLAY_OUTLINE.lerp(BAT_HIT_FLASH_OUTLINE, _bat_hit_flash)
+	draw_colored_polygon(drawn, fill)
 	drawn.append(drawn[0])
-	draw_polyline(drawn, BAT_OVERLAY_OUTLINE, 1.0)
+	draw_polyline(drawn, outline, 1.0)
 
 
 func _draw_spin_overlay() -> void:
@@ -198,9 +221,11 @@ func _draw_spin_overlay() -> void:
 	for i in SPIN_OVERLAY_SEGMENTS:
 		var angle: float = TAU * float(i) / float(SPIN_OVERLAY_SEGMENTS)
 		ring.append(inv_rot * Vector2(cos(angle), sin(angle)) * radius)
-	draw_colored_polygon(ring, SPIN_OVERLAY_FILL)
+	var fill: Color = SPIN_OVERLAY_FILL.lerp(BAT_HIT_FLASH_FILL, _bat_hit_flash)
+	var outline: Color = SPIN_OVERLAY_OUTLINE.lerp(BAT_HIT_FLASH_OUTLINE, _bat_hit_flash)
+	draw_colored_polygon(ring, fill)
 	ring.append(ring[0])
-	draw_polyline(ring, SPIN_OVERLAY_OUTLINE, 1.0)
+	draw_polyline(ring, outline, 1.0)
 
 
 func start(aim_direction: Vector2) -> void:

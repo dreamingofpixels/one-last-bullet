@@ -16,12 +16,13 @@ func update(_delta: float) -> void:
 	if owner.knockback_component.is_active():
 		return
 	owner.movement_component.stop()
-	# Locked in place while tethering, channeling, or vault-aiming an orb.
+	# Locked in place while tethering, channeling, vault-aiming, or charge-holding a spin bat.
 	if (
 		owner.is_assembling()
 		or owner.orb_tether_component.is_tethering()
 		or owner.orb_tether_component.is_channeling()
 		or owner.orb_tether_component.is_vaulting()
+		or owner.orb_tether_component.is_attack_charging()
 	):
 		return
 	# Poll held keys — is_action_pressed only fires on the rising edge, so returning
@@ -43,6 +44,7 @@ func handle_input(event: InputEvent) -> void:
 		if (
 			not owner.orb_tether_component.is_tethering()
 			and not owner.orb_tether_component.is_vaulting()
+			and not owner.orb_tether_component.is_attack_charging()
 			and owner.dash_component.can_dash()
 		):
 			emit_signal("finished", "dash")

@@ -10,7 +10,7 @@ const PHYSICS_LAYER_WALL := 16
 
 ## Playtest A/B: pick one mid-combat orb redirect style.
 enum OrbRedirectMode {
-	ATTACK_BAT, ## R1 / F — 180° front-cone bat along aim
+	ATTACK_BAT, ## R1 / F — swing-polygon bat along aim (hold = 360° in focus)
 	DASH_VAULT, ## R2 into orb — vault hold then aim
 }
 
@@ -30,8 +30,10 @@ enum OrbRedirectMode {
 @export var vault_aim_half_angle_degrees: float = 180.0
 ## After releasing a vaulted orb, ignore that same orb for vault catch (stops dash-away re-grab).
 @export var vault_recatch_cooldown: float = 0.35
-## Hold Attack this long then release for a 360° bat (attack_around); shorter release = front cone.
+## Hold Attack this long then release for a 360° bat (attack_around); shorter release = swing polygon.
 @export var attack_charge_hold_seconds: float = 0.5
+## Radius of the charged 360° bat (independent of glyph focus_radius).
+@export var attack_spin_radius: float = 32.0
 ## Axe whoosh on every Attack bat (including misses).
 @export var attack_bat_sound: SoundEvent = preload("res://entities/player/dwarf/axe_swing.tres")
 ## Hit SFX at each orb that gets batted (not vault launch).
@@ -179,7 +181,7 @@ func _process(delta: float) -> void:
 				if distance_for_input > focus_radius:
 					_start_remote_channel(remote_target)
 
-	# --- Attack bat (R1 / F): begin charge hold (front cone or 360° on release) ---
+	# --- Attack bat (R1 / F): begin charge hold (polygon or 360° on release) ---
 	if controls.is_attack_just_pressed():
 		if _try_begin_attack_charge():
 			return
@@ -208,13 +210,18 @@ func is_attack_charging() -> bool:
 	return _attack_charging
 
 
+## True when Attack has been held long enough that release will bat 360° in attack_spin_radius.
+func is_attack_charge_ready() -> bool:
+	return _attack_charging and _attack_charge_elapsed >= attack_charge_hold_seconds
+
+
 func get_channel_progress() -> float:
 	if not _channeling or remote_tether_hold_duration <= 0.0:
 		return 0.0
 	return clampf(_channel_elapsed / remote_tether_hold_duration, 0.0, 1.0)
 
 
-## True when Attack will bat (proximity cone target) or vault-held orb can early-fire.
+## True when Attack will bat (orb in swing polygon) or vault-held orb can early-fire.
 func has_redirect_target() -> bool:
 	if not tether_enabled or is_tethering() or _channeling:
 		return false
@@ -223,7 +230,7 @@ func has_redirect_target() -> bool:
 	if dash_vault_enabled:
 		return _vaulting and is_instance_valid(_vault_orb)
 	if attack_bat_enabled:
-		return _find_closest_orb_in_attack_cone() != null
+		return _find_closest_orb_in_attack_polygon() != null
 	return false
 
 
@@ -234,7 +241,7 @@ func try_tether_press() -> bool:
 	return _try_immediate_tether()
 
 
-## Bat flying orbs along explicit aim. front_cone=true → 180°; false → full 360° in focus_radius.
+## Bat flying orbs. front_cone=true → swing polygon along aim; false → 360° spin with radial bounce.
 ## Plays body clip even with no orbs in range. Does not refund dash cooldown.
 func try_attack_bat(front_cone: bool = true) -> bool:
 	if not attack_bat_enabled:
@@ -242,16 +249,17 @@ func try_attack_bat(front_cone: bool = true) -> bool:
 	if not _can_start_attack_bat():
 		return false
 
-	var aim: Vector2 = _get_bat_aim()
+	var aim: Vector2 = get_bat_aim()
 	var targets: Array[RigidBody2D] = (
-		_find_orbs_in_attack_cone() if front_cone else _find_flying_orbs_in_focus()
+		_find_orbs_in_attack_polygon() if front_cone else _find_flying_orbs_in_spin_radius()
 	)
 	if attack_bat_sound and owner is Node2D:
 		AudioManager.play_at(attack_bat_sound, (owner as Node2D).global_position)
 	for orb in targets:
 		if orb == null or not is_instance_valid(orb) or not orb.has_method("deflect"):
 			continue
-		orb.deflect(aim, owner)
+		var launch: Vector2 = aim if front_cone else _get_spin_bounce_direction(orb)
+		orb.deflect(launch, owner)
 		if attack_bat_redirect_sound:
 			AudioManager.play_at(attack_bat_redirect_sound, orb.global_position)
 
@@ -265,11 +273,35 @@ func try_attack_bat(front_cone: bool = true) -> bool:
 		if owner.has_method("play_attack_visual"):
 			owner.play_attack_visual(aim)
 	else:
+		owner.attack_component.begin_spin_overlay()
 		if owner.has_method("play_attack_around_visual"):
 			owner.play_attack_around_visual(aim)
 		elif owner.has_method("play_attack_visual"):
 			owner.play_attack_visual(aim)
 	return true
+
+
+## Circle-surface bounce: reflect velocity off the outward radial normal (player → orb).
+## Near-zero / degenerate cases fall back to radial outward (or bat aim if on top of the player).
+func _get_spin_bounce_direction(orb: RigidBody2D) -> Vector2:
+	var from_player: Vector2 = orb.global_position - owner.global_position
+	var normal: Vector2
+	if from_player.length_squared() < 0.0001:
+		normal = get_bat_aim()
+		if normal.length_squared() < 0.0001:
+			normal = Vector2.RIGHT
+	else:
+		normal = from_player.normalized()
+	var velocity: Vector2 = orb.linear_velocity
+	if velocity.length_squared() < 0.0001:
+		return normal
+	var bounced: Vector2 = velocity.bounce(normal)
+	if bounced.length_squared() < 0.0001:
+		return normal
+	# Inbound-only reflect can leave a near-zero outbound; keep outward bias.
+	if bounced.dot(normal) < 0.0:
+		return normal
+	return bounced.normalized()
 
 
 func _can_start_attack_bat() -> bool:
@@ -295,7 +327,7 @@ func _try_begin_attack_charge() -> bool:
 	_attack_charge_elapsed = 0.0
 	# Hold pose = first frame of attack_around (spin wind-up).
 	if owner.has_method("play_attack_around_visual"):
-		owner.play_attack_around_visual(_get_bat_aim())
+		owner.play_attack_around_visual(get_bat_aim())
 	owner.directional_sprite.pause_hold_at_frame(0)
 	return true
 
@@ -310,7 +342,7 @@ func _update_attack_charge(delta: float) -> void:
 	# Keep charge pose while held.
 	if owner.directional_sprite != null and not owner.directional_sprite.is_playing_action(&"attack_around"):
 		if owner.has_method("play_attack_around_visual"):
-			owner.play_attack_around_visual(_get_bat_aim())
+			owner.play_attack_around_visual(get_bat_aim())
 		owner.directional_sprite.pause_hold_at_frame(0)
 
 	if controls.is_attack_just_released() or not controls.is_attack_pressed():
@@ -364,6 +396,24 @@ func _find_flying_orbs_in_focus() -> Array[RigidBody2D]:
 		if not _is_orb_flying(orb):
 			continue
 		if origin.distance_squared_to(orb.global_position) <= radius_sq:
+			result.append(orb)
+	return result
+
+
+func _find_flying_orbs_in_spin_radius() -> Array[RigidBody2D]:
+	var result: Array[RigidBody2D] = []
+	var origin: Vector2 = owner.global_position
+	for node in get_tree().get_nodes_in_group("orb"):
+		var orb := node as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			continue
+		if not _is_orb_flying(orb):
+			continue
+		var orb_radius: float = 8.0
+		if orb.has_method("get_collision_radius"):
+			orb_radius = orb.get_collision_radius()
+		var reach: float = attack_spin_radius + orb_radius
+		if origin.distance_squared_to(orb.global_position) <= reach * reach:
 			result.append(orb)
 	return result
 
@@ -853,7 +903,7 @@ func _update_redirect_preview() -> void:
 		_clear_redirect_preview()
 		return
 
-	var closest := _find_closest_orb_in_attack_cone()
+	var closest := _find_closest_orb_in_attack_polygon()
 	if closest == null or not closest.has_method("set_redirect_preview"):
 		_clear_redirect_preview()
 		return
@@ -868,7 +918,7 @@ func _update_redirect_preview() -> void:
 		_redirect_preview_orb.clear_redirect_preview(owner)
 
 	_redirect_preview_orb = closest
-	closest.set_redirect_preview(_get_bat_aim(), owner)
+	closest.set_redirect_preview(get_bat_aim(), owner)
 
 
 func _clear_redirect_preview() -> void:
@@ -881,8 +931,8 @@ func _clear_redirect_preview() -> void:
 	_redirect_preview_orb = null
 
 
-## Launch direction for the attack bat: explicit aim, else cone forward, else last aim.
-func _get_bat_aim() -> Vector2:
+## Launch direction for the attack bat: explicit aim, else move/facing, else last aim.
+func get_bat_aim() -> Vector2:
 	if not is_instance_valid(owner):
 		return _last_redirect_aim
 	var controls: Controls = owner.controls
@@ -921,21 +971,17 @@ func _get_attack_forward() -> Vector2:
 	return Vector2.RIGHT
 
 
-## True when the orb is within focus_radius and in the 180° half-circle in front of the player.
-func _orb_in_attack_cone(orb: RigidBody2D) -> bool:
+## True when the flying orb's body circle overlaps the AttackComponent swing polygon.
+func _orb_in_attack_polygon(orb: RigidBody2D) -> bool:
 	if orb == null or not is_instance_valid(orb):
 		return false
-	var to_orb: Vector2 = orb.global_position - owner.global_position
-	var dist_sq: float = to_orb.length_squared()
-	if dist_sq > focus_radius * focus_radius:
-		return false
-	if dist_sq < 0.0001:
-		return true
-	var forward: Vector2 = _get_attack_forward()
-	return to_orb.normalized().dot(forward) >= 0.0
+	var radius: float = 8.0
+	if orb.has_method("get_collision_radius"):
+		radius = orb.get_collision_radius()
+	return owner.attack_component.overlaps_world_circle(orb.global_position, radius)
 
 
-func _find_orbs_in_attack_cone() -> Array[RigidBody2D]:
+func _find_orbs_in_attack_polygon() -> Array[RigidBody2D]:
 	var result: Array[RigidBody2D] = []
 	for node in get_tree().get_nodes_in_group("orb"):
 		var orb := node as RigidBody2D
@@ -943,16 +989,16 @@ func _find_orbs_in_attack_cone() -> Array[RigidBody2D]:
 			continue
 		if not _is_orb_flying(orb):
 			continue
-		if _orb_in_attack_cone(orb):
+		if _orb_in_attack_polygon(orb):
 			result.append(orb)
 	return result
 
 
-func _find_closest_orb_in_attack_cone() -> RigidBody2D:
+func _find_closest_orb_in_attack_polygon() -> RigidBody2D:
 	var origin: Vector2 = owner.global_position
 	var best: RigidBody2D = null
 	var best_dist_sq: float = INF
-	for orb in _find_orbs_in_attack_cone():
+	for orb in _find_orbs_in_attack_polygon():
 		var dist_sq: float = origin.distance_squared_to(orb.global_position)
 		if dist_sq < best_dist_sq:
 			best_dist_sq = dist_sq

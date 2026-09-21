@@ -2,9 +2,15 @@ class_name AttackComponent extends Area2D
 
 ## Player melee arc: authored CollisionPolygon2D that knocks enemies (and optionally reflects the orb).
 ## Parked behind melee_enabled for Attack-redirect-only playtest (nodes/code kept).
+## Attack bat (dwarf) uses the same polygon as a geometry hit test + persistent overlay.
 
 const PHYSICS_LAYER_ENEMY := 4
 const PHYSICS_LAYER_ORB := 8
+const BAT_OVERLAY_FILL := Color(1.0, 0.35, 0.2, 0.28)
+const BAT_OVERLAY_OUTLINE := Color(1.0, 0.35, 0.2, 0.85)
+const SPIN_OVERLAY_FILL := Color(1.0, 0.55, 0.15, 0.22)
+const SPIN_OVERLAY_OUTLINE := Color(1.0, 0.55, 0.15, 0.9)
+const SPIN_OVERLAY_SEGMENTS := 48
 
 @export var knockback_force: float = 220.0
 @export var attack_cooldown: float = 0.35
@@ -31,6 +37,9 @@ var _attacking: bool = false
 var _cooldown_until_msec: int = 0
 var _hit_orb: bool = false
 var _hit_enemies: Dictionary = {}
+var _show_bat_overlay: bool = false
+var _show_spin_overlay: bool = false
+var _spin_overlay_active: bool = false
 
 
 func _ready() -> void:
@@ -58,7 +67,82 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not melee_enabled:
+	_update_bat_overlay_and_aim()
+	_update_melee_hint()
+
+
+## True when world_pos lies inside the authored swing polygon.
+func contains_world_point(world_pos: Vector2) -> bool:
+	var pts: PackedVector2Array = collision_polygon.polygon
+	if pts.size() < 3:
+		return false
+	var local: Vector2 = collision_polygon.to_local(world_pos)
+	return Geometry2D.is_point_in_polygon(local, pts)
+
+
+## True when a world-space circle (orb body) overlaps the authored swing polygon.
+func overlaps_world_circle(world_center: Vector2, radius: float) -> bool:
+	var pts: PackedVector2Array = collision_polygon.polygon
+	if pts.size() < 3:
+		return false
+	var local: Vector2 = collision_polygon.to_local(world_center)
+	# Scale radius into CollisionPolygon2D local space (handles non-uniform parent scale).
+	var local_radius: float = radius
+	var scale_abs: Vector2 = collision_polygon.global_scale.abs()
+	if scale_abs.x > 0.0001 and scale_abs.y > 0.0001:
+		local_radius = radius / minf(scale_abs.x, scale_abs.y)
+	if Geometry2D.is_point_in_polygon(local, pts):
+		return true
+	var r_sq: float = local_radius * local_radius
+	var count: int = pts.size()
+	for i in count:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % count]
+		# Vertex inside circle.
+		if local.distance_squared_to(a) <= r_sq:
+			return true
+		# Edge within radius of center.
+		if Geometry2D.get_closest_point_to_segment(local, a, b).distance_squared_to(local) <= r_sq:
+			return true
+	return false
+
+
+func _update_bat_overlay_and_aim() -> void:
+	var tether: OrbTetherComponent = owner.orb_tether_component
+	var assembling: bool = owner.has_method("is_assembling") and owner.is_assembling()
+	_show_bat_overlay = tether.attack_bat_enabled and not assembling
+	if not _show_bat_overlay:
+		_spin_overlay_active = false
+		_show_spin_overlay = false
+		queue_redraw()
+		return
+
+	if _spin_overlay_active:
+		var still_spinning: bool = (
+			owner.directional_sprite != null
+			and owner.directional_sprite.is_playing_action(&"attack_around")
+		)
+		if not still_spinning:
+			_spin_overlay_active = false
+
+	_show_spin_overlay = tether.is_attack_charge_ready() or _spin_overlay_active
+
+	var aim: Vector2 = tether.get_bat_aim()
+	if aim.length_squared() > 0.0001:
+		_aim_direction = aim.normalized()
+		rotation = _aim_direction.angle()
+	queue_redraw()
+
+
+## Show the focus-radius ring through the attack_around spin after a 360° bat.
+func begin_spin_overlay() -> void:
+	_spin_overlay_active = true
+	_show_spin_overlay = true
+	queue_redraw()
+
+
+func _update_melee_hint() -> void:
+	if not melee_enabled or _show_bat_overlay:
 		attack_sprite_hint.visible = false
 		return
 	if (
@@ -79,6 +163,44 @@ func _process(_delta: float) -> void:
 	rotation = _aim_direction.angle()
 	attack_sprite_hint.rotation = sprite_angle_offset
 	attack_sprite_hint.visible = true
+
+
+func _draw() -> void:
+	if not _show_bat_overlay:
+		return
+	if _show_spin_overlay:
+		_draw_spin_overlay()
+		return
+	_draw_wedge_overlay()
+
+
+func _draw_wedge_overlay() -> void:
+	var pts: PackedVector2Array = collision_polygon.polygon
+	if pts.size() < 3:
+		return
+	var offset: Vector2 = collision_polygon.position
+	var drawn := PackedVector2Array()
+	for p in pts:
+		drawn.append(p + offset)
+	draw_colored_polygon(drawn, BAT_OVERLAY_FILL)
+	drawn.append(drawn[0])
+	draw_polyline(drawn, BAT_OVERLAY_OUTLINE, 1.0)
+
+
+func _draw_spin_overlay() -> void:
+	var tether: OrbTetherComponent = owner.orb_tether_component
+	var radius: float = tether.attack_spin_radius
+	if radius <= 0.0:
+		return
+	# Draw in unrotated local space so the ring stays circular around the player.
+	var inv_rot := Transform2D(-rotation, Vector2.ZERO)
+	var ring := PackedVector2Array()
+	for i in SPIN_OVERLAY_SEGMENTS:
+		var angle: float = TAU * float(i) / float(SPIN_OVERLAY_SEGMENTS)
+		ring.append(inv_rot * Vector2(cos(angle), sin(angle)) * radius)
+	draw_colored_polygon(ring, SPIN_OVERLAY_FILL)
+	ring.append(ring[0])
+	draw_polyline(ring, SPIN_OVERLAY_OUTLINE, 1.0)
 
 
 func start(aim_direction: Vector2) -> void:

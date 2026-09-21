@@ -20,6 +20,7 @@ func update(_delta: float) -> void:
 		or owner.orb_tether_component.is_tethering()
 		or owner.orb_tether_component.is_channeling()
 		or owner.orb_tether_component.is_vaulting()
+		or owner.orb_tether_component.is_attack_charging()
 	):
 		owner.movement_component.stop()
 		emit_signal("finished", "idle")
@@ -28,10 +29,7 @@ func update(_delta: float) -> void:
 	var dir := controls.get_move_vector()
 	owner.movement_component.move(dir)
 
-	# Face while charging so the bat cone tracks movement; do not overwrite attack clips.
-	if owner.orb_tether_component.is_attack_charging():
-		owner.directional_sprite.face(dir)
-	elif not owner.is_attack_busy():
+	if not owner.is_attack_busy():
 		owner.directional_sprite.face(dir)
 		owner.directional_sprite.play(&"moving")
 
@@ -49,6 +47,7 @@ func handle_input(event: InputEvent) -> void:
 		if (
 			not owner.orb_tether_component.is_tethering()
 			and not owner.orb_tether_component.is_vaulting()
+			and not owner.orb_tether_component.is_attack_charging()
 			and owner.dash_component.can_dash()
 		):
 			emit_signal("finished", "dash")

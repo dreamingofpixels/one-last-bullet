@@ -19,6 +19,13 @@ const MANA_BY_RARITY: Dictionary = {
 	Glyph.Rarity.UNIQUE: 20.0,
 }
 const CAPTURE_GRACE_SECONDS := 0.35
+const COMMIT_STAGGER := 0.1
+const COMMIT_FLY_DURATION := 0.1
+const COMMIT_PEAK_TO_LAUNCH := 0.2
+const COMMIT_CAMERA_KICK_PX := 2.0
+const SOCKET_NOTE_D4: SoundEvent = preload("res://objects/summoning_circle/add_glyph_sfx/socket_note_d4.tres")
+const SOCKET_NOTE_FS4: SoundEvent = preload("res://objects/summoning_circle/add_glyph_sfx/socket_note_fs4.tres")
+const SOCKET_NOTE_A4: SoundEvent = preload("res://objects/summoning_circle/add_glyph_sfx/socket_note_a4.tres")
 ## Name-row hint tints match each element's glyph fill.
 var HINT_ELEMENT_MODULATE: Dictionary = {
 	"Fire": Color.html("#a53030"),
@@ -48,12 +55,17 @@ var _capture_tween: Tween
 var _capture_grace_orbs: Dictionary = {}
 var _glyph_sockets: Array[Sprite2D] = []
 var _glyph_icons: Array[Sprite2D] = []
+var _glyph_icon_home: Array[Vector2] = []
+var _socket_notes: Array[SoundEvent] = []
 ## Attribute-row Fire/Water/Air/Earth hints — kept in the scene, hidden for now.
 var _hint_labels: Array[Label] = []
 ## Name-row HintContainer (%Hint1–%Hint4), same element order as OrbRecipes.ELEMENTS.
 var _name_hint_labels: Array[Label] = []
 ## Cache so _refresh_input_prompts does not rebuild SpriteFrames every frame.
 var _prompt_cache_key: String = ""
+var _commit_busy: bool = false
+var _commit_trail_nodes: Array[Node] = []
+var _arcane_default_material: ParticleProcessMaterial
 
 @onready var deposit_area: Area2D = %DepositArea
 @onready var info_proximity_area: Area2D = %InfoProximityArea
@@ -102,8 +114,13 @@ var _prompt_cache_key: String = ""
 func _ready() -> void:
 	add_to_group("summoning_circle")
 	arcane_particles.emitting = false
+	_arcane_default_material = arcane_particles.process_material as ParticleProcessMaterial
 	_glyph_sockets = [glyph_socket_1, glyph_socket_2, glyph_socket_3]
 	_glyph_icons = [glyph_icon_1, glyph_icon_2, glyph_icon_3]
+	_glyph_icon_home.clear()
+	for icon in _glyph_icons:
+		_glyph_icon_home.append(icon.position)
+	_socket_notes = [SOCKET_NOTE_D4, SOCKET_NOTE_FS4, SOCKET_NOTE_A4]
 	_hint_labels = [fire_hint, water_hint, air_hint, earth_hint]
 	_name_hint_labels = [hint_1, hint_2, hint_3, hint_4]
 	orb_info.visible = false
@@ -236,6 +253,8 @@ func remove_inventory_entry(_index: int) -> Dictionary:
 func try_handle_ritual_pickup(player: Node) -> bool:
 	if not _ritual_running or player == null or not is_instance_valid(player):
 		return false
+	if _commit_busy:
+		return true
 	if not glyph_slots.visible:
 		return false
 	var slot_index: int = _find_nearest_socket_for_player(player)
@@ -259,8 +278,10 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 		if player.has_method("clear_carried_item"):
 			player.clear_carried_item(carried)
 		carried.queue_free()
+		_play_socket_note(slot_index)
 		_refresh_orb_info(true)
 		_flash_stat_deltas(before, _displayed_stat_snapshot(orb))
+		_update_ready_idle()
 		return true
 
 	if not orb.has_glyph_at(slot_index):
@@ -280,6 +301,7 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 		return false
 	_refresh_orb_info(true)
 	_flash_stat_deltas(before_remove, _displayed_stat_snapshot(orb))
+	_update_ready_idle()
 	return true
 
 
@@ -309,9 +331,13 @@ func _on_orb_capture_finished() -> void:
 
 
 func release_orb(direction: Vector2 = Vector2.ZERO, by: Node = null) -> void:
+	_clear_ready_idle()
+	_restore_arcane_particles()
+	_clear_commit_trails()
 	if _captured_orb == null or not is_instance_valid(_captured_orb):
 		_ritual_running = false
 		_captured_orb = null
+		_commit_busy = false
 		_hide_ritual_ui()
 		deactivate()
 		ritual_ended.emit()
@@ -320,11 +346,15 @@ func release_orb(direction: Vector2 = Vector2.ZERO, by: Node = null) -> void:
 	var orb: RigidBody2D = _captured_orb
 	_captured_orb = null
 	_ritual_running = false
+	_commit_busy = false
 	_hide_ritual_ui()
+	_reset_glyph_icon_homes()
 
 	var exit_dir: Vector2 = direction
 	if exit_dir.length_squared() < 0.0001:
 		exit_dir = Vector2.from_angle(randf() * TAU)
+	if orb is BlankOrb:
+		(orb as BlankOrb).clear_commit_visuals()
 	grant_capture_grace(orb)
 	if orb.has_method("release_from_circle"):
 		orb.release_from_circle(exit_dir, by)
@@ -336,6 +366,10 @@ func get_captured_orb() -> RigidBody2D:
 	return _captured_orb if is_instance_valid(_captured_orb) else null
 
 
+func is_commit_busy() -> bool:
+	return _commit_busy
+
+
 ## Replace the captured orb during a ritual (e.g. Transform) without ending the ritual.
 func swap_captured_orb(new_orb: RigidBody2D) -> void:
 	if not _ritual_running or new_orb == null or not is_instance_valid(new_orb):
@@ -344,6 +378,17 @@ func swap_captured_orb(new_orb: RigidBody2D) -> void:
 	if new_orb.has_method("assume_circle_capture"):
 		new_orb.assume_circle_capture(get_launch_origin())
 	_refresh_orb_info(true)
+
+
+## Stage a Transformed orb mid-commit (no launch). Legacy menu still uses commit_transformed_orb.
+func stage_transformed_orb(new_orb: RigidBody2D) -> void:
+	if not _ritual_running or new_orb == null or not is_instance_valid(new_orb):
+		return
+	_captured_orb = new_orb
+	if new_orb.has_method("assume_circle_capture"):
+		new_orb.assume_circle_capture(get_launch_origin())
+	if new_orb is BlankOrb:
+		(new_orb as BlankOrb).snap_to_commit_white()
 
 
 ## Swap in the transformed orb, then launch it and end the ritual.
@@ -390,13 +435,15 @@ func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
 	if controls.is_activate_just_pressed():
 		if in_deposit:
 			try_activate()
-		if _ritual_running:
+		if _ritual_running and not _commit_busy:
 			_try_commit_upgrade(player)
 	# Square / E: buy blank while idle or waiting (same DepositArea range as activate).
 	if in_deposit and controls.is_upgrade_just_pressed() and not _ritual_running:
 		_try_buy_blank_orb()
 	# Circle / C: disarm waiting (no mana refund) or release captured orb.
 	if controls.is_ritual_cancel_just_pressed():
+		if _commit_busy:
+			return
 		if _ritual_running:
 			release_orb(Vector2.ZERO, player)
 		elif _active:
@@ -418,27 +465,120 @@ func _try_buy_blank_orb() -> void:
 
 
 func _try_commit_upgrade(player: Node) -> void:
+	if _commit_busy:
+		return
 	var orb: BlankOrb = get_captured_orb() as BlankOrb
 	if orb == null or orb.socketed_count() < 3:
 		return
 	var elements: Array[String] = OrbRecipes.elements_from_socketed(orb.socketed_glyphs)
 	var row: Dictionary = OrbRecipes.result_for(orb, elements)
-	if OrbRecipes.is_playable(row):
-		var orb_id: StringName = StringName(String(row.get("id", "")))
-		if not orb_id.is_empty():
-			transform_requested.emit(orb_id, player)
+	var is_transform: bool = OrbRecipes.is_playable(row)
+	var orb_id: StringName = &""
+	if is_transform:
+		orb_id = StringName(String(row.get("id", "")))
+		if orb_id.is_empty():
+			return
+	_run_commit_sequence(player, is_transform, orb_id)
+
+
+func _run_commit_sequence(player: Node, is_transform: bool, orb_id: StringName) -> void:
+	_commit_busy = true
+	_prompt_cache_key = ""
+	_refresh_input_prompts()
+	_clear_ready_idle_visuals_only()
+	_start_commit_particle_suck()
+
+	var bake_attrs: Array[String] = []
+	if not is_transform:
+		bake_attrs = _socketed_attribute_keys(get_captured_orb() as BlankOrb)
+
+	for i in _glyph_icons.size():
+		if i > 0:
+			await get_tree().create_timer(COMMIT_STAGGER).timeout
+			if not _ensure_commit_still_valid():
+				return
+		_start_glyph_fly_in(i)
+
+	# Last glyph started at 0.2s; wait its flight so peak lands at ~0.3s.
+	await get_tree().create_timer(COMMIT_FLY_DURATION).timeout
+	if not _ensure_commit_still_valid():
 		return
+
+	if is_transform:
+		await _finish_transform_commit(player, orb_id)
+	else:
+		await _finish_bake_commit(player, bake_attrs)
+
+
+func _ensure_commit_still_valid() -> bool:
+	if _commit_busy and _ritual_running and is_instance_valid(self):
+		return true
+	_commit_busy = false
+	_restore_arcane_particles()
+	_clear_commit_trails()
+	return false
+
+
+func _finish_transform_commit(player: Node, orb_id: StringName) -> void:
+	var old_orb: BlankOrb = get_captured_orb() as BlankOrb
+	if old_orb != null:
+		old_orb.play_commit_flash(1.0, 0.05, 0.01)
+	_burst_commit_particles()
+	_kick_camera()
+	transform_requested.emit(orb_id, player)
+
+	await get_tree().process_frame
+	if not _ensure_commit_still_valid():
+		return
+
+	var new_orb: BlankOrb = get_captured_orb() as BlankOrb
+	if new_orb == null:
+		_commit_busy = false
+		return
+
+	new_orb.begin_transform_bloom(0.12)
+	var launch_dir: Vector2 = Vector2.from_angle(randf() * TAU)
+	new_orb.play_commit_squash_stretch(launch_dir, 0.12)
+	await get_tree().create_timer(COMMIT_PEAK_TO_LAUNCH).timeout
+	if not _ensure_commit_still_valid():
+		return
+	release_orb(launch_dir, player)
+
+
+func _finish_bake_commit(player: Node, bake_attrs: Array[String]) -> void:
+	var orb: BlankOrb = get_captured_orb() as BlankOrb
+	if orb == null:
+		_commit_busy = false
+		return
+	orb.play_commit_flash(0.55, 0.04, 0.12)
+	_burst_commit_particles()
+	_flash_attribute_keys(bake_attrs)
 	orb.bake_socketed_glyphs()
+	_hide_all_glyph_icons()
+	await get_tree().create_timer(COMMIT_PEAK_TO_LAUNCH).timeout
+	if not _ensure_commit_still_valid():
+		return
 	release_orb(Vector2.ZERO, player)
+
+
+func _hide_all_glyph_icons() -> void:
+	for i in _glyph_icons.size():
+		var icon: Sprite2D = _glyph_icons[i]
+		icon.visible = false
+		icon.texture = null
+		icon.scale = Vector2.ONE
+		icon.position = _glyph_icon_home[i] if i < _glyph_icon_home.size() else Vector2.ZERO
 
 
 func _show_ritual_ui() -> void:
 	glyph_slots.visible = true
 	_update_ritual_ui_proximity()
 	_refresh_orb_info(true)
+	_update_ready_idle()
 
 
 func _hide_ritual_ui() -> void:
+	_clear_ready_idle()
 	orb_info.visible = false
 	glyph_slots.visible = false
 	_hide_hints()
@@ -571,6 +711,8 @@ func _flash_stat_deltas(before: Dictionary, after: Dictionary) -> void:
 
 
 func _refresh_glyph_slot_icons(orb: BlankOrb) -> void:
+	if _commit_busy:
+		return
 	for i in _glyph_icons.size():
 		var icon: Sprite2D = _glyph_icons[i]
 		if orb.has_glyph_at(i):
@@ -581,6 +723,209 @@ func _refresh_glyph_slot_icons(orb: BlankOrb) -> void:
 		else:
 			icon.texture = null
 			icon.visible = false
+	_update_ready_idle()
+
+
+func _play_socket_note(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= _socket_notes.size():
+		return
+	var event: SoundEvent = _socket_notes[slot_index]
+	if event == null:
+		return
+	AudioManager.play_at(event, global_position)
+
+
+func _update_ready_idle() -> void:
+	var orb: BlankOrb = get_captured_orb() as BlankOrb
+	var ready: bool = (
+		not _commit_busy
+		and orb != null
+		and is_instance_valid(orb)
+		and orb.socketed_count() == 3
+	)
+	if ready:
+		orb.set_ritual_ready_pulse(true)
+	elif orb != null and is_instance_valid(orb):
+		orb.set_ritual_ready_pulse(false)
+
+
+func _clear_ready_idle() -> void:
+	var orb: BlankOrb = get_captured_orb() as BlankOrb
+	if orb != null and is_instance_valid(orb):
+		orb.set_ritual_ready_pulse(false)
+
+
+func _clear_ready_idle_visuals_only() -> void:
+	# Stop pulse for commit fly-in without resetting icon textures.
+	var orb: BlankOrb = get_captured_orb() as BlankOrb
+	if orb != null and is_instance_valid(orb):
+		orb.set_ritual_ready_pulse(false)
+
+
+func _reset_glyph_icon_homes() -> void:
+	for i in _glyph_icons.size():
+		var icon: Sprite2D = _glyph_icons[i]
+		var home: Vector2 = _glyph_icon_home[i] if i < _glyph_icon_home.size() else Vector2.ZERO
+		icon.position = home
+		icon.modulate = Color.WHITE
+		icon.scale = Vector2.ONE
+
+
+func _start_glyph_fly_in(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= _glyph_icons.size():
+		return
+	var icon: Sprite2D = _glyph_icons[slot_index]
+	var socket: Sprite2D = _glyph_sockets[slot_index]
+	if not icon.visible or icon.texture == null:
+		# Empty gap: still chime on schedule so the triad resolves.
+		var delay_tw: Tween = create_tween()
+		delay_tw.tween_interval(COMMIT_FLY_DURATION)
+		delay_tw.tween_callback(_play_socket_note.bind(slot_index))
+		return
+
+	var start_global: Vector2 = icon.global_position
+	var end_local: Vector2 = -socket.position
+	var texture: Texture2D = icon.texture
+	_spawn_glyph_trails(texture, start_global, socket.to_global(end_local))
+
+	var fly_tw: Tween = create_tween()
+	fly_tw.set_trans(Tween.TRANS_CUBIC)
+	fly_tw.set_ease(Tween.EASE_IN)
+	fly_tw.tween_property(icon, "position", end_local, COMMIT_FLY_DURATION)
+	fly_tw.parallel().tween_property(icon, "scale", Vector2(0.55, 0.55), COMMIT_FLY_DURATION)
+	fly_tw.tween_callback(func() -> void:
+		icon.visible = false
+		icon.texture = null
+		icon.position = _glyph_icon_home[slot_index] if slot_index < _glyph_icon_home.size() else Vector2.ZERO
+		icon.scale = Vector2.ONE
+		_play_socket_note(slot_index)
+	)
+
+
+func _spawn_glyph_trails(texture: Texture2D, from_global: Vector2, to_global: Vector2) -> void:
+	if texture == null:
+		return
+	for step in 3:
+		var t: float = float(step + 1) / 4.0
+		var pos: Vector2 = from_global.lerp(to_global, t)
+		var delay: float = COMMIT_FLY_DURATION * t * 0.85
+		var trail_tw: Tween = create_tween()
+		trail_tw.tween_interval(delay)
+		trail_tw.tween_callback(_spawn_one_glyph_trail.bind(texture, pos))
+
+
+func _spawn_one_glyph_trail(texture: Texture2D, global_pos: Vector2) -> void:
+	if not is_inside_tree() or texture == null:
+		return
+	var ghost := Sprite2D.new()
+	ghost.texture = texture
+	ghost.z_as_relative = false
+	ghost.z_index = 2
+	ghost.modulate = Color(1, 1, 1, 0.65)
+	glyph_slots.add_child(ghost)
+	ghost.global_position = global_pos
+	_commit_trail_nodes.append(ghost)
+	var fade_tw: Tween = create_tween()
+	fade_tw.tween_property(ghost, "modulate:a", 0.0, 0.14)
+	fade_tw.parallel().tween_property(ghost, "scale", Vector2(0.4, 0.4), 0.14)
+	fade_tw.tween_callback(func() -> void:
+		_commit_trail_nodes.erase(ghost)
+		if is_instance_valid(ghost):
+			ghost.queue_free()
+	)
+
+
+func _clear_commit_trails() -> void:
+	for node in _commit_trail_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_commit_trail_nodes.clear()
+
+
+func _start_commit_particle_suck() -> void:
+	if _arcane_default_material == null:
+		return
+	var mat: ParticleProcessMaterial = _arcane_default_material.duplicate() as ParticleProcessMaterial
+	mat.radial_accel_min = -120.0
+	mat.radial_accel_max = -60.0
+	mat.initial_velocity_min = 8.0
+	mat.initial_velocity_max = 18.0
+	arcane_particles.process_material = mat
+	arcane_particles.emitting = true
+
+
+func _burst_commit_particles() -> void:
+	if _arcane_default_material == null:
+		return
+	var mat: ParticleProcessMaterial = _arcane_default_material.duplicate() as ParticleProcessMaterial
+	mat.radial_accel_min = 40.0
+	mat.radial_accel_max = 90.0
+	mat.initial_velocity_min = 28.0
+	mat.initial_velocity_max = 55.0
+	arcane_particles.process_material = mat
+	arcane_particles.restart()
+	arcane_particles.emitting = true
+	var stop_tw: Tween = create_tween()
+	stop_tw.tween_interval(0.25)
+	stop_tw.tween_callback(_restore_arcane_particles)
+
+
+func _restore_arcane_particles() -> void:
+	if _arcane_default_material != null:
+		arcane_particles.process_material = _arcane_default_material
+	if not _active:
+		arcane_particles.emitting = false
+
+
+func _kick_camera() -> void:
+	var cam: Camera2D = get_viewport().get_camera_2d()
+	if cam == null:
+		return
+	var base_offset: Vector2 = cam.offset
+	cam.offset = base_offset + Vector2(COMMIT_CAMERA_KICK_PX, 0.0)
+	var kick_tw: Tween = create_tween()
+	kick_tw.tween_property(cam, "offset", base_offset, 0.08)
+
+
+func _socketed_attribute_keys(orb: BlankOrb) -> Array[String]:
+	var keys: Array[String] = []
+	if orb == null:
+		return keys
+	for i in orb.socketed_glyphs.size():
+		if not orb.has_glyph_at(i):
+			continue
+		var entry: Dictionary = orb.socketed_glyphs[i]
+		var glyph_id: StringName = StringName(String(entry.get("id", "")))
+		var row: Variant = GameData.get_row(&"glyphs", glyph_id)
+		if row == null or typeof(row) != TYPE_DICTIONARY:
+			continue
+		var attr: String = String((row as Dictionary).get("attribute", ""))
+		if attr == "poison":
+			attr = "blight"
+		if not attr.is_empty() and not keys.has(attr):
+			keys.append(attr)
+	return keys
+
+
+func _flash_attribute_keys(keys: Array[String]) -> void:
+	var box_by_key: Dictionary = {
+		"damage": damage_box,
+		"self_damage": self_damage_box,
+		"crit_chance": crit_chance_box,
+		"crit_damage": crit_damage_box,
+		"speed": speed_box,
+		"weight": weight_box,
+		"splash": splash_box,
+		"glyph_drop": glyph_drop_box,
+		"burn": burn_box,
+		"chill": chill_box,
+		"shock": shock_box,
+		"blight": blight_box,
+	}
+	for key in keys:
+		var box: AttributeBox = box_by_key.get(key) as AttributeBox
+		if box != null:
+			box.flash_value_changed()
 
 
 func _effect_text_for_orb(orb: BlankOrb) -> String:
@@ -658,7 +1003,7 @@ func _refresh_input_prompts() -> void:
 	var cancel_text: String = "Release" if _ritual_running else "Cancel"
 	var show_commit: bool = false
 	var commit_text: String = "Bake"
-	if _ritual_running:
+	if _ritual_running and not _commit_busy:
 		var orb: BlankOrb = get_captured_orb() as BlankOrb
 		if orb != null and orb.socketed_count() >= 3:
 			show_commit = true

@@ -527,6 +527,17 @@ angular_damp = 100.0
 glyph_id = &"spore"
 rarity = 1
 
+[node name="Glyph4" parent="WorldYSort/Items" unique_id=189856945 instance=ExtResource("12_qygx2")]
+position = Vector2(335, 127)
+can_sleep = false
+freeze = true
+freeze_mode = 1
+linear_damp_mode = 1
+angular_damp_mode = 1
+angular_damp = 100.0
+glyph_id = &"spore"
+rarity = 1
+
 [node name="Cliffs" type="Node2D" parent="WorldYSort" unique_id=776114261]
 y_sort_enabled = true
 

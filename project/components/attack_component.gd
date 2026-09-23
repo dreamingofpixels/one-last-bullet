@@ -11,6 +11,8 @@ const BAT_OVERLAY_OUTLINE := Color(1.0, 0.35, 0.2, 0.85)
 const SPIN_OVERLAY_FILL := Color(1.0, 0.55, 0.15, 0.22)
 const SPIN_OVERLAY_OUTLINE := Color(1.0, 0.55, 0.15, 0.9)
 const SPIN_OVERLAY_SEGMENTS := 48
+## Matches BlankOrb body CircleShape2D radius so the drawn ring equals catch reach.
+const SPIN_OVERLAY_ORB_BODY_RADIUS := 8.0
 const BAT_HIT_FLASH_DURATION := 0.15
 const BAT_HIT_FLASH_FILL := Color(1.0, 1.0, 1.0, 0.55)
 const BAT_HIT_FLASH_OUTLINE := Color(1.0, 1.0, 1.0, 1.0)
@@ -43,7 +45,7 @@ var _hit_enemies: Dictionary = {}
 var _show_bat_overlay: bool = false
 var _show_spin_overlay: bool = false
 var _spin_overlay_active: bool = false
-## Authored wedge centroid angle in local space (NE slice sits left of stick +X when aiming up).
+## Authored wedge centroid angle in local space. ~0 when the polygon center lies on +X.
 var _wedge_mid_angle: float = 0.0
 ## 1 = full white hit flash; decays to 0 over BAT_HIT_FLASH_DURATION.
 var _bat_hit_flash: float = 0.0
@@ -75,8 +77,9 @@ func _ready() -> void:
 	attack_animation.animation_finished.connect(_on_animation_finished)
 
 
-## Stick aim rotated to the authored wedge's visual center (polygon centroid).
-## The NE slice sits ~45° off +X, so 12 o'clock stick looks like 10–11 on the overlay.
+## Stick aim rotated onto the authored wedge's visual center (polygon centroid).
+## The scene polygon is pre-rotated so that center lies on local +X (stick aim and tap launch).
+## A centroid that drifts off +X still turns the body to match the slice.
 func get_visual_forward(aim: Vector2) -> Vector2:
 	var base: Vector2 = aim
 	if base.length_squared() < 0.0001:
@@ -242,7 +245,8 @@ func _draw_wedge_overlay() -> void:
 
 func _draw_spin_overlay() -> void:
 	var tether: OrbTetherComponent = owner.orb_tether_component
-	var radius: float = tether.attack_spin_radius
+	# Match catch: attack_spin_radius + orb body radius (see _find_flying_orbs_in_spin_radius).
+	var radius: float = tether.attack_spin_radius + SPIN_OVERLAY_ORB_BODY_RADIUS
 	if radius <= 0.0:
 		return
 	# Draw in unrotated local space so the ring stays circular around the player.

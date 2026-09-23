@@ -83,8 +83,7 @@ frame = 2
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="." unique_id=1610840802]
 unique_name_in_owner = true
-position = Vector2(0.20000029, -4.799999)
-polygon = PackedVector2Array(0, -12, -0.20000029, -25.2, 12.799999, -22.2, 24.8, -12.200001, 28.8, 4.799999, 17, 5, 10, -6)
+polygon = PackedVector2Array(12.4206, -11.3141, 21.936, -20.4649, 28.6105, -8.9128, 29.4845, 6.6832, 19.7828, 21.2048, 11.587, 12.7131, 14.855, 0.0909)
 disabled = true
 
 [node name="AttackAnimation" type="AnimationPlayer" parent="." unique_id=2130073236]

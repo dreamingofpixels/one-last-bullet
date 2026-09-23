@@ -9,4 +9,3 @@ streams = Array[AudioStream]([ExtResource("2_stream")])
 volume_db = 1.293999999999997
 pitch_min = 0.95
 pitch_max = 1.05
-retrigger_cooldown = 0.0

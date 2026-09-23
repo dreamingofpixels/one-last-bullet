@@ -26,12 +26,13 @@
 size = Vector2(13, 8)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hitbox"]
-radius = 6.0
-height = 26.0
+radius = 5.0
+height = 24.0
 
 [node name="Player" type="CharacterBody2D" unique_id=2057158373]
 collision_layer = 2
 script = ExtResource("1_abrql")
+character = 1
 
 [node name="PlayerSprite" type="AnimatedSprite2D" parent="." unique_id=1508902462]
 unique_name_in_owner = true

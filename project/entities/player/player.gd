@@ -119,7 +119,7 @@ func try_throw_item() -> bool:
 	return true
 
 
-## Dwarf: body faces the wedge visual center (polygon midline), not raw stick +X.
+## Dwarf: body faces the wedge visual center. The polygon centroid is on local +X, so this matches stick aim.
 func sync_body_facing(move_dir: Vector2 = Vector2.ZERO) -> void:
 	if orb_tether_component.attack_bat_enabled:
 		var aim: Vector2 = orb_tether_component.get_bat_aim()

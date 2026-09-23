@@ -584,7 +584,10 @@ func _on_transform_requested(orb_id: StringName, by: Node = null) -> void:
 	players_root.add_child(new_orb)
 	new_orb.global_position = spawn_pos
 	_connect_orb_signals(new_orb)
-	summoning_circle.commit_transformed_orb(new_orb, by)
+	if summoning_circle.is_commit_busy():
+		summoning_circle.stage_transformed_orb(new_orb)
+	else:
+		summoning_circle.commit_transformed_orb(new_orb, by)
 
 	if is_instance_valid(old_orb):
 		old_orb.remove_from_group("orb")

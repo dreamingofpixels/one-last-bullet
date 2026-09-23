@@ -115,6 +115,12 @@ var _vault_holder: Node2D = null
 ## Attack-bat hitstop: white flash while vault-held from a bat (not wizard vault).
 var _bat_flash: bool = false
 var _bat_squash_tween: Tween
+## Ritual ready idle: dim white pulse while 3 glyphs are socketed.
+var _ritual_ready_pulse: bool = false
+var _ritual_ready_tween: Tween
+## Commit / Transform bloom owns modulate until cleared.
+var _commit_visual_lock: bool = false
+var _commit_visual_tween: Tween
 
 
 func _ready() -> void:
@@ -417,6 +423,116 @@ func _clear_bat_flash_visual() -> void:
 	_kill_bat_squash_tween()
 	_reset_orb_sprite_xform()
 	_update_grace_visual()
+
+
+## Dim looping pulse while three glyphs are ready to Transform/bake. Circle owns enable/disable.
+func set_ritual_ready_pulse(enabled: bool) -> void:
+	if enabled == _ritual_ready_pulse:
+		return
+	_ritual_ready_pulse = enabled
+	_kill_ritual_ready_tween()
+	if not enabled:
+		if not _commit_visual_lock and not _bat_flash:
+			_update_grace_visual()
+		return
+	if _commit_visual_lock or _bat_flash:
+		return
+	# Blank orbs are already near-white — lerp-to-white is invisible. Pulse
+	# between a darkened trough and an overbright peak so grey and color both read.
+	var trough: Color = base_modulate.lerp(Color.BLACK, 0.35)
+	var peak: Color = Color(
+		minf(base_modulate.r * 1.25 + 0.55, 2.0),
+		minf(base_modulate.g * 1.25 + 0.55, 2.0),
+		minf(base_modulate.b * 1.25 + 0.55, 2.0),
+		base_modulate.a
+	)
+	orb_sprite.modulate = trough
+	_ritual_ready_tween = create_tween()
+	_ritual_ready_tween.set_loops()
+	_ritual_ready_tween.tween_property(orb_sprite, "modulate", peak, 0.28)
+	_ritual_ready_tween.tween_property(orb_sprite, "modulate", trough, 0.28)
+
+
+## Peak flash for bake (partial) or Transform (full white). Locks modulate until fade ends.
+func play_commit_flash(white_amount: float = 1.0, hold: float = 0.05, fade: float = 0.12) -> void:
+	_kill_ritual_ready_tween()
+	_ritual_ready_pulse = false
+	_kill_commit_visual_tween()
+	_commit_visual_lock = true
+	orb_sprite.visible = true
+	var peak: Color = base_modulate.lerp(Color.WHITE, clampf(white_amount, 0.0, 1.0))
+	orb_sprite.modulate = peak
+	_commit_visual_tween = create_tween()
+	if hold > 0.0:
+		_commit_visual_tween.tween_interval(hold)
+	_commit_visual_tween.tween_property(orb_sprite, "modulate", base_modulate, maxf(fade, 0.01))
+	_commit_visual_tween.tween_callback(_clear_commit_visual_lock)
+
+
+## New specialist after Transform: start white and bloom into authored color.
+func begin_transform_bloom(duration: float = 0.12) -> void:
+	_kill_ritual_ready_tween()
+	_ritual_ready_pulse = false
+	_kill_commit_visual_tween()
+	_commit_visual_lock = true
+	orb_sprite.visible = true
+	orb_sprite.modulate = Color.WHITE
+	_commit_visual_tween = create_tween()
+	_commit_visual_tween.tween_property(orb_sprite, "modulate", base_modulate, maxf(duration, 0.01))
+	_commit_visual_tween.tween_callback(_clear_commit_visual_lock)
+
+
+## Hold full white until begin_transform_bloom (avoids a one-frame base-color flash on swap).
+func snap_to_commit_white() -> void:
+	_kill_ritual_ready_tween()
+	_ritual_ready_pulse = false
+	_kill_commit_visual_tween()
+	_commit_visual_lock = true
+	orb_sprite.visible = true
+	orb_sprite.modulate = Color.WHITE
+
+
+## Squash then stretch along launch direction (Transform peak → fly-off).
+func play_commit_squash_stretch(launch_dir: Vector2, duration: float = 0.12) -> void:
+	_kill_bat_squash_tween()
+	var dir: Vector2 = (
+		launch_dir.normalized() if launch_dir.length_squared() > 0.0001 else Vector2.RIGHT
+	)
+	orb_sprite.rotation = dir.angle()
+	orb_sprite.scale = Vector2(0.88, 1.10)
+	var half: float = maxf(duration * 0.5, 0.01)
+	_bat_squash_tween = create_tween()
+	_bat_squash_tween.tween_property(orb_sprite, "scale", Vector2(1.12, 0.88), half)
+	_bat_squash_tween.tween_property(orb_sprite, "scale", Vector2.ONE, half)
+	_bat_squash_tween.tween_callback(_reset_orb_sprite_xform)
+
+
+func clear_commit_visuals() -> void:
+	_kill_ritual_ready_tween()
+	_ritual_ready_pulse = false
+	_kill_commit_visual_tween()
+	_commit_visual_lock = false
+	_kill_bat_squash_tween()
+	_reset_orb_sprite_xform()
+	_update_grace_visual()
+
+
+func _clear_commit_visual_lock() -> void:
+	_commit_visual_lock = false
+	_commit_visual_tween = null
+	_update_grace_visual()
+
+
+func _kill_ritual_ready_tween() -> void:
+	if _ritual_ready_tween != null and _ritual_ready_tween.is_valid():
+		_ritual_ready_tween.kill()
+	_ritual_ready_tween = null
+
+
+func _kill_commit_visual_tween() -> void:
+	if _commit_visual_tween != null and _commit_visual_tween.is_valid():
+		_commit_visual_tween.kill()
+	_commit_visual_tween = null
 
 
 func _kill_bat_squash_tween() -> void:
@@ -1014,8 +1130,9 @@ func _get_grace_remaining_fraction() -> float:
 
 
 func _update_grace_visual() -> void:
-	if _bat_flash:
-		orb_sprite.modulate = Color.WHITE
+	if _bat_flash or _commit_visual_lock or _ritual_ready_pulse:
+		if _bat_flash:
+			orb_sprite.modulate = Color.WHITE
 		return
 	var fraction: float = _get_grace_remaining_fraction()
 	if fraction <= 0.0:

@@ -298,7 +298,9 @@ func try_attack_bat(front_cone: bool = true) -> bool:
 			owner.play_attack_around_visual(aim)
 		elif owner.has_method("play_attack_visual"):
 			owner.play_attack_visual(aim)
+		# Spin ring ∪ wedge so front orbs still catch when the circle is armed.
 		_catch_orbs_in_spin_radius()
+		_catch_orbs_in_wedge()
 
 	_retag_bat_catches_for_launch(front_cone)
 	if _bat_catches.is_empty():
@@ -350,7 +352,7 @@ func _catch_orbs_in_wedge() -> void:
 		_try_catch_orb(orb, true, aim)
 
 
-## Freeze flying orbs in the spin ring (spin release only).
+## Freeze flying orbs in the spin ring (spin release; try_attack_bat also unions the wedge).
 func _catch_orbs_in_spin_radius() -> void:
 	var aim: Vector2 = get_bat_aim()
 	for orb in _find_flying_orbs_in_spin_radius():
@@ -435,10 +437,7 @@ func _resolve_bat_catch_launch(entry: Dictionary, front_cone: bool) -> Vector2:
 	var default_dir: Vector2 = entry.get("default_dir", Vector2.RIGHT) as Vector2
 	if front_cone:
 		return get_bat_aim()
-	if is_instance_valid(owner) and owner.controls != null:
-		var stick: Vector2 = owner.controls.get_stick_aim_vector()
-		if stick.length_squared() > 0.0001:
-			return stick
+	# Spin: always round-body bounce (no stick/aim override).
 	if default_dir.length_squared() > 0.0001:
 		return default_dir.normalized()
 	return Vector2.RIGHT

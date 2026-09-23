@@ -362,6 +362,23 @@ func begin_bat_hold(player: Node2D, inbound: Vector2) -> bool:
 	return true
 
 
+## Cancel a bat catch without deflect boost — resume prior flight velocity.
+func end_bat_hold_restore(resume_velocity: Vector2) -> void:
+	if not _vault_hold:
+		return
+	_clear_vault_hold()
+	freeze = false
+	if resume_velocity.length_squared() > 0.0001:
+		aim_direction = resume_velocity.normalized()
+		linear_velocity = resume_velocity
+	else:
+		aim_direction = Vector2.RIGHT
+		linear_velocity = aim_direction * speed
+	_apply_collision_mask()
+	hitbox_component.monitoring = true
+	_apply_heading()
+
+
 func is_vault_held() -> bool:
 	return _vault_hold
 

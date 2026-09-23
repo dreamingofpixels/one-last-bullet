@@ -32,7 +32,7 @@ enum OrbRedirectMode {
 @export var vault_recatch_cooldown: float = 0.35
 ## Hold Attack this long then release for a 360° bat (attack_around); shorter release = swing polygon.
 @export var attack_charge_hold_seconds: float = 0.4
-## Orb-only freeze after a connecting bat before deflect (player stays free).
+## Orb-only freeze after a connecting bat before deflect (unused for wedge-catch path; launch is on contact frame).
 @export var attack_bat_hold_seconds: float = 0.15
 ## Front-swing (`attacking`) frame that applies the freeze / crack (0-based).
 @export var attack_bat_contact_frame: int = 3
@@ -91,13 +91,11 @@ var _vault_recatch_until_msec: int = 0
 ## Attack-bat charge: hold R1 / F on attack_around frame 0 until release.
 var _attack_charging: bool = false
 var _attack_charge_elapsed: float = 0.0
-## Connecting bat hitstop entries: {orb, elapsed, default_dir, front_cone}.
-var _bat_holds: Array[Dictionary] = []
-## Release-time snapshot waiting for the swing contact frame (null when idle).
-## Keys: front_cone, contact_frame, action, targets[{orb, inbound, default_dir}].
+## Orbs frozen by wedge/spin catch awaiting contact-frame launch.
+## Keys: orb, inbound, resume_velocity, default_dir.
+var _bat_catches: Array[Dictionary] = []
+## Swing waiting for contact frame (null when idle). Keys: front_cone, contact_frame, action.
 var _pending_bat_swing: Variant = null
-## True while the hammer pose is paused for a connecting bat freeze.
-var _bat_pose_held: bool = false
 
 
 func _ready() -> void:
@@ -110,8 +108,8 @@ func _on_tree_exiting() -> void:
 	if _vaulting:
 		_fire_vault(false)
 	if _pending_bat_swing != null:
-		_apply_pending_bat_swing()
-	_fire_all_bat_holds()
+		_fire_pending_bat_swing()
+	_release_bat_catches_unboosted()
 	_cancel_attack_charge()
 	_clear_redirect_preview()
 	_clear_this_player_focus()
@@ -146,9 +144,8 @@ func begin_opening_tether(radius: float = -1.0) -> void:
 func _process(delta: float) -> void:
 	var controls: Controls = owner.controls
 
-	# Pending contact-frame resolve, then bat hitstop (both continue while vaulting / charging).
+	# Contact-frame launch continues even while vaulting / charging.
 	_update_pending_bat_swing()
-	_update_bat_holds(delta)
 
 	# --- Dash-vault aim window ---
 	if _vaulting:
@@ -265,17 +262,24 @@ func try_tether_press() -> bool:
 
 ## Bat flying orbs. front_cone=true → swing polygon along aim; false → 360° spin with radial bounce.
 ## Plays body clip even with no orbs in range. Does not refund dash cooldown.
-## Overlap is snapshotted at release; freeze / crack wait for the swing contact frame.
+## Catches may already be frozen from charge; release adds wedge or spin-ring catch then launches on contact frame.
 func try_attack_bat(front_cone: bool = true) -> bool:
 	if not attack_bat_enabled:
 		return false
-	if not _can_start_attack_bat():
+	if _pending_bat_swing != null:
+		return false
+	# Hard locks: never leave charge-catches frozen if we abort.
+	if not tether_enabled or is_tethering() or _channeling or _vaulting:
+		_release_bat_catches_unboosted()
+		return false
+	if owner.has_method("is_assembling") and owner.is_assembling():
+		_release_bat_catches_unboosted()
+		return false
+	if owner.dash_component.is_dashing():
+		_release_bat_catches_unboosted()
 		return false
 
 	var aim: Vector2 = get_bat_aim()
-	var targets: Array[RigidBody2D] = (
-		_find_orbs_in_attack_polygon() if front_cone else _find_flying_orbs_in_spin_radius()
-	)
 	if attack_bat_sound and owner is Node2D:
 		AudioManager.play_at(attack_bat_sound, (owner as Node2D).global_position)
 
@@ -287,47 +291,36 @@ func try_attack_bat(front_cone: bool = true) -> bool:
 	if front_cone:
 		if owner.has_method("play_attack_visual"):
 			owner.play_attack_visual(aim)
+		_catch_orbs_in_wedge()
 	else:
 		owner.attack_component.begin_spin_overlay()
 		if owner.has_method("play_attack_around_visual"):
 			owner.play_attack_around_visual(aim)
 		elif owner.has_method("play_attack_visual"):
 			owner.play_attack_visual(aim)
+		_catch_orbs_in_spin_radius()
 
-	var pending_targets: Array[Dictionary] = []
-	for orb in targets:
-		if orb == null or not is_instance_valid(orb):
-			continue
-		if not orb.has_method("begin_bat_hold"):
-			continue
-		# Snapshot launch dirs before the contact-frame freeze zeros velocity.
-		var default_dir: Vector2 = aim if front_cone else _get_spin_bounce_direction(orb)
-		var inbound: Vector2 = (
-			-aim if front_cone else (orb.linear_velocity if orb.linear_velocity.length_squared() > 0.0001 else -(orb.global_position - owner.global_position))
-		)
-		pending_targets.append({
-			"orb": orb,
-			"inbound": inbound,
-			"default_dir": default_dir,
-		})
+	_retag_bat_catches_for_launch(front_cone)
+	if _bat_catches.is_empty():
+		return true
 
-	if not pending_targets.is_empty():
-		var action: StringName = &"attacking" if front_cone else &"attack_around"
-		var contact_frame: int = (
-			attack_bat_contact_frame if front_cone else attack_bat_spin_contact_frame
-		)
-		_pending_bat_swing = {
-			"front_cone": front_cone,
-			"contact_frame": contact_frame,
-			"action": action,
-			"targets": pending_targets,
-		}
+	var action: StringName = &"attacking" if front_cone else &"attack_around"
+	var contact_frame: int = (
+		attack_bat_contact_frame if front_cone else attack_bat_spin_contact_frame
+	)
+	_pending_bat_swing = {
+		"front_cone": front_cone,
+		"contact_frame": contact_frame,
+		"action": action,
+	}
+	_update_bat_catch_previews(front_cone)
 	return true
 
 
 ## Circle-surface bounce: reflect velocity off the outward radial normal (player → orb).
 ## Near-zero / degenerate cases fall back to radial outward (or bat aim if on top of the player).
-func _get_spin_bounce_direction(orb: RigidBody2D) -> Vector2:
+## Optional velocity_override is used when the orb is already frozen (linear_velocity is zero).
+func _get_spin_bounce_direction(orb: RigidBody2D, velocity_override: Vector2 = Vector2.ZERO) -> Vector2:
 	var from_player: Vector2 = orb.global_position - owner.global_position
 	var normal: Vector2
 	if from_player.length_squared() < 0.0001:
@@ -336,7 +329,9 @@ func _get_spin_bounce_direction(orb: RigidBody2D) -> Vector2:
 			normal = Vector2.RIGHT
 	else:
 		normal = from_player.normalized()
-	var velocity: Vector2 = orb.linear_velocity
+	var velocity: Vector2 = velocity_override
+	if velocity.length_squared() < 0.0001:
+		velocity = orb.linear_velocity
 	if velocity.length_squared() < 0.0001:
 		return normal
 	var bounced: Vector2 = velocity.bounce(normal)
@@ -348,118 +343,98 @@ func _get_spin_bounce_direction(orb: RigidBody2D) -> Vector2:
 	return bounced.normalized()
 
 
-## Wait for the swing contact frame (or an interrupted clip) then freeze snapshotted orbs.
-func _update_pending_bat_swing() -> void:
-	if _pending_bat_swing == null:
-		return
-	var pending: Dictionary = _pending_bat_swing as Dictionary
-	var action: StringName = pending.get("action", &"attacking") as StringName
-	var sprite: DirectionalSpriteComponent = owner.directional_sprite
-	if sprite == null:
-		_apply_pending_bat_swing()
-		return
-	# Clip replaced before contact — apply so a committed overlap is not lost.
-	if not sprite.is_playing_action(action):
-		_apply_pending_bat_swing()
-		return
-	var contact_frame: int = int(pending.get("contact_frame", 0))
-	if sprite.get_frame() >= contact_frame:
-		_apply_pending_bat_swing()
+## Freeze flying orbs overlapping the swing wedge (tap release only). Never used during charge.
+func _catch_orbs_in_wedge() -> void:
+	var aim: Vector2 = get_bat_aim()
+	for orb in _find_orbs_in_attack_polygon():
+		_try_catch_orb(orb, true, aim)
 
 
-## Resolve the release-time snapshot: begin_bat_hold, flash, pose pause, crack.
-func _apply_pending_bat_swing() -> void:
-	if _pending_bat_swing == null:
-		return
-	var pending: Dictionary = _pending_bat_swing as Dictionary
-	_pending_bat_swing = null
+## Freeze flying orbs in the spin ring (spin release only).
+func _catch_orbs_in_spin_radius() -> void:
+	var aim: Vector2 = get_bat_aim()
+	for orb in _find_flying_orbs_in_spin_radius():
+		_try_catch_orb(orb, false, aim)
 
-	var front_cone: bool = bool(pending.get("front_cone", true))
-	var contact_frame: int = int(pending.get("contact_frame", 0))
-	var targets: Array = pending.get("targets", []) as Array
 
-	var hit_any: bool = false
-	for entry_variant in targets:
-		var snap: Dictionary = entry_variant as Dictionary
-		var orb: RigidBody2D = snap.get("orb") as RigidBody2D
-		if orb == null or not is_instance_valid(orb):
-			continue
-		if not orb.has_method("begin_bat_hold"):
-			continue
-		if not _is_orb_flying(orb):
-			continue
-		if orb.has_method("is_vault_held") and orb.is_vault_held():
-			continue
-		var inbound: Vector2 = snap.get("inbound", Vector2.RIGHT) as Vector2
-		var default_dir: Vector2 = snap.get("default_dir", Vector2.RIGHT) as Vector2
-		if not orb.begin_bat_hold(owner, inbound):
-			continue
-		_bat_holds.append({
-			"orb": orb,
-			"elapsed": 0.0,
-			"default_dir": default_dir,
-			"front_cone": front_cone,
-		})
-		if orb.has_method("set_redirect_preview"):
-			orb.set_redirect_preview(default_dir, owner)
-		hit_any = true
+func _try_catch_orb(orb: RigidBody2D, front_cone: bool, aim: Vector2) -> bool:
+	if orb == null or not is_instance_valid(orb):
+		return false
+	if not orb.has_method("begin_bat_hold"):
+		return false
+	if not _is_orb_flying(orb):
+		return false
+	if orb.has_method("is_vault_held") and orb.is_vault_held():
+		return false
+	if _bat_catch_index_of(orb) >= 0:
+		return false
 
-	if not hit_any:
-		return
-
-	if owner.attack_component.has_method("flash_bat_hit"):
-		owner.attack_component.flash_bat_hit()
-	if owner.directional_sprite != null:
-		owner.directional_sprite.pause_hold_at_frame(contact_frame)
-		_bat_pose_held = true
-	if attack_bat_redirect_sound and owner is Node2D:
-		AudioManager.play_at(
-			attack_bat_redirect_sound,
-			(owner as Node2D).global_position,
-			attack_bat_impact_pitch
+	var resume_velocity: Vector2 = orb.linear_velocity
+	var inbound: Vector2
+	var default_dir: Vector2
+	if front_cone:
+		default_dir = aim if aim.length_squared() > 0.0001 else Vector2.RIGHT
+		inbound = -default_dir
+	else:
+		inbound = (
+			resume_velocity
+			if resume_velocity.length_squared() > 0.0001
+			else -(orb.global_position - owner.global_position)
 		)
+		default_dir = _get_spin_bounce_direction(orb, resume_velocity)
+
+	if not orb.begin_bat_hold(owner, inbound):
+		return false
+
+	_bat_catches.append({
+		"orb": orb,
+		"inbound": inbound,
+		"resume_velocity": resume_velocity,
+		"default_dir": default_dir,
+	})
+	if orb.has_method("set_redirect_preview"):
+		orb.set_redirect_preview(default_dir, owner)
+	return true
 
 
-func _update_bat_holds(delta: float) -> void:
-	if _bat_holds.is_empty():
-		_maybe_resume_bat_contact_pose()
-		return
-	var hold_duration: float = maxf(attack_bat_hold_seconds, 0.0)
-	var i: int = 0
-	while i < _bat_holds.size():
-		var entry: Dictionary = _bat_holds[i]
+func _bat_catch_index_of(orb: RigidBody2D) -> int:
+	for i in _bat_catches.size():
+		if _bat_catches[i].get("orb") == orb:
+			return i
+	return -1
+
+
+## After release, retag launch style for every catch (wedge-caught orbs may become spin launches).
+func _retag_bat_catches_for_launch(front_cone: bool) -> void:
+	for i in _bat_catches.size():
+		var entry: Dictionary = _bat_catches[i]
 		var orb: RigidBody2D = entry.get("orb") as RigidBody2D
 		if orb == null or not is_instance_valid(orb):
-			_bat_holds.remove_at(i)
 			continue
-		# Capture / possess / other clear — drop without deflect.
-		if not orb.has_method("is_vault_held") or not orb.is_vault_held():
-			if orb.has_method("clear_redirect_preview"):
-				orb.clear_redirect_preview(owner)
-			_bat_holds.remove_at(i)
+		var resume_velocity: Vector2 = entry.get("resume_velocity", Vector2.ZERO) as Vector2
+		if front_cone:
+			var aim: Vector2 = get_bat_aim()
+			entry["default_dir"] = aim if aim.length_squared() > 0.0001 else Vector2.RIGHT
+		else:
+			entry["default_dir"] = _get_spin_bounce_direction(orb, resume_velocity)
+		_bat_catches[i] = entry
+
+
+func _update_bat_catch_previews(front_cone: bool) -> void:
+	for entry in _bat_catches:
+		var orb: RigidBody2D = entry.get("orb") as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
 			continue
-
-		var elapsed: float = float(entry.get("elapsed", 0.0)) + delta
-		entry["elapsed"] = elapsed
-		_bat_holds[i] = entry
-
-		var launch: Vector2 = _resolve_bat_hold_launch(entry)
-		if orb.has_method("set_redirect_preview"):
-			orb.set_redirect_preview(launch, owner)
-
-		if elapsed >= hold_duration:
-			_fire_bat_hold_at(i)
+		if not orb.has_method("set_redirect_preview"):
 			continue
-		i += 1
-	_maybe_resume_bat_contact_pose()
+		var launch: Vector2 = _resolve_bat_catch_launch(entry, front_cone)
+		orb.set_redirect_preview(launch, owner)
 
 
-func _resolve_bat_hold_launch(entry: Dictionary) -> Vector2:
-	var front_cone: bool = bool(entry.get("front_cone", true))
+func _resolve_bat_catch_launch(entry: Dictionary, front_cone: bool) -> Vector2:
 	var default_dir: Vector2 = entry.get("default_dir", Vector2.RIGHT) as Vector2
 	if front_cone:
 		return get_bat_aim()
-	# Spin: stick override only (mouse must not steal bounce).
 	if is_instance_valid(owner) and owner.controls != null:
 		var stick: Vector2 = owner.controls.get_stick_aim_vector()
 		if stick.length_squared() > 0.0001:
@@ -469,47 +444,93 @@ func _resolve_bat_hold_launch(entry: Dictionary) -> Vector2:
 	return Vector2.RIGHT
 
 
-func _fire_bat_hold_at(index: int) -> void:
-	if index < 0 or index >= _bat_holds.size():
-		return
-	var entry: Dictionary = _bat_holds[index]
-	_bat_holds.remove_at(index)
-	var orb: RigidBody2D = entry.get("orb") as RigidBody2D
-	if orb == null or not is_instance_valid(orb):
-		return
-	if not orb.has_method("is_vault_held") or not orb.is_vault_held():
+## Cancel charge / abort: resume prior velocity with no deflect boost.
+func _release_bat_catches_unboosted() -> void:
+	for entry in _bat_catches:
+		var orb: RigidBody2D = entry.get("orb") as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			continue
 		if orb.has_method("clear_redirect_preview"):
 			orb.clear_redirect_preview(owner)
+		if orb.has_method("end_bat_hold_restore"):
+			var resume_velocity: Vector2 = entry.get("resume_velocity", Vector2.ZERO) as Vector2
+			orb.end_bat_hold_restore(resume_velocity)
+	_bat_catches.clear()
+
+
+## Wait for the swing contact frame (or an interrupted clip) then launch catches.
+func _update_pending_bat_swing() -> void:
+	if _pending_bat_swing == null:
 		return
-	if not orb.has_method("deflect"):
+	var pending: Dictionary = _pending_bat_swing as Dictionary
+	var front_cone: bool = bool(pending.get("front_cone", true))
+	_update_bat_catch_previews(front_cone)
+
+	var action: StringName = pending.get("action", &"attacking") as StringName
+	var sprite: DirectionalSpriteComponent = owner.directional_sprite
+	if sprite == null:
+		_fire_pending_bat_swing()
+		return
+	if not sprite.is_playing_action(action):
+		_fire_pending_bat_swing()
+		return
+	var contact_frame: int = int(pending.get("contact_frame", 0))
+	if sprite.get_frame() >= contact_frame:
+		_fire_pending_bat_swing()
+
+
+## Contact-frame send: deflect all catches, crack once, flash overlay.
+func _fire_pending_bat_swing() -> void:
+	if _pending_bat_swing == null:
+		return
+	var pending: Dictionary = _pending_bat_swing as Dictionary
+	_pending_bat_swing = null
+	var front_cone: bool = bool(pending.get("front_cone", true))
+
+	# Snapshot valid launches first so SFX order is crack then pitched sends.
+	var to_launch: Array[Dictionary] = []
+	var i: int = 0
+	while i < _bat_catches.size():
+		var entry: Dictionary = _bat_catches[i]
+		var orb: RigidBody2D = entry.get("orb") as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			_bat_catches.remove_at(i)
+			continue
+		if not orb.has_method("is_vault_held") or not orb.is_vault_held():
+			if orb.has_method("clear_redirect_preview"):
+				orb.clear_redirect_preview(owner)
+			_bat_catches.remove_at(i)
+			continue
+		if not orb.has_method("deflect"):
+			_bat_catches.remove_at(i)
+			continue
+		to_launch.append(entry)
+		_bat_catches.remove_at(i)
+
+	if to_launch.is_empty():
 		return
 
-	var launch: Vector2 = _resolve_bat_hold_launch(entry)
+	if owner.attack_component.has_method("flash_bat_hit"):
+		owner.attack_component.flash_bat_hit()
+	if attack_bat_redirect_sound and owner is Node2D:
+		AudioManager.play_at(
+			attack_bat_redirect_sound,
+			(owner as Node2D).global_position,
+			attack_bat_impact_pitch
+		)
+
 	var instigator: Node = owner if is_instance_valid(owner) else null
-	orb.deflect(launch, instigator)
-	if orb.has_method("clear_redirect_preview"):
-		orb.clear_redirect_preview(owner)
-	if attack_bat_redirect_sound:
-		var pitch: float = _bat_redirect_pitch_for(orb)
-		AudioManager.play_at(attack_bat_redirect_sound, orb.global_position, pitch)
-
-
-func _fire_all_bat_holds() -> void:
-	while not _bat_holds.is_empty():
-		_fire_bat_hold_at(0)
-	_maybe_resume_bat_contact_pose()
-
-
-## After the shared freeze, resume follow-through (or clear if holds were aborted).
-func _maybe_resume_bat_contact_pose() -> void:
-	if not _bat_pose_held:
-		return
-	if not _bat_holds.is_empty():
-		return
-	_bat_pose_held = false
-	if not is_instance_valid(owner) or owner.directional_sprite == null:
-		return
-	owner.directional_sprite.resume_hold()
+	for entry in to_launch:
+		var orb: RigidBody2D = entry.get("orb") as RigidBody2D
+		if orb == null or not is_instance_valid(orb):
+			continue
+		var launch: Vector2 = _resolve_bat_catch_launch(entry, front_cone)
+		orb.deflect(launch, instigator)
+		if orb.has_method("clear_redirect_preview"):
+			orb.clear_redirect_preview(owner)
+		if attack_bat_redirect_sound:
+			var pitch: float = _bat_redirect_pitch_for(orb)
+			AudioManager.play_at(attack_bat_redirect_sound, orb.global_position, pitch)
 
 
 func _bat_redirect_pitch_for(orb: RigidBody2D) -> float:
@@ -526,7 +547,7 @@ func _bat_redirect_pitch_for(orb: RigidBody2D) -> float:
 func _can_start_attack_bat() -> bool:
 	if not tether_enabled or is_tethering() or _channeling or _vaulting:
 		return false
-	if _pending_bat_swing != null or _bat_pose_held:
+	if _pending_bat_swing != null:
 		return false
 	if owner.has_method("is_assembling") and owner.is_assembling():
 		return false
@@ -547,6 +568,7 @@ func _try_begin_attack_charge() -> bool:
 	_attack_charging = true
 	_attack_charge_elapsed = 0.0
 	# Hold pose = first frame of attack_around (spin wind-up).
+	# Orbs keep flying during charge; catch only on release via try_attack_bat.
 	if owner.has_method("play_attack_around_visual"):
 		owner.play_attack_around_visual(get_bat_aim())
 	owner.directional_sprite.pause_hold_at_frame(0)
@@ -595,6 +617,7 @@ func _cancel_attack_charge() -> void:
 		return
 	_attack_charging = false
 	_attack_charge_elapsed = 0.0
+	_release_bat_catches_unboosted()
 	# Drop back to idle/moving; states will re-assert locomotion next frame.
 	# Skip sprite restore during player/level teardown (_on_tree_exiting).
 	if not is_instance_valid(owner) or owner.directional_sprite == null:
@@ -1108,8 +1131,8 @@ func _update_redirect_preview() -> void:
 	if _vaulting:
 		return
 
-	# Bat hitstop owns chevrons on held orbs; do not clear or steal them.
-	if not _bat_holds.is_empty():
+	# Bat catches own chevrons on held orbs; do not clear or steal them.
+	if not _bat_catches.is_empty():
 		return
 
 	# Attack-bat chevron only in ATTACK_BAT mode.

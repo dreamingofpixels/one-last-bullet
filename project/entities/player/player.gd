@@ -1,3 +1,4 @@
+@tool
 extends CharacterBody2D
 
 ## Player index: 1 = keyboard/mouse + gamepad device 0.
@@ -7,9 +8,20 @@ extends CharacterBody2D
 enum CharacterId { WIZARD, DWARF }
 
 ## Body + redirect fantasy. Wizard = dash vault; dwarf = Attack bat (incl. hold-to-spin).
-@export var character: CharacterId = CharacterId.WIZARD
+@export var character: CharacterId = CharacterId.WIZARD:
+	set(value):
+		character = value
+		if Engine.is_editor_hint() and is_node_ready():
+			_apply_editor_preview()
+
+## Dwarf only: when a dash ends overlapping a flying orb, deflect it along the dash instead of taking contact damage.
+@export var dash_end_redirect: bool = true
 
 const STUCK_FRAMES_BEFORE_UNSTICK := 6
+const HITBOX_RADIUS := 5.0
+const WIZARD_HITBOX_HEIGHT := 24.0
+const DWARF_HITBOX_HEIGHT := 16.0
+const DWARF_HITBOX_OFFSET := Vector2(0, 4)
 const WIZARD_FRAMES := preload("res://entities/player/player_frames.tres")
 const DWARF_FRAMES := preload("res://entities/player/dwarf/dwarf_frames.tres")
 
@@ -26,13 +38,26 @@ var COMPONENTS: Dictionary = {}
 @onready var controls: Controls = %Controls
 @onready var state_machine: StateMachine = %StateMachine
 @onready var body_collision_shape: CollisionShape2D = %CollisionShape2D
+@onready var hitbox_shape: CollisionShape2D = %HitboxShape
 
 var _assembling: bool = true
 var _carried_item: Glyph = null
 var _stuck_frames: int = 0
 
 
+func _process(_delta: float) -> void:
+	# Instanced scenes keep the packed dwarf art until this overwrites it, and the
+	# editor can restore those child properties after _ready.
+	if Engine.is_editor_hint():
+		_apply_editor_preview()
+
+
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		set_physics_process(false)
+		_apply_editor_preview()
+		return
+	set_process(false)
 	add_to_group("player")
 	controls.apply_player_index(player_index)
 	_apply_character()
@@ -41,6 +66,8 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if _assembling or dash_component.is_dashing():
 		_stuck_frames = 0
 		return
@@ -156,6 +183,14 @@ func uses_body_attack_swing() -> bool:
 	return character == CharacterId.DWARF
 
 
+## Called from DashComponent at normal dash end (before hurtbox monitoring returns).
+## Dwarf + dash_end_redirect: deflect overlapping flying orbs along the dash direction.
+func try_dash_end_redirect(dash_dir: Vector2) -> void:
+	if not dash_end_redirect or character != CharacterId.DWARF:
+		return
+	orb_tether_component.redirect_overlapping_orbs(dash_dir)
+
+
 func _face_aim(aim: Vector2) -> void:
 	var dir: Vector2 = aim
 	if dir.length_squared() < 0.0001:
@@ -174,11 +209,49 @@ func _apply_character() -> void:
 			# Sheet faces SE; invert so logical west matches the art after flip.
 			directional_sprite.set_flip_h_inverted(true)
 			orb_tether_component.orb_redirect_mode = OrbTetherComponent.OrbRedirectMode.ATTACK_BAT
+			_apply_hitbox(DWARF_HITBOX_HEIGHT, DWARF_HITBOX_OFFSET)
 		_:
 			player_sprite.sprite_frames = WIZARD_FRAMES
 			directional_sprite.set_flip_h_inverted(false)
 			orb_tether_component.orb_redirect_mode = OrbTetherComponent.OrbRedirectMode.DASH_VAULT
+			_apply_hitbox(WIZARD_HITBOX_HEIGHT, Vector2.ZERO)
 	directional_sprite.play(&"idle", true)
+
+
+func _apply_editor_preview() -> void:
+	if not is_node_ready():
+		return
+	var frames: SpriteFrames = DWARF_FRAMES if character == CharacterId.DWARF else WIZARD_FRAMES
+	if player_sprite.sprite_frames != frames:
+		player_sprite.sprite_frames = frames
+		player_sprite.animation = &"idle_sw"
+		player_sprite.frame = 0
+		player_sprite.flip_h = false
+	_apply_hitbox_for_character()
+
+
+func _apply_hitbox_for_character() -> void:
+	if character == CharacterId.DWARF:
+		_apply_hitbox(DWARF_HITBOX_HEIGHT, DWARF_HITBOX_OFFSET)
+	else:
+		_apply_hitbox(WIZARD_HITBOX_HEIGHT, Vector2.ZERO)
+
+
+func _apply_hitbox(capsule_height: float, offset: Vector2) -> void:
+	var existing := hitbox_shape.shape as CapsuleShape2D
+	if (
+		Engine.is_editor_hint()
+		and existing != null
+		and is_equal_approx(existing.radius, HITBOX_RADIUS)
+		and is_equal_approx(existing.height, capsule_height)
+		and hitbox_shape.position == offset
+	):
+		return
+	var capsule := CapsuleShape2D.new()
+	capsule.radius = HITBOX_RADIUS
+	capsule.height = capsule_height
+	hitbox_shape.shape = capsule
+	hitbox_shape.position = offset
 
 
 func _set_spawn_inert(inert: bool) -> void:

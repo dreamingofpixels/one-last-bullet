@@ -163,6 +163,9 @@ func _end_dash() -> void:
 	body.velocity = Vector2.ZERO
 	_resolve_end_position(body)
 	_end_phase()
+	# Before hurtbox monitoring returns: dwarf may deflect orbs we ended on.
+	if owner.has_method("try_dash_end_redirect"):
+		owner.try_dash_end_redirect(_direction)
 	if hitbox_component:
 		hitbox_component.set_invulnerable(false)
 	if animated_sprite:

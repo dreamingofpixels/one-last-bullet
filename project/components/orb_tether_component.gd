@@ -6,6 +6,7 @@ class_name OrbTetherComponent extends Node2D
 ## Mid-combat steer is mutually exclusive via orb_redirect_mode: Attack bat (R1 / F) or dash vault.
 
 const PHYSICS_LAYER_WORLD := 1
+const PHYSICS_LAYER_ORB := 8
 const PHYSICS_LAYER_WALL := 16
 
 ## Playtest A/B: pick one mid-combat orb redirect style.
@@ -692,6 +693,59 @@ func try_redirect_attack() -> bool:
 	return true
 
 
+## Dash-end shoulder redirect: deflect every flying orb whose hurtbox overlaps the player
+## hurtbox along `direction`. Used by dwarf dash_end_redirect before monitoring returns.
+## Returns how many orbs were redirected.
+func redirect_overlapping_orbs(direction: Vector2) -> int:
+	if not is_instance_valid(owner):
+		return 0
+	var hitbox_shape: CollisionShape2D = owner.get("hitbox_shape") as CollisionShape2D
+	if hitbox_shape == null or hitbox_shape.shape == null:
+		return 0
+
+	var dir: Vector2 = direction
+	if dir.length_squared() < 0.0001:
+		dir = Vector2.RIGHT
+	else:
+		dir = dir.normalized()
+
+	var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = hitbox_shape.shape
+	params.transform = hitbox_shape.global_transform
+	params.collision_mask = PHYSICS_LAYER_ORB
+	params.collide_with_bodies = false
+	params.collide_with_areas = true
+	params.exclude = [owner.get_rid()]
+
+	var hits: Array[Dictionary] = space.intersect_shape(params, 32)
+	if hits.is_empty():
+		return 0
+
+	var seen_ids: Dictionary = {}
+	var redirected: int = 0
+	var instigator: Node = owner
+	for hit in hits:
+		var orb: RigidBody2D = _resolve_orb_from_collider(hit.get("collider"))
+		if orb == null:
+			continue
+		var orb_id: int = orb.get_instance_id()
+		if seen_ids.has(orb_id):
+			continue
+		seen_ids[orb_id] = true
+		if not _can_dash_end_redirect_orb(orb):
+			continue
+		orb.deflect(dir, instigator)
+		if orb.has_method("clear_redirect_preview"):
+			orb.clear_redirect_preview(owner)
+		if attack_bat_redirect_sound:
+			var pitch: float = _bat_redirect_pitch_for(orb)
+			AudioManager.play_at(attack_bat_redirect_sound, orb.global_position, pitch)
+		redirected += 1
+
+	return redirected
+
+
 ## While dashing: commit to the soonest orb on the remaining ray and clamp remaining
 ## distance to the far-side landing so the dash walks there (no teleport).
 ## Returns the remaining distance to use this frame.
@@ -1307,6 +1361,39 @@ func _cancel_channel() -> void:
 
 func _is_orb_flying(orb: RigidBody2D) -> bool:
 	return orb.has_method("is_flying") and orb.is_flying()
+
+
+func _resolve_orb_from_collider(collider: Variant) -> RigidBody2D:
+	if collider == null or not is_instance_valid(collider):
+		return null
+	if not collider is Node:
+		return null
+	var node: Node = collider as Node
+	if collider is Area2D:
+		var area_owner: Node = (collider as Area2D).owner
+		if area_owner is RigidBody2D and area_owner.is_in_group("orb"):
+			return area_owner as RigidBody2D
+	while node != null:
+		if node is RigidBody2D and node.is_in_group("orb"):
+			return node as RigidBody2D
+		node = node.get_parent()
+	return null
+
+
+func _can_dash_end_redirect_orb(orb: RigidBody2D) -> bool:
+	if not _is_orb_flying(orb) or not orb.has_method("deflect"):
+		return false
+	var comp = orb.get("COMPONENTS")
+	if comp == null or not comp.has(DamageComponent):
+		return false
+	var dc: DamageComponent = comp[DamageComponent]
+	if dc.damage <= 0.0:
+		return false
+	if is_instance_valid(dc.instigator) and dc.instigator == owner:
+		return false
+	if orb.has_method("should_apply_hitbox_damage") and not bool(orb.should_apply_hitbox_damage(owner)):
+		return false
+	return true
 
 
 func _get_opening_orb() -> RigidBody2D:

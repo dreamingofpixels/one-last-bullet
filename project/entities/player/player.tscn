@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://du4wuw1kmuhnc"]
 
 [ext_resource type="Script" uid="uid://177x22cxj76t" path="res://entities/player/player.gd" id="1_abrql"]
-[ext_resource type="SpriteFrames" uid="uid://bl2x5nlx7dk6" path="res://entities/player/player_frames.tres" id="1_frames"]
+[ext_resource type="SpriteFrames" uid="uid://yqc5208gvb6w" path="res://entities/player/dwarf/dwarf_frames.tres" id="2_eyb6c"]
 [ext_resource type="Script" uid="uid://c7md11u5737tg" path="res://components/component_handler.gd" id="2_handler"]
 [ext_resource type="Script" uid="uid://bgqh6j755avbu" path="res://components/health_component.gd" id="3_health"]
 [ext_resource type="Script" uid="uid://uas2uqfgn6px" path="res://components/damage_component.gd" id="4_damage"]
@@ -27,17 +27,16 @@ size = Vector2(13, 8)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hitbox"]
 radius = 5.0
-height = 24.0
+height = 16.0
 
 [node name="Player" type="CharacterBody2D" unique_id=2057158373]
 collision_layer = 2
 script = ExtResource("1_abrql")
-character = 1
 
 [node name="PlayerSprite" type="AnimatedSprite2D" parent="." unique_id=1508902462]
 unique_name_in_owner = true
 texture_filter = 1
-sprite_frames = ExtResource("1_frames")
+sprite_frames = ExtResource("2_eyb6c")
 animation = &"idle_sw"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=565534729]
@@ -106,7 +105,9 @@ collision_mask = 12
 script = ExtResource("8_hitbox")
 health_component = NodePath("../HealthComponent")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1095677379]
+[node name="HitboxShape" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1095677379]
+unique_name_in_owner = true
+position = Vector2(0, 4)
 shape = SubResource("CapsuleShape2D_hitbox")
 
 [node name="Controls" type="Node" parent="." unique_id=700935364]

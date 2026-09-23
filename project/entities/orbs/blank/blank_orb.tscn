@@ -50,6 +50,7 @@ continuous_cd = 2
 linear_damp_mode = 1
 script = ExtResource("1_1x56v")
 speed = 100.0
+max_speed = 1700.0
 rotate_heading = false
 bounce_sound = ExtResource("2_u1u0s")
 begin_tether_sound = ExtResource("3_y0mie")

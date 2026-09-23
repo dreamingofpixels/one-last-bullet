@@ -219,6 +219,9 @@ func _draw() -> void:
 	if _show_spin_overlay:
 		_draw_spin_overlay()
 		return
+	# Wedge visibility is the cooldown tell: hidden after a bat until can_attack() again.
+	if Time.get_ticks_msec() < _cooldown_until_msec:
+		return
 	_draw_wedge_overlay()
 
 

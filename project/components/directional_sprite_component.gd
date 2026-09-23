@@ -97,6 +97,37 @@ func pause_hold_at_frame(frame: int = 0) -> void:
 	_hold_paused = true
 
 
+## Resume a pause_hold_at_frame clip from the held frame (no restart at 0).
+func resume_hold() -> void:
+	if animated_sprite == null:
+		return
+	if not _hold_paused:
+		return
+	var held_frame: int = animated_sprite.frame
+	_hold_paused = false
+	var anim: StringName = _current_anim
+	if animated_sprite.sprite_frames and animated_sprite.sprite_frames.has_animation(anim):
+		animated_sprite.play(anim)
+		animated_sprite.set_frame_and_progress(held_frame, 0.0)
+
+
+## Current AnimatedSprite2D frame (0 when no sprite).
+func get_frame() -> int:
+	if animated_sprite == null:
+		return 0
+	return animated_sprite.frame
+
+
+## Current logical action (idle / moving / attacking / attack_around).
+func get_action() -> StringName:
+	return _action
+
+
+## True while pause_hold_at_frame froze the clip.
+func is_hold_paused() -> bool:
+	return _hold_paused
+
+
 ## True while the given action clip is current and still playing, or held paused for charge.
 func is_playing_action(action: StringName) -> bool:
 	if _action != action:

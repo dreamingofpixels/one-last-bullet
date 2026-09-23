@@ -43,6 +43,8 @@ var _hit_enemies: Dictionary = {}
 var _show_bat_overlay: bool = false
 var _show_spin_overlay: bool = false
 var _spin_overlay_active: bool = false
+## Authored wedge centroid angle in local space (NE slice sits left of stick +X when aiming up).
+var _wedge_mid_angle: float = 0.0
 ## 1 = full white hit flash; decays to 0 over BAT_HIT_FLASH_DURATION.
 var _bat_hit_flash: float = 0.0
 var _bat_hit_flash_elapsed: float = 0.0
@@ -68,8 +70,33 @@ func _ready() -> void:
 	attack_sprite_hint.rotation = sprite_angle_offset
 	attack_sprite_hint.frame = 2
 	attack_sprite_hint.visible = false
+	_wedge_mid_angle = _compute_wedge_mid_angle()
 	body_entered.connect(_on_body_entered)
 	attack_animation.animation_finished.connect(_on_animation_finished)
+
+
+## Stick aim rotated to the authored wedge's visual center (polygon centroid).
+## The NE slice sits ~45° off +X, so 12 o'clock stick looks like 10–11 on the overlay.
+func get_visual_forward(aim: Vector2) -> Vector2:
+	var base: Vector2 = aim
+	if base.length_squared() < 0.0001:
+		base = Vector2.from_angle(rotation)
+		if base.length_squared() < 0.0001:
+			base = Vector2.RIGHT
+	return base.normalized().rotated(_wedge_mid_angle)
+
+
+func _compute_wedge_mid_angle() -> float:
+	var pts: PackedVector2Array = collision_polygon.polygon
+	if pts.is_empty():
+		return 0.0
+	var sum := Vector2.ZERO
+	for p in pts:
+		sum += p
+	var mid: Vector2 = sum / float(pts.size()) + collision_polygon.position
+	if mid.length_squared() < 0.0001:
+		return 0.0
+	return mid.angle()
 
 
 func _process(delta: float) -> void:

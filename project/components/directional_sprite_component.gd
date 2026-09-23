@@ -2,8 +2,8 @@ class_name DirectionalSpriteComponent extends Node2D
 
 ## Tracks 8-way logical facing (N/S/E/W + diagonals) and plays
 ## "<action>_<west>" on an AnimatedSprite2D. Authored art is SW/NW only;
-## SE/NE reuse those clips with flip_h. Cardinals map to the nearest diagonal.
-## If an NW clip is missing (e.g. dwarf SW-only), falls back to SW.
+## SE/NE reuse those clips with flip_h. N/S pick east/west from aim X (flip at 12/6);
+## E/W keep the last N/S diagonal. If an NW clip is missing (e.g. dwarf SW-only), falls back to SW.
 
 enum Facing { N, S, E, W, NE, NW, SE, SW }
 
@@ -11,6 +11,8 @@ signal facing_changed(facing: Facing)
 
 ## tan(22.5°) — boundary between cardinal and diagonal octants.
 const _CARDINAL_THRESHOLD := 0.41421356237
+## Normalized X must pass this to flip east/west at N/S (~3° off 12/6 o'clock).
+const _AXIS_FLIP_DEADZONE := 0.05
 
 const _VECTOR: Dictionary = {
 	Facing.N: Vector2(0, -1),
@@ -33,12 +35,15 @@ var _action: StringName = &"idle"
 var _current_anim: StringName = &""
 var _visual_suffix: String = "se"
 var _flip_h: bool = true
+## Last non-zero `face()` vector; N/S east-west uses its X sign.
+var _face_dir: Vector2 = Vector2.RIGHT
 ## True while pause_hold_at_frame() froze a clip (charge pose); counts as playing that action.
 var _hold_paused: bool = false
 
 
 func _ready() -> void:
 	facing = default_facing
+	_face_dir = _VECTOR[default_facing] as Vector2
 	_sync_visual()
 	_refresh()
 
@@ -53,16 +58,21 @@ func set_flip_h_inverted(inverted: bool) -> void:
 
 
 ## Zero-length input is ignored. Snaps to the nearest of 8 octants.
+## N/S also refresh east/west from aim X while the octant stays north/south.
 func face(direction: Vector2) -> void:
 	if direction.length_squared() < 0.0001:
 		return
 
+	_face_dir = direction
 	var next := _octant(direction)
-	if next == facing:
-		return
+	var old_facing: Facing = facing
+	var old_suffix: String = _visual_suffix
 	facing = next
 	_sync_visual()
-	facing_changed.emit(facing)
+	if facing == old_facing and _visual_suffix == old_suffix:
+		return
+	if facing != old_facing:
+		facing_changed.emit(facing)
 	_refresh()
 
 
@@ -116,7 +126,7 @@ func _octant(direction: Vector2) -> Facing:
 	return Facing.SW if d.y > 0.0 else Facing.NW
 
 
-## Cardinals reuse the prior visual's other axis (N keeps E/W bias, etc.).
+## N/S pick east/west from aim X (flip at 12/6). E/W still keep N/S bias from the last diagonal.
 func _sync_visual() -> void:
 	match facing:
 		Facing.SW:
@@ -128,15 +138,22 @@ func _sync_visual() -> void:
 		Facing.NW:
 			_visual_suffix = "nw"
 		Facing.N:
-			_visual_suffix = "ne" if _is_east_visual() else "nw"
+			_visual_suffix = "ne" if _prefer_east_from_x(_face_dir.x) else "nw"
 		Facing.S:
-			_visual_suffix = "se" if _is_east_visual() else "sw"
+			_visual_suffix = "se" if _prefer_east_from_x(_face_dir.x) else "sw"
 		Facing.E:
 			_visual_suffix = "se" if _is_south_visual() else "ne"
 		Facing.W:
 			_visual_suffix = "sw" if _is_south_visual() else "nw"
 	# Authored west clips play unflipped; east uses flip_h. Invert for SE-authored sheets (dwarf).
 	_flip_h = _is_east_visual() != flip_h_inverted
+
+
+## True when X is clearly right of 12/6. Near-zero X keeps the current east/west so analog noise does not flicker.
+func _prefer_east_from_x(x: float) -> bool:
+	if absf(x) <= _AXIS_FLIP_DEADZONE:
+		return _is_east_visual()
+	return x > 0.0
 
 
 func _is_east_visual() -> bool:

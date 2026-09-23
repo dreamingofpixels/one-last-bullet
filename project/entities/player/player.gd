@@ -119,10 +119,11 @@ func try_throw_item() -> bool:
 	return true
 
 
-## Dwarf: body faces bat aim (last stick / mouse). Wizard: faces move_dir when given.
+## Dwarf: body faces the wedge visual center (polygon midline), not raw stick +X.
 func sync_body_facing(move_dir: Vector2 = Vector2.ZERO) -> void:
 	if orb_tether_component.attack_bat_enabled:
-		_face_aim(orb_tether_component.get_bat_aim())
+		var aim: Vector2 = orb_tether_component.get_bat_aim()
+		_face_aim(attack_component.get_visual_forward(aim))
 		return
 	if move_dir.length_squared() > 0.0001:
 		directional_sprite.face(move_dir)

@@ -21,6 +21,13 @@ func should_apply_hitbox_damage(victim: Node) -> bool:
 	return true
 
 
+func _should_bounce_off_hurtbox(victim: Node) -> bool:
+	# Possess enemies instead of pinballing off them.
+	if victim != null and victim.is_in_group("enemies"):
+		return false
+	return super._should_bounce_off_hurtbox(victim)
+
+
 func on_hitbox_hit(victim: Node) -> void:
 	if state != OrbState.FLYING or _circle_captured:
 		return

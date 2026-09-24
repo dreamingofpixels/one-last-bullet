@@ -78,6 +78,10 @@ func _poll_attacker(attacker: Node, attacker_id: int, frame: int, now_msec: int)
 	var is_fresh: bool = state.is_empty()
 	state["last_seen_frame"] = frame
 
+	# Entity pinball bounce uses the same hurtbox volume as damage (once per overlap).
+	if is_fresh and attacker.has_method("try_bounce_off_hurtbox"):
+		attacker.try_bounce_off_hurtbox(owner)
+
 	if is_fresh or now_msec >= int(state.get("next_damage_msec", 0)):
 		var apply_hp: bool = true
 		if attacker.has_method("should_apply_hitbox_damage"):

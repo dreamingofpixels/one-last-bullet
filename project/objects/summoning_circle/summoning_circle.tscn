@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ni4epc6h4rnd"]
 
 [ext_resource type="Script" uid="uid://cqnto3o0teehp" path="res://objects/summoning_circle/summoning_circle.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://rydltayd3s4e" path="res://objects/summoning_circle/summoning_circle.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://dnw76l3m48iet" path="res://objects/summoning_circle/summoning_circle_V2.png" id="2_74jjp"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="3_uicfy"]
 [ext_resource type="Texture2D" uid="uid://kbn6iicr3wj6" path="res://effects/particle_pixel.png" id="4_pixel"]
 [ext_resource type="Texture2D" uid="uid://cu676vqehm8hp" path="res://objects/summoning_circle/hint_arrow.png" id="5_0l32g"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://chy06wl0beo0o" path="res://ui/panels/attribute_stripes/water_stripe.png" id="9_74jjp"]
 [ext_resource type="Texture2D" uid="uid://ckyj6p3tyadtc" path="res://ui/panels/attribute_stripes/air_stripe.png" id="10_4awwu"]
 [ext_resource type="Texture2D" uid="uid://ess0ne6ng7q0" path="res://ui/panels/attribute_stripes/earth_stripe.png" id="11_tnsfc"]
+[ext_resource type="PackedScene" uid="uid://er74x28r1s1a" path="res://objects/summoning_circle/rite_slot/rite_slot.tscn" id="13_4awwu"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_deposit"]
 radius = 22.0
@@ -110,7 +111,7 @@ script = ExtResource("1_script")
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=677143838]
 unique_name_in_owner = true
 z_as_relative = false
-texture = ExtResource("2_tex")
+texture = ExtResource("2_74jjp")
 
 [node name="DepositArea" type="Area2D" parent="." unique_id=2040364074]
 unique_name_in_owner = true
@@ -794,6 +795,32 @@ texture = ExtResource("6_pjoiy")
 unique_name_in_owner = true
 visible = false
 
+[node name="RiteSlots" type="Node2D" parent="." unique_id=743787362]
+
+[node name="RiteSlot1" parent="RiteSlots" unique_id=43061609 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot2" parent="RiteSlots" unique_id=1049207732 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot3" parent="RiteSlots" unique_id=1918218797 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot4" parent="RiteSlots" unique_id=170365303 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot5" parent="RiteSlots" unique_id=97894205 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot6" parent="RiteSlots" unique_id=1051758800 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot7" parent="RiteSlots" unique_id=1779622857 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot8" parent="RiteSlots" unique_id=839549306 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot9" parent="RiteSlots" unique_id=1256371262 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot10" parent="RiteSlots" unique_id=849368412 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot11" parent="RiteSlots" unique_id=655229899 instance=ExtResource("13_4awwu")]
+
+[node name="RiteSlot12" parent="RiteSlots" unique_id=178020974 instance=ExtResource("13_4awwu")]
+
 [node name="Prompt" type="Control" parent="." unique_id=632496195]
 layout_mode = 3
 anchors_preset = 0
@@ -843,6 +870,15 @@ layout_mode = 2
 size_flags_vertical = 3
 input_id = "keyboard_q_down"
 prompt_text = "Cancel"
+
+[node name="PromptOrbInfo" parent="Prompt/PromptStack" unique_id=1672523802 instance=ExtResource("7_prompt")]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(30, 16)
+layout_mode = 2
+size_flags_vertical = 3
+input_id = "keyboard_C_down"
+prompt_text = "Hide"
 
 [node name="PromptCommit" parent="Prompt/PromptStack" unique_id=914149582 instance=ExtResource("7_prompt")]
 unique_name_in_owner = true

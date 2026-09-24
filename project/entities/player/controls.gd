@@ -28,6 +28,7 @@ var input_scheme: InputScheme = InputScheme.KEYBOARD_MOUSE
 @onready var activate_action: PlayerAction = %ActivateAction
 @onready var upgrade_action: PlayerAction = %UpgradeAction
 @onready var ritual_cancel_action: PlayerAction = %RitualCancelAction
+@onready var toggle_orb_info_action: PlayerAction = %ToggleOrbInfoAction
 @onready var attack_action: PlayerAction = %AttackAction
 @onready var dash_action: PlayerAction = %DashAction
 
@@ -211,6 +212,12 @@ func is_ritual_cancel_just_pressed() -> bool:
 	if ritual_cancel_action.action.is_empty():
 		return false
 	return Input.is_action_just_pressed(ritual_cancel_action.action)
+
+
+func is_toggle_orb_info_just_pressed() -> bool:
+	if toggle_orb_info_action.action.is_empty():
+		return false
+	return Input.is_action_just_pressed(toggle_orb_info_action.action)
 
 
 ## True when this player aims with the mouse (P1). Gamepad-only players must not use mouse GUI gates.

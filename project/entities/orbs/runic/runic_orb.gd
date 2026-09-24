@@ -29,10 +29,11 @@ func _ready() -> void:
 	homing.set_enabled(false)
 
 
-func _apply_collision_mask() -> void:
-	super._apply_collision_mask()
-	if state == OrbState.FLYING:
-		collision_mask |= PHYSICS_LAYER_ENEMY
+func _should_bounce_off_hurtbox(victim: Node) -> bool:
+	# Always bounce off enemies for pathing; player only when the playtest toggle is on.
+	if victim != null and is_instance_valid(victim) and victim.is_in_group("enemies"):
+		return true
+	return super._should_bounce_off_hurtbox(victim)
 
 
 func _physics_process(delta: float) -> void:

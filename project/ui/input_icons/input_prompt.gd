@@ -12,6 +12,7 @@ const ACTION_ICONS: Dictionary = {
 	&"upgrade": {&"kb": "keyboard_e_down", &"pad": "square_down"},
 	&"activate": {&"kb": "keyboard_space_down", &"pad": "triangle_down"},
 	&"ritual_cancel": {&"kb": "keyboard_q_down", &"pad": "circle_down"},
+	&"toggle_orb_info": {&"kb": "keyboard_C_down", &"pad": "cross_down"},
 	&"pickup": {&"kb": "mouse_right_click", &"pad": "L2_down"},
 }
 

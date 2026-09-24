@@ -64,6 +64,8 @@ var _name_hint_labels: Array[Label] = []
 ## Cache so _refresh_input_prompts does not rebuild SpriteFrames every frame.
 var _prompt_cache_key: String = ""
 var _commit_busy: bool = false
+## True when the player hid %OrbInfo during a capture; cleared on leave / release.
+var _orb_info_collapsed: bool = false
 var _commit_trail_nodes: Array[Node] = []
 var _arcane_default_material: ParticleProcessMaterial
 
@@ -109,6 +111,7 @@ var _arcane_default_material: ParticleProcessMaterial
 @onready var prompt_activate: InputPrompt = %PromptActivate
 @onready var prompt_cancel: InputPrompt = %PromptCancel
 @onready var prompt_commit: InputPrompt = %PromptCommit
+@onready var prompt_orb_info: InputPrompt = %PromptOrbInfo
 
 
 func _ready() -> void:
@@ -316,6 +319,7 @@ func capture_orb(orb: RigidBody2D) -> void:
 		return
 
 	_ritual_running = true
+	_orb_info_collapsed = false
 	_captured_orb = orb
 	orb.begin_circle_capture(get_launch_origin(), orb_capture_suck_speed, _on_orb_capture_finished)
 
@@ -431,7 +435,7 @@ func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
 	if controls == null:
 		return
 
-	# Triangle / F: arm from DepositArea; Transform/bake from InfoProximityArea during capture.
+	# Triangle / Space: arm from DepositArea; Transform/bake from InfoProximityArea during capture.
 	if controls.is_activate_just_pressed():
 		if in_deposit:
 			try_activate()
@@ -440,7 +444,7 @@ func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
 	# Square / E: buy blank while idle or waiting (same DepositArea range as activate).
 	if in_deposit and controls.is_upgrade_just_pressed() and not _ritual_running:
 		_try_buy_blank_orb()
-	# Circle / C: disarm waiting (no mana refund) or release captured orb.
+	# Circle / Q: disarm waiting (no mana refund) or release captured orb.
 	if controls.is_ritual_cancel_just_pressed():
 		if _commit_busy:
 			return
@@ -448,6 +452,11 @@ func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
 			release_orb(Vector2.ZERO, player)
 		elif _active:
 			deactivate()
+	# Cross / C: hide or show OrbInfo while a capture is running.
+	if _ritual_running and controls.is_toggle_orb_info_just_pressed():
+		_orb_info_collapsed = not _orb_info_collapsed
+		_prompt_cache_key = ""
+		_update_ritual_ui_proximity()
 
 
 func _try_buy_blank_orb() -> void:
@@ -571,6 +580,7 @@ func _hide_all_glyph_icons() -> void:
 
 
 func _show_ritual_ui() -> void:
+	_orb_info_collapsed = false
 	glyph_slots.visible = true
 	_update_ritual_ui_proximity()
 	_refresh_orb_info(true)
@@ -579,6 +589,7 @@ func _show_ritual_ui() -> void:
 
 func _hide_ritual_ui() -> void:
 	_clear_ready_idle()
+	_orb_info_collapsed = false
 	orb_info.visible = false
 	glyph_slots.visible = false
 	_hide_hints()
@@ -587,7 +598,11 @@ func _hide_ritual_ui() -> void:
 
 ## OrbInfo (ritual) and input prompts only while a player is in InfoProximityArea.
 func _update_ritual_ui_proximity() -> void:
-	orb_info.visible = _ritual_running and not _players_near_info.is_empty()
+	orb_info.visible = (
+		_ritual_running
+		and not _players_near_info.is_empty()
+		and not _orb_info_collapsed
+	)
 	if orb_info.visible:
 		_refresh_orb_info(true)
 	_refresh_input_prompts()
@@ -1001,6 +1016,8 @@ func _refresh_input_prompts() -> void:
 	)
 	var show_cancel: bool = _active or _ritual_running
 	var cancel_text: String = "Release" if _ritual_running else "Cancel"
+	var show_orb_info_toggle: bool = _ritual_running
+	var orb_info_toggle_text: String = "Show" if _orb_info_collapsed else "Hide"
 	var show_commit: bool = false
 	var commit_text: String = "Bake"
 	if _ritual_running and not _commit_busy:
@@ -1012,13 +1029,15 @@ func _refresh_input_prompts() -> void:
 
 	var activate_cost: float = get_activation_cost()
 	var buy_cost: int = int(get_blank_orb_cost())
-	var cache_key: String = "%s|%s|%s|%s|%s|%s|%d|%d|%s" % [
+	var cache_key: String = "%s|%s|%s|%s|%s|%s|%s|%s|%d|%d|%s" % [
 		keyboard_mouse,
 		show_buy,
 		show_activate,
 		show_cancel,
+		show_orb_info_toggle,
 		show_commit,
 		cancel_text,
+		orb_info_toggle_text,
 		buy_cost,
 		int(activate_cost),
 		commit_text,
@@ -1057,6 +1076,13 @@ func _refresh_input_prompts() -> void:
 	else:
 		prompt_cancel.visible = false
 
+	if show_orb_info_toggle:
+		prompt_orb_info.visible = true
+		prompt_orb_info.configure_action(&"toggle_orb_info", orb_info_toggle_text, keyboard_mouse)
+		any_visible = true
+	else:
+		prompt_orb_info.visible = false
+
 	if show_commit:
 		prompt_commit.visible = true
 		prompt_commit.configure_action(&"activate", commit_text, keyboard_mouse)
@@ -1072,6 +1098,7 @@ func _hide_input_prompts() -> void:
 	prompt_buy.visible = false
 	prompt_activate.visible = false
 	prompt_cancel.visible = false
+	prompt_orb_info.visible = false
 	prompt_commit.visible = false
 
 
@@ -1162,6 +1189,8 @@ func _on_info_proximity_body_entered(body: Node2D) -> void:
 func _on_info_proximity_body_exited(body: Node2D) -> void:
 	if body != null:
 		_players_near_info.erase(body)
+		if _players_near_info.is_empty():
+			_orb_info_collapsed = false
 		_update_ritual_ui_proximity()
 
 

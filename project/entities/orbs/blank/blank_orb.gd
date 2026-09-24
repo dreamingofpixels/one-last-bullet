@@ -14,7 +14,7 @@ const PHYSICS_LAYER_ORB := 8
 const SPLASH_RADIUS := 50.0
 ## Body / tether probe / depenetrate default to world solids (walls, rocks, breakables).
 ## Flying orbs always collide with other orbs. When bounce_off_entities is true, they also
-## bounce off player/enemy bodies. Entity damage still comes from HitboxComponent overlap.
+## bounce off player/enemy hurtboxes (same volume as contact damage) — not feet/body colliders.
 const SEPARATE_STEP_PX := 2.0
 const SEPARATE_MAX_ITERS := 4
 const SEPARATE_MAX_PUSH_PX := 8.0
@@ -24,7 +24,7 @@ const STALL_TICKS_BEFORE_UNSTICK := 12
 
 var COMPONENTS: Dictionary = {}
 
-## Playtest toggle: when true, flying orbs bounce off player/enemy bodies instead of punching through.
+## Playtest toggle: when true, flying orbs bounce off player/enemy hurtboxes instead of punching through.
 static var bounce_off_entities: bool = false
 
 @export var orb_id: StringName = &"blank"
@@ -1110,14 +1110,56 @@ func _clear_grace_exception() -> void:
 
 
 func _apply_collision_mask() -> void:
-	if state == OrbState.FLYING and bounce_off_entities:
-		collision_mask = (
-			PHYSICS_LAYER_WORLD | PHYSICS_LAYER_PLAYER | PHYSICS_LAYER_ENEMY | PHYSICS_LAYER_ORB
-		)
-	elif state == OrbState.FLYING:
+	# Entity bounce is hurtbox-driven (`try_bounce_off_hurtbox`); rigid mask stays world|orb.
+	if state == OrbState.FLYING:
 		collision_mask = PHYSICS_LAYER_WORLD | PHYSICS_LAYER_ORB
 	else:
 		collision_mask = PHYSICS_LAYER_WORLD
+
+
+## When true, a fresh hurtbox overlap with `victim` should reflect this orb (pinball mode).
+func _should_bounce_off_hurtbox(victim: Node) -> bool:
+	if not bounce_off_entities:
+		return false
+	if victim == null or not is_instance_valid(victim):
+		return false
+	return victim.is_in_group("player") or victim.is_in_group("enemies")
+
+
+## Reflect off a player/enemy hurtbox once per continuous overlap (called from HitboxComponent).
+func try_bounce_off_hurtbox(victim: Node) -> void:
+	if not _should_bounce_off_hurtbox(victim):
+		return
+	if state != OrbState.FLYING or _circle_captured or _vault_hold or freeze:
+		return
+	if is_instance_valid(damage_component.instigator) and damage_component.instigator == victim:
+		return
+	if not (victim is Node2D):
+		return
+
+	var victim_pos: Vector2 = (victim as Node2D).global_position
+	var normal: Vector2 = global_position - victim_pos
+	if normal.length_squared() < 0.0001:
+		normal = -aim_direction
+	else:
+		normal = normal.normalized()
+
+	var travel: Vector2 = aim_direction
+	if travel.length_squared() < 0.0001:
+		travel = Vector2.RIGHT
+	# Already leaving the victim — don't re-reflect.
+	if travel.dot(normal) >= 0.0:
+		return
+
+	aim_direction = _safe_exit_direction(travel, normal)
+	if _keeps_constant_flight_speed():
+		linear_velocity = aim_direction * speed
+	else:
+		var speed_now: float = linear_velocity.length()
+		linear_velocity = aim_direction * maxf(speed_now, 0.001)
+	_apply_heading()
+	if bounce_sound:
+		AudioManager.play_at(bounce_sound, global_position)
 
 
 func _get_grace_remaining_fraction() -> float:
@@ -1539,9 +1581,9 @@ func _on_body_entered(body: Node) -> void:
 	if bounce_sound:
 		AudioManager.play_at(bounce_sound, global_position)
 
-	# Bounce direction is owned by _integrate_forces (true contact normals).
+	# Bounce direction is owned by _integrate_forces (world / orb body contacts).
 	# World solids (walls / rocks / breakables) take body-contact damage.
-	# Player / enemies use hitbox poll only (skip here to avoid double-hit when bouncing).
+	# Player / enemies bounce + damage via hurtbox poll (skip body path).
 	# Other orbs bounce but deal no damage to each other.
 	if body.is_in_group("player") or body.is_in_group("enemies") or body.is_in_group("orb"):
 		return

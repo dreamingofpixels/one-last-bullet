@@ -1,0 +1,176 @@
+[gd_scene format=3 uid="uid://begm3bk7y0p32"]
+
+[ext_resource type="Texture2D" uid="uid://bdrce4sjgw0wl" path="res://objects/shop/shop_stall.png" id="1_puukc"]
+[ext_resource type="Script" uid="uid://v20kpipjn2el" path="res://objects/shop/shop.gd" id="1_xuxxm"]
+[ext_resource type="PackedScene" uid="uid://bib6uplmvaxeu" path="res://objects/shop/item_shop_slot.tscn" id="2_op54n"]
+[ext_resource type="Texture2D" uid="uid://85cvsn8vls3j" path="res://items/glyphs/blast_glyph.png" id="3_sqpg3"]
+[ext_resource type="SpriteFrames" uid="uid://yqc5208gvb6w" path="res://entities/player/dwarf/dwarf_frames.tres" id="4_fgmcg"]
+[ext_resource type="Texture2D" uid="uid://0j51kyfa86bi" path="res://ui/panels/panel.png" id="5_yq32o"]
+[ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="6_i83tn"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_p5e4m"]
+texture = ExtResource("5_yq32o")
+texture_margin_left = 62.0
+texture_margin_top = 50.0
+texture_margin_right = 67.0
+texture_margin_bottom = 73.0
+
+[sub_resource type="LabelSettings" id="LabelSettings_wu8gw"]
+font = ExtResource("6_i83tn")
+font_size = 12
+
+[sub_resource type="LabelSettings" id="LabelSettings_aesy4"]
+font = ExtResource("6_i83tn")
+font_size = 8
+
+[node name="Shop" type="Node2D" unique_id=1347830140]
+script = ExtResource("1_xuxxm")
+
+[node name="RiteStall" type="Sprite2D" parent="." unique_id=1350451740]
+texture = ExtResource("1_puukc")
+
+[node name="ItemShopSlots" type="Node2D" parent="RiteStall" unique_id=1478359739]
+
+[node name="ItemShopSlot1" parent="RiteStall/ItemShopSlots" unique_id=1322810650 instance=ExtResource("2_op54n")]
+position = Vector2(-14, 4)
+texture = ExtResource("3_sqpg3")
+
+[node name="ItemShopSlot2" parent="RiteStall/ItemShopSlots" unique_id=2029090010 instance=ExtResource("2_op54n")]
+position = Vector2(4, 4)
+texture = ExtResource("3_sqpg3")
+
+[node name="ItemShopSlot3" parent="RiteStall/ItemShopSlots" unique_id=1502355941 instance=ExtResource("2_op54n")]
+position = Vector2(22, 4)
+texture = ExtResource("3_sqpg3")
+
+[node name="RiteInfo" type="Control" parent="RiteStall" unique_id=890614024]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 0
+offset_left = -173.0
+offset_top = -36.0
+offset_right = -45.0
+offset_bottom = 28.0
+
+[node name="MenuPanel" type="Panel" parent="RiteStall/RiteInfo" unique_id=811960872]
+self_modulate = Color(1, 1, 1, 0.8039216)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_p5e4m")
+
+[node name="MarginContainer" type="MarginContainer" parent="RiteStall/RiteInfo" unique_id=106509219]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="RiteStall/RiteInfo/MarginContainer" unique_id=1221948597]
+layout_mode = 2
+
+[node name="RiteNameLabel" type="Label" parent="RiteStall/RiteInfo/MarginContainer/VBoxContainer" unique_id=1393203879]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "FROSTBURN"
+label_settings = SubResource("LabelSettings_wu8gw")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RiteDescLabel" type="Label" parent="RiteStall/RiteInfo/MarginContainer/VBoxContainer" unique_id=1326091670]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Each time 3 or more stacks of Frost is inflicted, inflict 1 burn"
+label_settings = SubResource("LabelSettings_aesy4")
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="GlyphStall" type="Sprite2D" parent="." unique_id=329375525]
+position = Vector2(81, 0)
+texture = ExtResource("1_puukc")
+
+[node name="ItemShopSlots" type="Node2D" parent="GlyphStall" unique_id=1469786020]
+
+[node name="ItemShopSlot1" parent="GlyphStall/ItemShopSlots" unique_id=1137536828 instance=ExtResource("2_op54n")]
+position = Vector2(-14, 4)
+texture = ExtResource("3_sqpg3")
+
+[node name="ItemShopSlot2" parent="GlyphStall/ItemShopSlots" unique_id=1443757838 instance=ExtResource("2_op54n")]
+position = Vector2(4, 4)
+texture = ExtResource("3_sqpg3")
+
+[node name="ItemShopSlot3" parent="GlyphStall/ItemShopSlots" unique_id=1140705639 instance=ExtResource("2_op54n")]
+position = Vector2(22, 4)
+texture = ExtResource("3_sqpg3")
+
+[node name="GlyphInfo" type="Control" parent="GlyphStall" unique_id=328506359]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 48.0
+offset_top = -32.0
+offset_right = 176.0
+offset_bottom = 32.0
+
+[node name="MenuPanel" type="Panel" parent="GlyphStall/GlyphInfo" unique_id=2102485270]
+self_modulate = Color(1, 1, 1, 0.8039216)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_p5e4m")
+
+[node name="MarginContainer" type="MarginContainer" parent="GlyphStall/GlyphInfo" unique_id=1459145177]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GlyphStall/GlyphInfo/MarginContainer" unique_id=333258155]
+layout_mode = 2
+
+[node name="GlyphNameLabel" type="Label" parent="GlyphStall/GlyphInfo/MarginContainer/VBoxContainer" unique_id=366615954]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "RIME"
+label_settings = SubResource("LabelSettings_wu8gw")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GlyphDescLabel" type="Label" parent="GlyphStall/GlyphInfo/MarginContainer/VBoxContainer" unique_id=1535037773]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Chill enemy on hit"
+label_settings = SubResource("LabelSettings_aesy4")
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="ShopKeeper" type="AnimatedSprite2D" parent="." unique_id=1401924866]
+modulate = Color(1, 0.5921569, 1, 1)
+position = Vector2(44, 20)
+sprite_frames = ExtResource("4_fgmcg")
+animation = &"idle_sw"
+autoplay = "idle_sw"

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bib6uplmvaxeu"]
+
+[ext_resource type="Script" uid="uid://dg1wsl6kipmyf" path="res://objects/shop/item_shop_slot.gd" id="1_u3p78"]
+
+[node name="ItemShopSlot" type="Sprite2D" unique_id=1322810650]
+script = ExtResource("1_u3p78")

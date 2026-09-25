@@ -274,6 +274,7 @@ time_horizon_agents = 0.5
 avoidance_priority = 0.9
 movement_component = NodePath("../MovementComponent")
 knockback_component = NodePath("../KnockbackComponent")
+slot_preference = 1
 
 [node name="HitboxComponent" type="Area2D" parent="Components" unique_id=637237179 node_paths=PackedStringArray("health_component")]
 unique_name_in_owner = true

@@ -25,13 +25,14 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pq7si"]
 size = Vector2(13, 8)
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hitbox"]
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_eyb6c"]
 radius = 5.0
 height = 16.0
 
 [node name="Player" type="CharacterBody2D" unique_id=2057158373]
 collision_layer = 2
 script = ExtResource("1_abrql")
+character = 1
 
 [node name="PlayerSprite" type="AnimatedSprite2D" parent="." unique_id=1508902462]
 unique_name_in_owner = true
@@ -108,7 +109,7 @@ health_component = NodePath("../HealthComponent")
 [node name="HitboxShape" type="CollisionShape2D" parent="Components/HitboxComponent" unique_id=1095677379]
 unique_name_in_owner = true
 position = Vector2(0, 4)
-shape = SubResource("CapsuleShape2D_hitbox")
+shape = SubResource("CapsuleShape2D_eyb6c")
 
 [node name="Controls" type="Node" parent="." unique_id=700935364]
 unique_name_in_owner = true
@@ -174,7 +175,7 @@ unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "ritual_cancel"
 
-[node name="ToggleOrbInfoAction" type="Node" parent="Controls"]
+[node name="ToggleOrbInfoAction" type="Node" parent="Controls" unique_id=2104389216]
 unique_name_in_owner = true
 script = ExtResource("10_action")
 action = "toggle_orb_info"

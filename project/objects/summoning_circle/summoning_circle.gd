@@ -40,6 +40,8 @@ var HINT_ELEMENT_MODULATE: Dictionary = {
 @export var orb_capture_suck_speed: float = 240.0
 ## Tiny player-detect radius around each world glyph socket for Cross place/remove.
 @export var socket_interact_radius: float = 16.0
+## Player-detect radius around a filled rite slot for RiteInfo inspect.
+@export var rite_inspect_radius: float = 16.0
 
 var mana_pool: float = 0.0
 
@@ -68,12 +70,18 @@ var _commit_busy: bool = false
 var _orb_info_collapsed: bool = false
 var _commit_trail_nodes: Array[Node] = []
 var _arcane_default_material: ParticleProcessMaterial
+var _rite_slots: Array[RiteSlot] = []
+var _focused_rite_slot: RiteSlot = null
 
 @onready var deposit_area: Area2D = %DepositArea
 @onready var info_proximity_area: Area2D = %InfoProximityArea
 @onready var mana_pool_label: Label = %ManaPoolLabel
 @onready var sprite: Sprite2D = %Sprite2D
 @onready var arcane_particles: GPUParticles2D = %ArcaneParticles
+@onready var rite_info: Control = %RiteInfo
+@onready var rite_name_label: Label = %RiteNameLabel
+@onready var rite_desc_label: Label = %RiteDescLabel
+@onready var rite_slots_root: Node2D = %RiteSlots
 @onready var orb_info: Control = %OrbInfo
 @onready var orb_name_label: Label = %OrbNameLabel
 @onready var hint_arrow: TextureRect = %HintArrow
@@ -126,7 +134,12 @@ func _ready() -> void:
 	_socket_notes = [SOCKET_NOTE_D4, SOCKET_NOTE_FS4, SOCKET_NOTE_A4]
 	_hint_labels = [fire_hint, water_hint, air_hint, earth_hint]
 	_name_hint_labels = [hint_1, hint_2, hint_3, hint_4]
+	_rite_slots.clear()
+	for child in rite_slots_root.get_children():
+		if child is RiteSlot:
+			_rite_slots.append(child as RiteSlot)
 	orb_info.visible = false
+	rite_info.visible = false
 	glyph_slots.visible = false
 	_hide_hints()
 	_refresh_mana_label()
@@ -143,6 +156,7 @@ func _process(_delta: float) -> void:
 	_poll_ritual_input()
 	if _ritual_running:
 		_refresh_orb_info(false)
+	_refresh_rite_info()
 	_refresh_input_prompts()
 
 
@@ -605,7 +619,59 @@ func _update_ritual_ui_proximity() -> void:
 	)
 	if orb_info.visible:
 		_refresh_orb_info(true)
+	_refresh_rite_info()
 	_refresh_input_prompts()
+
+
+## RiteInfo while standing on a filled slot and no orb is captured.
+func _refresh_rite_info() -> void:
+	if _ritual_running:
+		_set_focused_rite_slot(null)
+		rite_info.visible = false
+		rite_slots_root.visible = false
+		return
+	rite_slots_root.visible = true
+	var slot: RiteSlot = _find_nearest_filled_rite_slot()
+	_set_focused_rite_slot(slot)
+	if slot == null:
+		rite_info.visible = false
+		return
+	rite_name_label.text = RiteSlot.rite_display_name(slot.rite_id).to_upper()
+	rite_desc_label.text = RiteSlot.rite_description(slot.rite_id)
+	rite_info.visible = true
+
+
+func _set_focused_rite_slot(slot: RiteSlot) -> void:
+	if _focused_rite_slot == slot:
+		return
+	if _focused_rite_slot != null and is_instance_valid(_focused_rite_slot):
+		_focused_rite_slot.set_focused(false)
+	_focused_rite_slot = slot
+	if _focused_rite_slot != null:
+		_focused_rite_slot.set_focused(true)
+
+
+## Nearest filled rite slot within `rite_inspect_radius` of any living player, or null.
+func _find_nearest_filled_rite_slot() -> RiteSlot:
+	var radius_sq: float = rite_inspect_radius * rite_inspect_radius
+	var best_slot: RiteSlot = null
+	var best_dist_sq: float = INF
+	for player_variant in Players.all(get_tree()):
+		if player_variant == null or not is_instance_valid(player_variant):
+			continue
+		if not (player_variant is Node2D):
+			continue
+		var origin: Vector2 = (player_variant as Node2D).global_position
+		for slot in _rite_slots:
+			if slot == null or not slot.is_filled():
+				continue
+			var dist_sq: float = origin.distance_squared_to(slot.global_position)
+			if dist_sq > radius_sq:
+				continue
+			if dist_sq < best_dist_sq:
+				best_dist_sq = dist_sq
+				best_slot = slot
+	return best_slot
 
 
 func _refresh_orb_info(_force_slots: bool = true) -> void:

@@ -14,6 +14,9 @@
 [ext_resource type="Texture2D" uid="uid://ckyj6p3tyadtc" path="res://ui/panels/attribute_stripes/air_stripe.png" id="10_4awwu"]
 [ext_resource type="Texture2D" uid="uid://ess0ne6ng7q0" path="res://ui/panels/attribute_stripes/earth_stripe.png" id="11_tnsfc"]
 [ext_resource type="PackedScene" uid="uid://er74x28r1s1a" path="res://objects/summoning_circle/rite_slot/rite_slot.tscn" id="13_4awwu"]
+[ext_resource type="Texture2D" uid="uid://dqi4s1alwln45" path="res://ui/rites/frostburn_rite.png" id="14_msylq"]
+[ext_resource type="Texture2D" uid="uid://bl7hjd16vj7ee" path="res://ui/rites/tempered_rite.png" id="15_msylq"]
+[ext_resource type="Texture2D" uid="uid://dhu78mdcbwi35" path="res://ui/rites/clash_rite.png" id="16_eka2a"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_deposit"]
 radius = 22.0
@@ -105,6 +108,14 @@ font_size = 12
 font = ExtResource("3_uicfy")
 font_size = 10
 
+[sub_resource type="LabelSettings" id="LabelSettings_msylq"]
+font = ExtResource("3_uicfy")
+font_size = 12
+
+[sub_resource type="LabelSettings" id="LabelSettings_eka2a"]
+font = ExtResource("3_uicfy")
+font_size = 8
+
 [node name="SummoningCircle" type="Node2D" unique_id=1057267850]
 script = ExtResource("1_script")
 
@@ -164,6 +175,7 @@ process_material = SubResource("ParticleProcessMaterial_arcane")
 
 [node name="OrbInfo" type="Control" parent="." unique_id=1933136328]
 unique_name_in_owner = true
+visible = false
 layout_mode = 3
 anchors_preset = 0
 offset_left = -216.0
@@ -795,31 +807,98 @@ texture = ExtResource("6_pjoiy")
 unique_name_in_owner = true
 visible = false
 
+[node name="RiteInfo" type="Control" parent="." unique_id=827330026]
+layout_mode = 3
+anchors_preset = 0
+offset_left = -64.0
+offset_top = -144.0
+offset_right = 64.0
+offset_bottom = -80.0
+
+[node name="EffectPanel" type="Panel" parent="RiteInfo" unique_id=1353838905]
+self_modulate = Color(1, 1, 1, 0.8039216)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_o7k1j")
+
+[node name="MarginContainer" type="MarginContainer" parent="RiteInfo" unique_id=1237257080]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="RiteInfo/MarginContainer" unique_id=1523382897]
+layout_mode = 2
+
+[node name="RiteNameLabel" type="Label" parent="RiteInfo/MarginContainer/VBoxContainer" unique_id=1575513976]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "FROSTBURN"
+label_settings = SubResource("LabelSettings_msylq")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RiteDescLabel" type="Label" parent="RiteInfo/MarginContainer/VBoxContainer" unique_id=1831015157]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Each time 3 or more stacks of Frost is inflicted, inflict 1 burn"
+label_settings = SubResource("LabelSettings_eka2a")
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
 [node name="RiteSlots" type="Node2D" parent="." unique_id=743787362]
 
 [node name="RiteSlot1" parent="RiteSlots" unique_id=43061609 instance=ExtResource("13_4awwu")]
+position = Vector2(0, -36)
+texture = ExtResource("14_msylq")
 
 [node name="RiteSlot2" parent="RiteSlots" unique_id=1049207732 instance=ExtResource("13_4awwu")]
+position = Vector2(18, -31)
+texture = ExtResource("15_msylq")
 
 [node name="RiteSlot3" parent="RiteSlots" unique_id=1918218797 instance=ExtResource("13_4awwu")]
+position = Vector2(31, -18)
+texture = ExtResource("16_eka2a")
 
 [node name="RiteSlot4" parent="RiteSlots" unique_id=170365303 instance=ExtResource("13_4awwu")]
+position = Vector2(36, 0)
 
 [node name="RiteSlot5" parent="RiteSlots" unique_id=97894205 instance=ExtResource("13_4awwu")]
+position = Vector2(31, 18)
 
 [node name="RiteSlot6" parent="RiteSlots" unique_id=1051758800 instance=ExtResource("13_4awwu")]
+position = Vector2(18, 31)
 
 [node name="RiteSlot7" parent="RiteSlots" unique_id=1779622857 instance=ExtResource("13_4awwu")]
+position = Vector2(0, 36)
 
 [node name="RiteSlot8" parent="RiteSlots" unique_id=839549306 instance=ExtResource("13_4awwu")]
+position = Vector2(-18, 31)
 
 [node name="RiteSlot9" parent="RiteSlots" unique_id=1256371262 instance=ExtResource("13_4awwu")]
+position = Vector2(-31, 18)
 
 [node name="RiteSlot10" parent="RiteSlots" unique_id=849368412 instance=ExtResource("13_4awwu")]
+position = Vector2(-36, 0)
 
 [node name="RiteSlot11" parent="RiteSlots" unique_id=655229899 instance=ExtResource("13_4awwu")]
+position = Vector2(-31, -18)
 
 [node name="RiteSlot12" parent="RiteSlots" unique_id=178020974 instance=ExtResource("13_4awwu")]
+position = Vector2(-18, -31)
 
 [node name="Prompt" type="Control" parent="." unique_id=632496195]
 layout_mode = 3

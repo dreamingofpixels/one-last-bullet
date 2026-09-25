@@ -2,7 +2,5 @@
 
 [ext_resource type="Script" uid="uid://n5lvj8y0mpd1" path="res://objects/summoning_circle/rite_slot/rite_slot.gd" id="1_tjuwr"]
 
-[node name="RiteSlot" type="Node2D" unique_id=43061609]
+[node name="RiteSlot" type="Sprite2D" unique_id=1774062209]
 script = ExtResource("1_tjuwr")
-
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1774062209]

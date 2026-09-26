@@ -4,9 +4,40 @@
 [ext_resource type="Script" uid="uid://v20kpipjn2el" path="res://objects/shop/shop.gd" id="1_xuxxm"]
 [ext_resource type="PackedScene" uid="uid://bib6uplmvaxeu" path="res://objects/shop/item_shop_slot.tscn" id="2_op54n"]
 [ext_resource type="SpriteFrames" uid="uid://yqc5208gvb6w" path="res://entities/player/dwarf/dwarf_frames.tres" id="4_fgmcg"]
+[ext_resource type="Shader" uid="uid://0qd6bd0bt7ad" path="res://items/glyphs/glyph_rarity.gdshader" id="4_yq32o"]
 [ext_resource type="Texture2D" uid="uid://0j51kyfa86bi" path="res://ui/panels/panel.png" id="5_yq32o"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="6_i83tn"]
 [ext_resource type="PackedScene" uid="uid://d0m5w5k5yo3ge" path="res://ui/input_icons/input_prompt.tscn" id="7_prompt"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6pmnr"]
+size = Vector2(66, 20)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_i83tn"]
+shader = ExtResource("4_yq32o")
+shader_parameter/center_radius = 0.28
+shader_parameter/luma_cutoff = 0.82
+shader_parameter/glow = 0.0
+shader_parameter/pulse = 0.0
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p5e4m"]
+shader = ExtResource("4_yq32o")
+shader_parameter/center_radius = 0.28
+shader_parameter/luma_cutoff = 0.82
+shader_parameter/glow = 0.0
+shader_parameter/pulse = 0.0
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wu8gw"]
+shader = ExtResource("4_yq32o")
+shader_parameter/center_radius = 0.28
+shader_parameter/luma_cutoff = 0.82
+shader_parameter/glow = 0.0
+shader_parameter/pulse = 0.0
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_p5e4m"]
 texture = ExtResource("5_yq32o")
@@ -23,23 +54,59 @@ font_size = 12
 font = ExtResource("6_i83tn")
 font_size = 8
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_aesy4"]
+shader = ExtResource("4_yq32o")
+shader_parameter/center_radius = 0.28
+shader_parameter/luma_cutoff = 0.82
+shader_parameter/glow = 0.0
+shader_parameter/pulse = 0.0
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_d8yl7"]
+shader = ExtResource("4_yq32o")
+shader_parameter/center_radius = 0.28
+shader_parameter/luma_cutoff = 0.82
+shader_parameter/glow = 0.0
+shader_parameter/pulse = 0.0
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2mcm3"]
+shader = ExtResource("4_yq32o")
+shader_parameter/center_radius = 0.28
+shader_parameter/luma_cutoff = 0.82
+shader_parameter/glow = 0.0
+shader_parameter/pulse = 0.0
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
+
 [node name="Shop" type="Node2D" unique_id=1347830140]
 script = ExtResource("1_xuxxm")
 
 [node name="RiteStall" type="Sprite2D" parent="." unique_id=1350451740]
 texture = ExtResource("1_puukc")
 
+[node name="StaticBody2D" type="StaticBody2D" parent="RiteStall" unique_id=724822937]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RiteStall/StaticBody2D" unique_id=363216600]
+position = Vector2(4, 15)
+shape = SubResource("RectangleShape2D_6pmnr")
+
 [node name="ItemShopSlots" type="Node2D" parent="RiteStall" unique_id=1478359739]
 
 [node name="ItemShopSlot1" parent="RiteStall/ItemShopSlots" unique_id=1322810650 instance=ExtResource("2_op54n")]
+material = SubResource("ShaderMaterial_i83tn")
 position = Vector2(-14, 4)
 stock_kind = 1
 
 [node name="ItemShopSlot2" parent="RiteStall/ItemShopSlots" unique_id=2029090010 instance=ExtResource("2_op54n")]
+material = SubResource("ShaderMaterial_p5e4m")
 position = Vector2(4, 4)
 stock_kind = 1
 
 [node name="ItemShopSlot3" parent="RiteStall/ItemShopSlots" unique_id=1502355941 instance=ExtResource("2_op54n")]
+material = SubResource("ShaderMaterial_wu8gw")
 position = Vector2(22, 4)
 stock_kind = 1
 
@@ -52,6 +119,15 @@ offset_left = -173.0
 offset_top = -36.0
 offset_right = -45.0
 offset_bottom = 28.0
+
+[node name="RiteBuyPrompt" parent="RiteStall/RiteInfo" unique_id=475451516 instance=ExtResource("7_prompt")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 152.0
+offset_top = -9.0
+offset_right = 201.0
+offset_bottom = 7.0
+size_flags_horizontal = 4
 
 [node name="MenuPanel" type="Panel" parent="RiteStall/RiteInfo" unique_id=811960872]
 self_modulate = Color(1, 1, 1, 0.8039216)
@@ -99,24 +175,28 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="RiteBuyPrompt" parent="RiteStall/RiteInfo/MarginContainer/VBoxContainer" unique_id=475451516 instance=ExtResource("7_prompt")]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
 [node name="GlyphStall" type="Sprite2D" parent="." unique_id=329375525]
-position = Vector2(81, 0)
+position = Vector2(81, 1)
 texture = ExtResource("1_puukc")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="GlyphStall" unique_id=1198397713]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GlyphStall/StaticBody2D" unique_id=1863997315]
+position = Vector2(4, 15)
+shape = SubResource("RectangleShape2D_6pmnr")
 
 [node name="ItemShopSlots" type="Node2D" parent="GlyphStall" unique_id=1469786020]
 
 [node name="ItemShopSlot1" parent="GlyphStall/ItemShopSlots" unique_id=1137536828 instance=ExtResource("2_op54n")]
+material = SubResource("ShaderMaterial_aesy4")
 position = Vector2(-14, 4)
 
 [node name="ItemShopSlot2" parent="GlyphStall/ItemShopSlots" unique_id=1443757838 instance=ExtResource("2_op54n")]
+material = SubResource("ShaderMaterial_d8yl7")
 position = Vector2(4, 4)
 
 [node name="ItemShopSlot3" parent="GlyphStall/ItemShopSlots" unique_id=1140705639 instance=ExtResource("2_op54n")]
+material = SubResource("ShaderMaterial_2mcm3")
 position = Vector2(22, 4)
 
 [node name="GlyphInfo" type="Control" parent="GlyphStall" unique_id=328506359]
@@ -128,6 +208,15 @@ offset_left = 48.0
 offset_top = -32.0
 offset_right = 176.0
 offset_bottom = 32.0
+
+[node name="GlyphBuyPrompt" parent="GlyphStall/GlyphInfo" unique_id=475451517 instance=ExtResource("7_prompt")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -69.0
+offset_top = -14.0
+offset_right = -20.0
+offset_bottom = 2.0
+size_flags_horizontal = 4
 
 [node name="MenuPanel" type="Panel" parent="GlyphStall/GlyphInfo" unique_id=2102485270]
 self_modulate = Color(1, 1, 1, 0.8039216)
@@ -174,11 +263,6 @@ label_settings = SubResource("LabelSettings_aesy4")
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
-
-[node name="GlyphBuyPrompt" parent="GlyphStall/GlyphInfo/MarginContainer/VBoxContainer" unique_id=475451517 instance=ExtResource("7_prompt")]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
 
 [node name="ShopKeeper" type="AnimatedSprite2D" parent="." unique_id=1401924866]
 modulate = Color(1, 0.5921569, 1, 1)

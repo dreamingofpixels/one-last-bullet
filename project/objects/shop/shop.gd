@@ -5,16 +5,20 @@ const GLYPH_SCENE := preload("res://items/glyphs/glyph.tscn")
 const RITE_HOP_HEIGHT := 12.0
 const RITE_HOP_DURATION := 0.2
 const RITE_FLY_DURATION := 0.5
+## Shop glyph toss: south of the stall shelf (px/s).
+const GLYPH_TOSS_SPEED := 140.0
 
 @export var rite_cost: float = 50.0
 @export var glyph_cost_multiplier: float = 2.0
-@export var slot_interact_radius: float = 16.0
+## Half-extents of the interact ellipse: x = horizontal, y = vertical.
+@export var slot_interact_radius: Vector2 = Vector2(16.0, 24.0)
 @export var glyph_rarity_weight_common: float = 70.0
 @export var glyph_rarity_weight_rare: float = 25.0
 @export var glyph_rarity_weight_unique: float = 5.0
 
 var _glyph_slots: Array[ItemShopSlot] = []
 var _rite_slots: Array[ItemShopSlot] = []
+var _stall_bodies: Array[StaticBody2D] = []
 var _focused_slot: ItemShopSlot = null
 var _prompt_cache_key: String = ""
 
@@ -30,6 +34,7 @@ var _prompt_cache_key: String = ""
 
 func _ready() -> void:
 	_collect_slots()
+	_collect_stall_bodies()
 	rite_info.visible = false
 	glyph_info.visible = false
 	_stock_glyph_slots()
@@ -52,6 +57,13 @@ func _collect_slots() -> void:
 			_rite_slots.append(slot)
 		else:
 			_glyph_slots.append(slot)
+
+
+func _collect_stall_bodies() -> void:
+	_stall_bodies.clear()
+	for node in find_children("*", "StaticBody2D", true, false):
+		if node is StaticBody2D:
+			_stall_bodies.append(node as StaticBody2D)
 
 
 func _stock_glyph_slots() -> void:
@@ -123,14 +135,13 @@ func _configure_buy_prompt(prompt: InputPrompt, slot: ItemShopSlot) -> void:
 func _poll_buy_input() -> void:
 	if _focused_slot == null or not _focused_slot.is_stocked():
 		return
-	var radius_sq: float = slot_interact_radius * slot_interact_radius
 	for player_variant in Players.all(get_tree()):
 		if player_variant == null or not is_instance_valid(player_variant):
 			continue
 		var player: Node2D = player_variant as Node2D
 		if player == null:
 			continue
-		if player.global_position.distance_squared_to(_focused_slot.global_position) > radius_sq:
+		if not _is_within_interact_radius(player.global_position, _focused_slot.global_position):
 			continue
 		var controls: Controls = player.get("controls") as Controls
 		if controls == null:
@@ -195,6 +206,7 @@ func _spawn_glyph_at(world_pos: Vector2, glyph_id: StringName, rarity: Glyph.Rar
 		items_parent = get_tree().current_scene
 	items_parent.add_child(glyph)
 	glyph.global_position = world_pos
+	glyph.launch_toward(Vector2.DOWN, GLYPH_TOSS_SPEED, _stall_bodies)
 
 
 func _fly_rite_to_slot(
@@ -248,7 +260,6 @@ func _set_focused_slot(slot: ItemShopSlot) -> void:
 
 
 func _find_nearest_stocked_slot() -> ItemShopSlot:
-	var radius_sq: float = slot_interact_radius * slot_interact_radius
 	var best_slot: ItemShopSlot = null
 	var best_dist_sq: float = INF
 	for player_variant in Players.all(get_tree()):
@@ -260,22 +271,32 @@ func _find_nearest_stocked_slot() -> ItemShopSlot:
 		for slot in _glyph_slots:
 			if slot == null or not slot.is_stocked():
 				continue
-			var dist_sq: float = origin.distance_squared_to(slot.global_position)
-			if dist_sq > radius_sq:
+			if not _is_within_interact_radius(origin, slot.global_position):
 				continue
+			var dist_sq: float = origin.distance_squared_to(slot.global_position)
 			if dist_sq < best_dist_sq:
 				best_dist_sq = dist_sq
 				best_slot = slot
 		for slot in _rite_slots:
 			if slot == null or not slot.is_stocked():
 				continue
-			var dist_sq: float = origin.distance_squared_to(slot.global_position)
-			if dist_sq > radius_sq:
+			if not _is_within_interact_radius(origin, slot.global_position):
 				continue
+			var dist_sq: float = origin.distance_squared_to(slot.global_position)
 			if dist_sq < best_dist_sq:
 				best_dist_sq = dist_sq
 				best_slot = slot
 	return best_slot
+
+
+## Ellipse check: `slot_interact_radius.x` horizontal, `.y` vertical.
+func _is_within_interact_radius(from: Vector2, to: Vector2) -> bool:
+	var rx: float = maxf(slot_interact_radius.x, 0.001)
+	var ry: float = maxf(slot_interact_radius.y, 0.001)
+	var delta: Vector2 = to - from
+	var nx: float = delta.x / rx
+	var ny: float = delta.y / ry
+	return nx * nx + ny * ny <= 1.0
 
 
 func _find_circle() -> SummoningCircle:

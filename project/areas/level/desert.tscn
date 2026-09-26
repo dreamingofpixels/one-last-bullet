@@ -514,7 +514,7 @@ glyph_id = &"static"
 rarity = 2
 
 [node name="Glyph2" parent="WorldYSort/Items" unique_id=915524516 instance=ExtResource("12_qygx2")]
-position = Vector2(305, 262)
+position = Vector2(381, 245)
 can_sleep = false
 freeze = true
 freeze_mode = 1
@@ -767,7 +767,7 @@ collision_size_override = Vector2(32, 16)
 collision_offset_override = Vector2(0, -8)
 
 [node name="Cliff6" parent="WorldYSort/Cliffs/CliffSection3" unique_id=1535697788 instance=ExtResource("10_dlb6r")]
-position = Vector2(424, 104)
+position = Vector2(356, 122)
 physics_material_override = SubResource("PhysicsMaterial_ashxr")
 kind = 0
 frame_index = 3
@@ -797,10 +797,10 @@ collision_offset_override = Vector2(0, -8)
 
 [node name="Player1" parent="WorldYSort" unique_id=735883009 instance=ExtResource("3_player")]
 unique_name_in_owner = true
-position = Vector2(320, 288)
+position = Vector2(319, 179)
 
 [node name="Shop" parent="WorldYSort" unique_id=1347830140 instance=ExtResource("16_hl55e")]
-position = Vector2(465, 155)
+position = Vector2(249, 271)
 
 [node name="Walls" type="StaticBody2D" parent="." unique_id=1771153190 groups=["navigation_source"]]
 collision_layer = 17

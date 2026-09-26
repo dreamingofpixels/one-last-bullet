@@ -220,6 +220,8 @@ var _deposited: bool = false
 var _bounce_tween: Tween
 var _deposit_tween: Tween
 var _sprite_rest_y: float = 0.0
+## Temporary collision exceptions (e.g. shop stalls during a purchase toss).
+var _temp_collision_exceptions: Array[PhysicsBody2D] = []
 
 
 func _ready() -> void:
@@ -309,6 +311,7 @@ func _apply_visuals() -> void:
 
 
 func _on_destroyed(_node: Node = null) -> void:
+	_clear_temp_collision_exceptions()
 	if is_instance_valid(_carrier) and _carrier.has_method("clear_carried_item"):
 		_carrier.clear_carried_item(self)
 	_carrier = null
@@ -425,6 +428,60 @@ func throw_toward(direction: Vector2, level_root: Node, inherit_velocity: Vector
 	return true
 
 
+## Toss from the current world position while grounded (e.g. shop purchase).
+## `ignore_bodies` skips collision until settle (stall shelves block south tosses).
+func launch_toward(
+	direction: Vector2,
+	speed: float = -1.0,
+	ignore_bodies: Array = []
+) -> bool:
+	if _deposited or _state == GlyphState.CARRIED or _state == GlyphState.DEPOSITING:
+		return false
+	if _state == GlyphState.THROWN:
+		return false
+
+	var aim: Vector2 = direction.normalized() if direction.length_squared() > 0.0001 else Vector2.DOWN
+	var launch_speed: float = throw_speed if speed < 0.0 else speed
+	_state = GlyphState.THROWN
+	z_index = 0
+	top_level = false
+
+	body_collision.set_deferred("disabled", false)
+	collision_layer = PHYSICS_LAYER_ITEM
+	collision_mask = PHYSICS_LAYER_WORLD
+	hitbox_component.set_invulnerable(false)
+	presence_area.collision_layer = PHYSICS_LAYER_ITEM
+	presence_area.monitorable = true
+
+	_set_temp_collision_exceptions(ignore_bodies)
+
+	freeze = false
+	linear_damp = throw_damp
+	linear_velocity = aim * launch_speed
+	_play_bounce_visual()
+	set_physics_process(true)
+	return true
+
+
+func _set_temp_collision_exceptions(bodies: Array) -> void:
+	_clear_temp_collision_exceptions()
+	for body_variant in bodies:
+		if body_variant == null or not (body_variant is PhysicsBody2D):
+			continue
+		var body: PhysicsBody2D = body_variant as PhysicsBody2D
+		if not is_instance_valid(body):
+			continue
+		add_collision_exception_with(body)
+		_temp_collision_exceptions.append(body)
+
+
+func _clear_temp_collision_exceptions() -> void:
+	for body in _temp_collision_exceptions:
+		if is_instance_valid(body):
+			remove_collision_exception_with(body)
+	_temp_collision_exceptions.clear()
+
+
 func deposit_into(circle: Node) -> void:
 	if _deposited or circle == null or not is_instance_valid(circle):
 		return
@@ -513,6 +570,7 @@ func settle_on_ground() -> void:
 
 
 func _settle_grounded() -> void:
+	_clear_temp_collision_exceptions()
 	_state = GlyphState.GROUNDED
 	linear_velocity = Vector2.ZERO
 	freeze = true

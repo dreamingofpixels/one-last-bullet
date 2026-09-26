@@ -72,6 +72,8 @@ var _commit_trail_nodes: Array[Node] = []
 var _arcane_default_material: ParticleProcessMaterial
 var _rite_slots: Array[RiteSlot] = []
 var _focused_rite_slot: RiteSlot = null
+## Slots reserved by in-flight shop rite purchases (instance_id → true).
+var _reserved_rite_slots: Dictionary = {}
 
 @onready var deposit_area: Area2D = %DepositArea
 @onready var info_proximity_area: Area2D = %InfoProximityArea
@@ -621,6 +623,48 @@ func _update_ritual_ui_proximity() -> void:
 		_refresh_orb_info(true)
 	_refresh_rite_info()
 	_refresh_input_prompts()
+
+
+## Ids currently filled on the rite ring (for shop roll exclusion).
+func get_owned_rite_ids() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for slot in _rite_slots:
+		if slot == null or not slot.is_filled():
+			continue
+		var id: StringName = slot.rite_id
+		if not ids.has(id):
+			ids.append(id)
+	return ids
+
+
+## First empty, unreserved ring slot; marks it reserved until fill or release.
+func reserve_next_rite_slot() -> RiteSlot:
+	for slot in _rite_slots:
+		if slot == null or not is_instance_valid(slot):
+			continue
+		if slot.is_filled():
+			continue
+		var slot_id: int = slot.get_instance_id()
+		if _reserved_rite_slots.has(slot_id):
+			continue
+		_reserved_rite_slots[slot_id] = true
+		return slot
+	return null
+
+
+## Assign a rite to a previously reserved (or empty) slot and clear its reservation.
+func fill_rite_slot(slot: RiteSlot, rite_id: StringName) -> void:
+	if slot == null or not is_instance_valid(slot):
+		return
+	_reserved_rite_slots.erase(slot.get_instance_id())
+	slot.rite_id = rite_id
+
+
+## Drop a reservation without filling (e.g. if a purchase flight is cancelled).
+func release_rite_slot_reservation(slot: RiteSlot) -> void:
+	if slot == null or not is_instance_valid(slot):
+		return
+	_reserved_rite_slots.erase(slot.get_instance_id())
 
 
 ## RiteInfo while standing on a filled slot and no orb is captured.

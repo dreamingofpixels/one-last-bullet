@@ -1,6 +1,26 @@
 [gd_scene format=3 uid="uid://bib6uplmvaxeu"]
 
 [ext_resource type="Script" uid="uid://dg1wsl6kipmyf" path="res://objects/shop/item_shop_slot.gd" id="1_u3p78"]
+[ext_resource type="Shader" uid="uid://cfmtdvsrrjb2" path="res://effects/rite_focus.gdshader" id="2_focus"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_focus"]
+shader = ExtResource("2_focus")
+shader_parameter/size_px = 9.0
+shader_parameter/dash_px = 2.0
+shader_parameter/gap_px = 2.0
+shader_parameter/speed_px = 8.0
+shader_parameter/line_color = Color(1, 1, 1, 1)
 
 [node name="ItemShopSlot" type="Sprite2D" unique_id=1322810650]
 script = ExtResource("1_u3p78")
+
+[node name="FocusOverlay" type="ColorRect" parent="." unique_id=582892096]
+unique_name_in_owner = true
+visible = false
+z_index = 1
+material = SubResource("ShaderMaterial_focus")
+offset_left = -4.5
+offset_top = -4.5
+offset_right = 4.5
+offset_bottom = 4.5
+mouse_filter = 2

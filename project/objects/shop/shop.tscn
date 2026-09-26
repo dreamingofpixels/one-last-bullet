@@ -3,10 +3,10 @@
 [ext_resource type="Texture2D" uid="uid://bdrce4sjgw0wl" path="res://objects/shop/shop_stall.png" id="1_puukc"]
 [ext_resource type="Script" uid="uid://v20kpipjn2el" path="res://objects/shop/shop.gd" id="1_xuxxm"]
 [ext_resource type="PackedScene" uid="uid://bib6uplmvaxeu" path="res://objects/shop/item_shop_slot.tscn" id="2_op54n"]
-[ext_resource type="Texture2D" uid="uid://85cvsn8vls3j" path="res://items/glyphs/blast_glyph.png" id="3_sqpg3"]
 [ext_resource type="SpriteFrames" uid="uid://yqc5208gvb6w" path="res://entities/player/dwarf/dwarf_frames.tres" id="4_fgmcg"]
 [ext_resource type="Texture2D" uid="uid://0j51kyfa86bi" path="res://ui/panels/panel.png" id="5_yq32o"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="6_i83tn"]
+[ext_resource type="PackedScene" uid="uid://d0m5w5k5yo3ge" path="res://ui/input_icons/input_prompt.tscn" id="7_prompt"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_p5e4m"]
 texture = ExtResource("5_yq32o")
@@ -33,18 +33,19 @@ texture = ExtResource("1_puukc")
 
 [node name="ItemShopSlot1" parent="RiteStall/ItemShopSlots" unique_id=1322810650 instance=ExtResource("2_op54n")]
 position = Vector2(-14, 4)
-texture = ExtResource("3_sqpg3")
+stock_kind = 1
 
 [node name="ItemShopSlot2" parent="RiteStall/ItemShopSlots" unique_id=2029090010 instance=ExtResource("2_op54n")]
 position = Vector2(4, 4)
-texture = ExtResource("3_sqpg3")
+stock_kind = 1
 
 [node name="ItemShopSlot3" parent="RiteStall/ItemShopSlots" unique_id=1502355941 instance=ExtResource("2_op54n")]
 position = Vector2(22, 4)
-texture = ExtResource("3_sqpg3")
+stock_kind = 1
 
 [node name="RiteInfo" type="Control" parent="RiteStall" unique_id=890614024]
 unique_name_in_owner = true
+visible = false
 layout_mode = 3
 anchors_preset = 0
 offset_left = -173.0
@@ -98,6 +99,11 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
+[node name="RiteBuyPrompt" parent="RiteStall/RiteInfo/MarginContainer/VBoxContainer" unique_id=475451516 instance=ExtResource("7_prompt")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
 [node name="GlyphStall" type="Sprite2D" parent="." unique_id=329375525]
 position = Vector2(81, 0)
 texture = ExtResource("1_puukc")
@@ -106,17 +112,16 @@ texture = ExtResource("1_puukc")
 
 [node name="ItemShopSlot1" parent="GlyphStall/ItemShopSlots" unique_id=1137536828 instance=ExtResource("2_op54n")]
 position = Vector2(-14, 4)
-texture = ExtResource("3_sqpg3")
 
 [node name="ItemShopSlot2" parent="GlyphStall/ItemShopSlots" unique_id=1443757838 instance=ExtResource("2_op54n")]
 position = Vector2(4, 4)
-texture = ExtResource("3_sqpg3")
 
 [node name="ItemShopSlot3" parent="GlyphStall/ItemShopSlots" unique_id=1140705639 instance=ExtResource("2_op54n")]
 position = Vector2(22, 4)
-texture = ExtResource("3_sqpg3")
 
 [node name="GlyphInfo" type="Control" parent="GlyphStall" unique_id=328506359]
+unique_name_in_owner = true
+visible = false
 layout_mode = 3
 anchors_preset = 0
 offset_left = 48.0
@@ -150,6 +155,7 @@ theme_override_constants/margin_bottom = 10
 layout_mode = 2
 
 [node name="GlyphNameLabel" type="Label" parent="GlyphStall/GlyphInfo/MarginContainer/VBoxContainer" unique_id=366615954]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -159,6 +165,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="GlyphDescLabel" type="Label" parent="GlyphStall/GlyphInfo/MarginContainer/VBoxContainer" unique_id=1535037773]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -167,6 +174,11 @@ label_settings = SubResource("LabelSettings_aesy4")
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
+
+[node name="GlyphBuyPrompt" parent="GlyphStall/GlyphInfo/MarginContainer/VBoxContainer" unique_id=475451517 instance=ExtResource("7_prompt")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
 
 [node name="ShopKeeper" type="AnimatedSprite2D" parent="." unique_id=1401924866]
 modulate = Color(1, 0.5921569, 1, 1)

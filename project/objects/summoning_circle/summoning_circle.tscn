@@ -14,8 +14,6 @@
 [ext_resource type="Texture2D" uid="uid://ckyj6p3tyadtc" path="res://ui/panels/attribute_stripes/air_stripe.png" id="10_4awwu"]
 [ext_resource type="Texture2D" uid="uid://ess0ne6ng7q0" path="res://ui/panels/attribute_stripes/earth_stripe.png" id="11_tnsfc"]
 [ext_resource type="PackedScene" uid="uid://er74x28r1s1a" path="res://objects/summoning_circle/rite_slot/rite_slot.tscn" id="13_4awwu"]
-[ext_resource type="Texture2D" uid="uid://dqi4s1alwln45" path="res://ui/rites/frostburn_rite.png" id="14_msylq"]
-[ext_resource type="Texture2D" uid="uid://bl7hjd16vj7ee" path="res://ui/rites/tempered_rite.png" id="15_eka2a"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_deposit"]
 radius = 22.0
@@ -866,41 +864,51 @@ z_as_relative = false
 
 [node name="RiteSlot1" parent="RiteSlots" unique_id=1899574237 instance=ExtResource("13_4awwu")]
 position = Vector2(0, -36)
-texture = ExtResource("14_msylq")
+rite_id = &""
 
 [node name="RiteSlot2" parent="RiteSlots" unique_id=1565862321 instance=ExtResource("13_4awwu")]
 position = Vector2(18, -31)
-texture = ExtResource("15_eka2a")
+rite_id = &""
 
 [node name="RiteSlot3" parent="RiteSlots" unique_id=906273162 instance=ExtResource("13_4awwu")]
 position = Vector2(31, -18)
+rite_id = &""
 
 [node name="RiteSlot4" parent="RiteSlots" unique_id=1042435977 instance=ExtResource("13_4awwu")]
 position = Vector2(36, 0)
+rite_id = &""
 
 [node name="RiteSlot5" parent="RiteSlots" unique_id=1605444808 instance=ExtResource("13_4awwu")]
 position = Vector2(31, 18)
+rite_id = &""
 
 [node name="RiteSlot6" parent="RiteSlots" unique_id=970968198 instance=ExtResource("13_4awwu")]
 position = Vector2(18, 31)
+rite_id = &""
 
 [node name="RiteSlot7" parent="RiteSlots" unique_id=239031339 instance=ExtResource("13_4awwu")]
 position = Vector2(0, 36)
+rite_id = &""
 
 [node name="RiteSlot8" parent="RiteSlots" unique_id=809154062 instance=ExtResource("13_4awwu")]
 position = Vector2(-18, 31)
+rite_id = &""
 
 [node name="RiteSlot9" parent="RiteSlots" unique_id=655290490 instance=ExtResource("13_4awwu")]
 position = Vector2(-31, 18)
+rite_id = &""
 
 [node name="RiteSlot10" parent="RiteSlots" unique_id=1745697345 instance=ExtResource("13_4awwu")]
 position = Vector2(-36, 0)
+rite_id = &""
 
 [node name="RiteSlot11" parent="RiteSlots" unique_id=489896336 instance=ExtResource("13_4awwu")]
 position = Vector2(-31, -18)
+rite_id = &""
 
 [node name="RiteSlot12" parent="RiteSlots" unique_id=1149739886 instance=ExtResource("13_4awwu")]
 position = Vector2(-18, -31)
+rite_id = &""
 
 [node name="Prompt" type="Control" parent="." unique_id=539297937]
 layout_mode = 3

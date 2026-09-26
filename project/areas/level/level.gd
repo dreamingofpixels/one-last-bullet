@@ -5,6 +5,7 @@ const CONTAGION_ORB_SCENE := preload("res://entities/orbs/contagion/contagion_or
 const CONDUIT_ORB_SCENE := preload("res://entities/orbs/conduit/conduit_orb.tscn")
 const GLYPH_SCENE := preload("res://items/glyphs/glyph.tscn")
 const BLANK_ORB_SCENE := preload("res://entities/orbs/blank/blank_orb.tscn")
+const SHOP_SCENE := preload("res://objects/shop/shop.tscn")
 const PLAYER_SCENE := preload("res://entities/player/player.tscn")
 const MAX_PLAYERS := 2
 ## Shared i-frames for all living players when the opening volley launches (P2 has no orb instigator grace).
@@ -12,6 +13,12 @@ const OPENING_PLAYER_INVULN_SECONDS := 1.0
 ## Brief mutual RigidBody exceptions so co-spawned opening orbs fan out before colliding.
 const OPENING_ORB_COLLISION_GRACE_SECONDS := 0.2
 const PHYSICS_LAYER_WORLD := 1
+## Shop origin so stalls sit roughly centered north of the summoning circle.
+const SHOP_SPAWN_POSITION := Vector2(280.0, 90.0)
+const DEPART_DWELL_SECONDS := 1.0
+const PROP_FALL_DURATION := 0.7
+const PROP_ASSEMBLE_DURATION := 2.0
+const ORB_RECALL_FALL_DURATION := 0.7
 const P2_SPAWN_OFFSETS: Array[Vector2] = [
 	Vector2(40.0, 0.0),
 	Vector2(-40.0, 0.0),
@@ -50,6 +57,15 @@ var _cleared: bool = false
 var _opening_orbs_spawned: bool = false
 var _level_intro_done: bool = false
 var _p2_spawn_shape: CircleShape2D
+var _stage: int = 1
+var _base_waves: Array[EnemyWave] = []
+var _orb_snapshots: Array[Dictionary] = []
+var _shop: Shop = null
+var _intermission_ready: bool = false
+var _depart_timer: float = 0.0
+var _starting_next_stage: bool = false
+## Breakables hidden for the shop visit (not freed) so they can assemble back.
+var _stashed_breakables: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -58,6 +74,7 @@ func _ready() -> void:
 	status_label.text = "Assemble..."
 	BlankOrb.set_bounce_off_entities(bounce_orbs_off_entities)
 	_apply_run_start_config()
+	_base_waves = EnemySpawner.duplicate_waves(enemy_spawner.waves)
 
 	if level_music:
 		AudioManager.play_music(level_music)
@@ -89,6 +106,7 @@ func _ready() -> void:
 	await _await_navigation_ready()
 	if not is_inside_tree():
 		return
+	enemy_spawner.set_waves(EnemySpawner.build_scaled_waves(_base_waves, _stage))
 	enemy_spawner.start()
 	await _assemble_all_players()
 	if not is_inside_tree():
@@ -96,6 +114,18 @@ func _ready() -> void:
 	_level_intro_done = true
 	_launch_opening_orbs()
 	status_label.text = "Clear the room"
+
+
+func _process(delta: float) -> void:
+	if not _intermission_ready or _game_over or _starting_next_stage:
+		return
+	if _all_living_players_in_circle():
+		_depart_timer += delta
+		if _depart_timer >= DEPART_DWELL_SECONDS:
+			_depart_timer = 0.0
+			_start_next_stage()
+	else:
+		_depart_timer = 0.0
 
 
 func _apply_run_start_config() -> void:
@@ -461,8 +491,227 @@ func _on_all_cleared() -> void:
 	if _game_over:
 		return
 	_cleared = true
+	_intermission_ready = false
+	_depart_timer = 0.0
+	_starting_next_stage = false
 	time_slow_overlay.end()
-	status_label.text = "Cleared! Press R to restart"
+	status_label.text = "Cleared!"
+	await _begin_intermission()
+
+
+func _begin_intermission() -> void:
+	summoning_circle.set_intermission(true)
+	await _recall_and_destroy_orbs()
+	if not is_inside_tree() or _game_over:
+		return
+	await _stash_breakables()
+	if not is_inside_tree() or _game_over:
+		return
+	rebake_timer.start()
+	await _spawn_and_materialize_shop()
+	if not is_inside_tree() or _game_over:
+		return
+	_intermission_ready = true
+	status_label.text = "Shop — stand in the circle to continue"
+
+
+func _recall_and_destroy_orbs() -> void:
+	_orb_snapshots.clear()
+	var origin: Vector2 = summoning_circle.get_launch_origin()
+	var suck_speed: float = summoning_circle.orb_capture_suck_speed
+	var orbs: Array = _live_orbs()
+	if orbs.is_empty():
+		return
+
+	var remaining: Array = [orbs.size()]
+	for node in orbs:
+		if not is_instance_valid(node) or not (node is BlankOrb):
+			remaining[0] -= 1
+			continue
+		var orb: BlankOrb = node as BlankOrb
+		var on_arrived := func() -> void:
+			if is_instance_valid(orb):
+				_orb_snapshots.append(orb.snapshot_loadout())
+				if orb.orb_sprite != null:
+					DestructionEffect.play_from_sprite(orb.orb_sprite, ORB_RECALL_FALL_DURATION)
+					orb.orb_sprite.visible = false
+				orb.remove_from_group("orb")
+				orb.queue_free()
+			remaining[0] -= 1
+		orb.begin_level_clear_recall(origin, suck_speed, on_arrived)
+
+	while remaining[0] > 0:
+		if not await _await_process_frame():
+			return
+	# Let pixel-fall FX play briefly before the shop arrives.
+	await get_tree().create_timer(ORB_RECALL_FALL_DURATION * 0.35).timeout
+
+
+func _stash_breakables() -> void:
+	_stashed_breakables.clear()
+	for node in get_tree().get_nodes_in_group("breakables"):
+		if node == null or not is_instance_valid(node) or node.is_queued_for_deletion():
+			continue
+		if not (node is Node2D):
+			continue
+		var breakable: Node2D = node as Node2D
+		var components: Dictionary = breakable.get("COMPONENTS") if breakable.get("COMPONENTS") != null else {}
+		var destroy: DestroyComponent = components.get(DestroyComponent) as DestroyComponent
+		var sprite: Node2D = destroy.sprite if destroy != null else null
+		if sprite == null and breakable.has_node("%Sprite2D"):
+			sprite = breakable.get_node("%Sprite2D") as Node2D
+		var layer: int = 0
+		if breakable is CollisionObject2D:
+			layer = (breakable as CollisionObject2D).collision_layer
+		_stashed_breakables.append({
+			"node": breakable,
+			"sprite": sprite,
+			"collision_layer": layer,
+		})
+		if sprite != null and sprite.visible:
+			DestructionEffect.play_from_sprite(sprite, PROP_FALL_DURATION)
+			sprite.visible = false
+		_set_breakable_collision_enabled(breakable, false, 0)
+	if not _stashed_breakables.is_empty():
+		await get_tree().create_timer(PROP_FALL_DURATION * 0.5).timeout
+
+
+func _set_breakable_collision_enabled(breakable: Node2D, enabled: bool, layer: int) -> void:
+	if breakable is CollisionObject2D:
+		(breakable as CollisionObject2D).set_deferred(
+			"collision_layer", layer if enabled else 0
+		)
+	for child in breakable.get_children():
+		if child is CollisionShape2D:
+			(child as CollisionShape2D).set_deferred("disabled", not enabled)
+		if child.name == "Components":
+			for component in child.get_children():
+				if component is Area2D:
+					for shape in component.get_children():
+						if shape is CollisionShape2D:
+							(shape as CollisionShape2D).set_deferred("disabled", not enabled)
+					component.set_deferred("monitoring", enabled)
+					component.set_deferred("monitorable", enabled)
+
+
+func _spawn_and_materialize_shop() -> void:
+	if is_instance_valid(_shop):
+		_shop.queue_free()
+		_shop = null
+	var shop: Shop = SHOP_SCENE.instantiate() as Shop
+	if shop == null:
+		return
+	players_root.add_child(shop)
+	shop.global_position = SHOP_SPAWN_POSITION
+	_shop = shop
+	await shop.materialize_in()
+
+
+func _all_living_players_in_circle() -> bool:
+	var living: Array = Players.all(get_tree())
+	if living.is_empty():
+		return false
+	for p in living:
+		if not summoning_circle.contains_player(p):
+			return false
+	return true
+
+
+func _start_next_stage() -> void:
+	if _starting_next_stage or _game_over:
+		return
+	_starting_next_stage = true
+	_intermission_ready = false
+	_depart_timer = 0.0
+	status_label.text = "Next stage..."
+	await _run_next_stage()
+
+
+func _run_next_stage() -> void:
+	_stage += 1
+
+	if is_instance_valid(_shop):
+		await _shop.materialize_out()
+		_shop = null
+	if not is_inside_tree() or _game_over:
+		return
+
+	await _restore_breakables()
+	if not is_inside_tree() or _game_over:
+		return
+
+	navigation_region.bake_navigation_polygon(true)
+	await navigation_region.bake_finished
+	if not is_inside_tree() or _game_over:
+		return
+	await _await_navigation_ready()
+	if not is_inside_tree() or _game_over:
+		return
+
+	_launch_snapshotted_orbs()
+	summoning_circle.set_intermission(false)
+	enemy_spawner.set_waves(EnemySpawner.build_scaled_waves(_base_waves, _stage))
+	enemy_spawner.start()
+	_cleared = false
+	_starting_next_stage = false
+	status_label.text = "Stage %d — clear the room" % _stage
+
+
+func _restore_breakables() -> void:
+	var to_restore: Array[Dictionary] = _stashed_breakables.duplicate()
+	_stashed_breakables.clear()
+	var remaining: Array = [0]
+	for entry in to_restore:
+		var breakable: Node2D = entry.get("node") as Node2D
+		if breakable == null or not is_instance_valid(breakable):
+			continue
+		var sprite: Node2D = entry.get("sprite") as Node2D
+		var layer: int = int(entry.get("collision_layer", PHYSICS_LAYER_WORLD))
+		var components: Dictionary = breakable.get("COMPONENTS") if breakable.get("COMPONENTS") != null else {}
+		var health: HealthComponent = components.get(HealthComponent) as HealthComponent
+		if health != null:
+			health.restore_full()
+		_set_breakable_collision_enabled(breakable, true, layer if layer > 0 else PHYSICS_LAYER_WORLD)
+		if sprite == null:
+			continue
+		sprite.visible = false
+		remaining[0] += 1
+		var sprite_ref: Node2D = sprite
+		var run := func() -> void:
+			await DestructionEffect.play_assemble_from_sprite(sprite_ref, PROP_ASSEMBLE_DURATION)
+			if is_instance_valid(sprite_ref):
+				sprite_ref.visible = true
+			remaining[0] -= 1
+		get_tree().process_frame.connect(run, CONNECT_ONE_SHOT)
+
+	while remaining[0] > 0:
+		if not await _await_process_frame():
+			return
+
+
+func _launch_snapshotted_orbs() -> void:
+	var origin: Vector2 = summoning_circle.get_launch_origin()
+	var spawned: Array[RigidBody2D] = []
+	for snap in _orb_snapshots:
+		var path: String = String(snap.get("scene_path", ""))
+		var packed: PackedScene = null
+		if not path.is_empty() and ResourceLoader.exists(path):
+			packed = load(path) as PackedScene
+		if packed == null:
+			packed = BLANK_ORB_SCENE
+		var orb: BlankOrb = packed.instantiate() as BlankOrb
+		if orb == null:
+			continue
+		players_root.add_child(orb)
+		orb.global_position = origin
+		orb.apply_loadout(snap)
+		_connect_orb_signals(orb)
+		orb.begin_flight(Vector2.from_angle(randf() * TAU), player)
+		spawned.append(orb)
+	_orb_snapshots.clear()
+	_apply_opening_orb_collision_grace(spawned)
+	_grant_opening_invulnerability()
+	summoning_circle.notify_orb_count_changed()
 
 
 func _on_breakable_destroyed(node: Node = null) -> void:

@@ -6,5 +6,4 @@
 
 [resource]
 script = ExtResource("1_script")
-starting_mana = 200.0
 starting_orbs = Array[PackedScene]([ExtResource("3_fgehs")])

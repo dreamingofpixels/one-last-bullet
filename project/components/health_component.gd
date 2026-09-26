@@ -31,6 +31,11 @@ func _ready() -> void:
 	health_changed.emit(health, max_health)
 
 
+func restore_full() -> void:
+	health = max_health
+	health_changed.emit(health, max_health)
+
+
 func is_invulnerable() -> bool:
 	return Time.get_ticks_msec() < _invulnerable_until_msec
 

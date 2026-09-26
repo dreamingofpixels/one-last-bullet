@@ -27,6 +27,11 @@ func _keeps_constant_flight_speed() -> bool:
 	return false
 
 
+func _prepare_for_level_clear_recall() -> void:
+	_clear_park()
+	super._prepare_for_level_clear_recall()
+
+
 func begin_flight(direction: Vector2, instigator: Node = null) -> void:
 	super.begin_flight(direction, instigator)
 	_begin_slide()

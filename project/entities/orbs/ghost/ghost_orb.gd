@@ -126,3 +126,14 @@ func _emerge_and_fly(direction: Vector2) -> void:
 	collision_layer = _saved_collision_layer if _saved_collision_layer != 0 else 8
 	# No player grace — orb reappears mid-fight from a corpse.
 	begin_flight(direction, null)
+
+
+func _prepare_for_level_clear_recall() -> void:
+	if state == OrbState.POSSESSED:
+		_clear_possession_host()
+		collision_layer = _saved_collision_layer if _saved_collision_layer != 0 else 8
+		orb_sprite.visible = true
+		state = OrbState.FLYING
+		freeze = true
+		linear_velocity = Vector2.ZERO
+	super._prepare_for_level_clear_recall()

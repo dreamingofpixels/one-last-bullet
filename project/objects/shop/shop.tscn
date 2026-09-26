@@ -85,6 +85,7 @@ shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
 script = ExtResource("1_xuxxm")
 
 [node name="RiteStall" type="Sprite2D" parent="." unique_id=1350451740]
+unique_name_in_owner = true
 texture = ExtResource("1_puukc")
 
 [node name="StaticBody2D" type="StaticBody2D" parent="RiteStall" unique_id=724822937]
@@ -176,6 +177,7 @@ vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="GlyphStall" type="Sprite2D" parent="." unique_id=329375525]
+unique_name_in_owner = true
 position = Vector2(81, 1)
 texture = ExtResource("1_puukc")
 
@@ -265,6 +267,7 @@ vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="ShopKeeper" type="AnimatedSprite2D" parent="." unique_id=1401924866]
+unique_name_in_owner = true
 modulate = Color(1, 0.5921569, 1, 1)
 position = Vector2(44, 20)
 sprite_frames = ExtResource("4_fgmcg")

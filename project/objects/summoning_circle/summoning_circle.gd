@@ -48,6 +48,8 @@ var mana_pool: float = 0.0
 var _activation_count: int = 0
 var _active: bool = false
 var _ritual_running: bool = false
+## Between-level shop: circle is a depart pad only (no arm / buy blank).
+var _intermission: bool = false
 var _captured_orb: RigidBody2D = null
 var _players_inside: Dictionary = {}
 ## Players inside InfoProximityArea (larger than DepositArea); drives OrbInfo and input prompts.
@@ -225,7 +227,7 @@ func spend(amount: float) -> bool:
 
 
 func try_activate() -> bool:
-	if _active or _ritual_running:
+	if _intermission or _active or _ritual_running:
 		return false
 	var cost: float = get_activation_cost()
 	# First activation is free (cost 0); spend() rejects amount <= 0.
@@ -244,6 +246,33 @@ func deactivate() -> void:
 	_active = false
 	_stop_activation_vfx()
 	deactivated.emit()
+
+
+func set_intermission(enabled: bool) -> void:
+	_intermission = enabled
+	if enabled:
+		abort_for_level_clear()
+	_refresh_input_prompts()
+
+
+func is_intermission() -> bool:
+	return _intermission
+
+
+## Drop a mid-ritual capture without launching so the level can recall the orb.
+func abort_for_level_clear() -> void:
+	_commit_busy = false
+	_clear_ready_idle()
+	_restore_arcane_particles()
+	_clear_commit_trails()
+	_hide_ritual_ui()
+	_reset_glyph_icon_homes()
+	_captured_orb = null
+	_ritual_running = false
+	_orb_info_collapsed = false
+	if _active:
+		deactivate()
+	ritual_ended.emit()
 
 
 func receive_glyph(glyph: Node) -> void:
@@ -325,7 +354,7 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 
 
 func capture_orb(orb: RigidBody2D) -> void:
-	if not _active or _ritual_running or orb == null or not is_instance_valid(orb):
+	if _intermission or not _active or _ritual_running or orb == null or not is_instance_valid(orb):
 		return
 	if _capture_grace_orbs.has(orb.get_instance_id()):
 		return
@@ -476,6 +505,8 @@ func _handle_ritual_player_input(player: Node, in_deposit: bool) -> void:
 
 
 func _try_buy_blank_orb() -> void:
+	if _intermission:
+		return
 	var live_count: int = _live_orb_count()
 	if live_count >= MAX_ORBS:
 		return
@@ -1115,16 +1146,18 @@ func _refresh_input_prompts() -> void:
 
 	var keyboard_mouse: bool = _prompt_prefers_keyboard_mouse()
 	var show_buy: bool = (
-		not _ritual_running
+		not _intermission
+		and not _ritual_running
 		and _live_orb_count() < MAX_ORBS
 		and _any_near_info_in_deposit()
 	)
 	var show_activate: bool = (
-		not _ritual_running
+		not _intermission
+		and not _ritual_running
 		and not _active
 		and _any_near_info_in_deposit()
 	)
-	var show_cancel: bool = _active or _ritual_running
+	var show_cancel: bool = not _intermission and (_active or _ritual_running)
 	var cancel_text: String = "Release" if _ritual_running else "Cancel"
 	var show_orb_info_toggle: bool = _ritual_running
 	var orb_info_toggle_text: String = "Show" if _orb_info_collapsed else "Hide"

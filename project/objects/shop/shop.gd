@@ -7,6 +7,8 @@ const RITE_HOP_DURATION := 0.2
 const RITE_FLY_DURATION := 0.5
 ## Shop glyph toss: south of the stall shelf (px/s).
 const GLYPH_TOSS_SPEED := 140.0
+const ASSEMBLE_DURATION := 2.0
+const FALL_DURATION := 0.7
 
 @export var rite_cost: float = 50.0
 @export var glyph_cost_multiplier: float = 2.0
@@ -21,7 +23,12 @@ var _rite_slots: Array[ItemShopSlot] = []
 var _stall_bodies: Array[StaticBody2D] = []
 var _focused_slot: ItemShopSlot = null
 var _prompt_cache_key: String = ""
+var _interactive: bool = false
+var _materializing: bool = false
 
+@onready var rite_stall: Sprite2D = %RiteStall
+@onready var glyph_stall: Sprite2D = %GlyphStall
+@onready var shop_keeper: AnimatedSprite2D = %ShopKeeper
 @onready var rite_info: Control = %RiteInfo
 @onready var rite_name_label: Label = %RiteNameLabel
 @onready var rite_desc_label: Label = %RiteDescLabel
@@ -39,11 +46,122 @@ func _ready() -> void:
 	glyph_info.visible = false
 	_stock_glyph_slots()
 	_stock_rite_slots()
+	_set_stall_collision_enabled(false)
+	_set_visuals_visible(false)
+	_interactive = false
 
 
 func _process(_delta: float) -> void:
+	if not _interactive or _materializing:
+		return
 	_refresh_focus()
 	_poll_buy_input()
+
+
+## Pixel-assemble stalls, stock, and keeper. Enables buys when finished.
+func materialize_in() -> void:
+	_materializing = true
+	_interactive = false
+	_set_stall_collision_enabled(false)
+	_set_visuals_visible(false)
+	rite_info.visible = false
+	glyph_info.visible = false
+	await _play_assemble_on_visuals()
+	if not is_inside_tree():
+		return
+	_set_visuals_visible(true)
+	_set_stall_collision_enabled(true)
+	_materializing = false
+	_interactive = true
+
+
+## Pixel-fall then free this shop instance.
+func materialize_out() -> void:
+	_materializing = true
+	_interactive = false
+	_set_focused_slot(null)
+	rite_info.visible = false
+	glyph_info.visible = false
+	_set_stall_collision_enabled(false)
+	_play_fall_on_visuals()
+	await get_tree().create_timer(FALL_DURATION).timeout
+	if is_instance_valid(self):
+		queue_free()
+
+
+func _assemble_sprites() -> Array[Node2D]:
+	var sprites: Array[Node2D] = []
+	if rite_stall != null:
+		sprites.append(rite_stall)
+	if glyph_stall != null:
+		sprites.append(glyph_stall)
+	if shop_keeper != null:
+		sprites.append(shop_keeper)
+	for slot in _glyph_slots:
+		if slot != null and is_instance_valid(slot) and slot.is_stocked():
+			sprites.append(slot)
+	for slot in _rite_slots:
+		if slot != null and is_instance_valid(slot) and slot.is_stocked():
+			sprites.append(slot)
+	return sprites
+
+
+func _set_visuals_visible(show: bool) -> void:
+	if rite_stall != null:
+		rite_stall.visible = show
+	if glyph_stall != null:
+		glyph_stall.visible = show
+	if shop_keeper != null:
+		shop_keeper.visible = show
+	for slot in _glyph_slots:
+		_set_slot_visible(slot, show)
+	for slot in _rite_slots:
+		_set_slot_visible(slot, show)
+
+
+func _set_slot_visible(slot: ItemShopSlot, show: bool) -> void:
+	if slot == null or not is_instance_valid(slot):
+		return
+	var show_slot: bool = show and slot.is_stocked()
+	slot.visible = show_slot
+	var icon: Node2D = slot.get_node_or_null("%Icon") as Node2D
+	if icon != null:
+		icon.visible = show_slot and slot.stock_kind == ItemShopSlot.StockKind.RITE
+
+
+func _set_stall_collision_enabled(enabled: bool) -> void:
+	for body in _stall_bodies:
+		if body == null or not is_instance_valid(body):
+			continue
+		body.set_deferred("collision_layer", 1 if enabled else 0)
+		for child in body.get_children():
+			if child is CollisionShape2D:
+				(child as CollisionShape2D).set_deferred("disabled", not enabled)
+
+
+func _play_assemble_on_visuals() -> void:
+	var sprites: Array[Node2D] = _assemble_sprites()
+	if sprites.is_empty():
+		return
+	var remaining: Array = [sprites.size()]
+	for spr in sprites:
+		var sprite_ref: Node2D = spr
+		var run := func() -> void:
+			await DestructionEffect.play_assemble_from_sprite(sprite_ref, ASSEMBLE_DURATION)
+			remaining[0] -= 1
+		get_tree().process_frame.connect(run, CONNECT_ONE_SHOT)
+	while remaining[0] > 0:
+		if not is_inside_tree():
+			return
+		await get_tree().process_frame
+
+
+func _play_fall_on_visuals() -> void:
+	for spr in _assemble_sprites():
+		if spr == null or not is_instance_valid(spr) or not spr.visible:
+			continue
+		DestructionEffect.play_from_sprite(spr, FALL_DURATION)
+		spr.visible = false
 
 
 func _collect_slots() -> void:

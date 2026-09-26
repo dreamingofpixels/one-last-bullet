@@ -64,6 +64,47 @@ func stop() -> void:
 	_idle_living_enemies()
 
 
+## Replace wave list for the next start() (scaled stage copy — never mutates authored resources).
+func set_waves(new_waves: Array[EnemyWave]) -> void:
+	waves = new_waves
+
+
+## Deep-copy authored waves with +1 count per entry per stage above 1, and +1 copy of the last wave per stage above 1.
+static func build_scaled_waves(base_waves: Array[EnemyWave], stage: int) -> Array[EnemyWave]:
+	var result: Array[EnemyWave] = []
+	var bonus: int = maxi(stage - 1, 0)
+	for wave in base_waves:
+		if wave == null:
+			continue
+		result.append(_clone_wave(wave, bonus))
+	if bonus > 0 and not base_waves.is_empty():
+		var last: EnemyWave = base_waves[base_waves.size() - 1]
+		if last != null:
+			for _i in bonus:
+				result.append(_clone_wave(last, bonus))
+	return result
+
+
+static func _clone_wave(source: EnemyWave, count_bonus: int) -> EnemyWave:
+	var wave := EnemyWave.new()
+	wave.delay_before = source.delay_before
+	var entries: Array[EnemySpawnEntry] = []
+	for entry in source.entries:
+		if entry == null:
+			continue
+		var copy := EnemySpawnEntry.new()
+		copy.enemy_scene = entry.enemy_scene
+		copy.count = maxi(entry.count, 0) + count_bonus
+		entries.append(copy)
+	wave.entries = entries
+	return wave
+
+
+## Snapshot the inspector wave list so stage scaling never mutates scene subresources.
+static func duplicate_waves(source: Array[EnemyWave]) -> Array[EnemyWave]:
+	return build_scaled_waves(source, 1)
+
+
 func _count_planned() -> int:
 	var total := 0
 	for wave in waves:

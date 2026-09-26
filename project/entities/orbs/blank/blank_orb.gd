@@ -862,6 +862,94 @@ func begin_circle_capture(center: Vector2, suck_speed: float, on_finished: Calla
 	call_deferred("_begin_circle_capture_deferred", center, suck_speed, on_finished)
 
 
+## Level-clear recall: force a free body, then cubic-suck to the circle (any state).
+func begin_level_clear_recall(center: Vector2, suck_speed: float, on_finished: Callable) -> void:
+	_prepare_for_level_clear_recall()
+	if _capture_tween != null and _capture_tween.is_valid():
+		_capture_tween.kill()
+		_capture_tween = null
+	_circle_captured = true
+	linear_velocity = Vector2.ZERO
+	trail_particles.emitting = false
+	clear_redirect_preview()
+	set_in_focus(false)
+	_focus_requests.clear()
+	orb_in_focus.visible = false
+	orb_sprite.visible = true
+	call_deferred("_begin_circle_capture_deferred", center, suck_speed, on_finished)
+
+
+## Snapshot combat loadout for the next stage (stats already include socket / redirect boosts).
+func snapshot_loadout() -> Dictionary:
+	var sockets: Array = []
+	for entry in socketed_glyphs:
+		if typeof(entry) == TYPE_DICTIONARY:
+			sockets.append((entry as Dictionary).duplicate(true))
+		else:
+			sockets.append({})
+	return {
+		"scene_path": scene_file_path,
+		"orb_id": orb_id,
+		"damage": damage,
+		"self_damage": self_damage,
+		"splash": splash,
+		"speed": speed,
+		"weight": weight,
+		"crit_chance": crit_chance,
+		"crit_damage": crit_damage,
+		"glyph_drop": glyph_drop,
+		"burn": burn,
+		"chill": chill,
+		"shock": shock,
+		"blight": blight,
+		"glyph_slots": glyph_slots,
+		"socketed_glyphs": sockets,
+	}
+
+
+## Restore a snapshot after instantiate (do not re-apply glyph stat deltas).
+func apply_loadout(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	if data.has("orb_id"):
+		orb_id = data["orb_id"] as StringName
+	damage = float(data.get("damage", damage))
+	self_damage = float(data.get("self_damage", self_damage))
+	splash = float(data.get("splash", splash))
+	speed = float(data.get("speed", speed))
+	weight = float(data.get("weight", weight))
+	crit_chance = float(data.get("crit_chance", crit_chance))
+	crit_damage = float(data.get("crit_damage", crit_damage))
+	glyph_drop = float(data.get("glyph_drop", glyph_drop))
+	burn = int(data.get("burn", burn))
+	chill = int(data.get("chill", chill))
+	shock = int(data.get("shock", shock))
+	blight = int(data.get("blight", blight))
+	glyph_slots = int(data.get("glyph_slots", glyph_slots))
+	socketed_glyphs.clear()
+	socketed_glyphs.resize(glyph_slots)
+	var sockets: Array = data.get("socketed_glyphs", []) as Array
+	for i in glyph_slots:
+		if i < sockets.size() and typeof(sockets[i]) == TYPE_DICTIONARY:
+			socketed_glyphs[i] = (sockets[i] as Dictionary).duplicate(true)
+		else:
+			socketed_glyphs[i] = {}
+	_sync_damage_component()
+
+
+## Tear down tether / vault so a clear recall can suck from any state.
+func _prepare_for_level_clear_recall() -> void:
+	_clear_vault_hold()
+	if state == OrbState.TETHERED:
+		_opening_tether = false
+		_clear_tether_vars()
+		set_in_focus(false)
+		clear_redirect_preview()
+		state = OrbState.FLYING
+		freeze = true
+		linear_velocity = Vector2.ZERO
+
+
 func _begin_circle_capture_deferred(center: Vector2, suck_speed: float, on_finished: Callable) -> void:
 	if not is_inside_tree() or not _circle_captured:
 		return

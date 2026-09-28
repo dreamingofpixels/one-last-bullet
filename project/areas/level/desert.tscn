@@ -394,8 +394,7 @@ y_sort_enabled = true
 [node name="ArenaCollapse" type="Node2D" parent="GroundEffects" unique_id=30983666]
 unique_name_in_owner = true
 script = ExtResource("2_collapse")
-start_delay_seconds = 5.0
-step_seconds = 0.5
+step_seconds = 1.0
 
 [node name="WorldYSort" type="Node2D" parent="." unique_id=1563161946]
 unique_name_in_owner = true
@@ -456,10 +455,10 @@ position = Vector2(296, 48)
 position = Vector2(528, 128)
 
 [node name="BigRock10" parent="WorldYSort/Rocks" unique_id=1683889156 instance=ExtResource("5_4ykq2")]
-position = Vector2(192, 95)
+position = Vector2(176, 56)
 
 [node name="BigRock11" parent="WorldYSort/Rocks" unique_id=414153712 instance=ExtResource("5_4ykq2")]
-position = Vector2(160, 96)
+position = Vector2(144, 104)
 
 [node name="BigRock12" parent="WorldYSort/Rocks" unique_id=1097417405 instance=ExtResource("5_4ykq2")]
 position = Vector2(40, 288)

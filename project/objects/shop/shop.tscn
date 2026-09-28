@@ -3,11 +3,11 @@
 [ext_resource type="Texture2D" uid="uid://bdrce4sjgw0wl" path="res://objects/shop/shop_stall.png" id="1_puukc"]
 [ext_resource type="Script" uid="uid://v20kpipjn2el" path="res://objects/shop/shop.gd" id="1_xuxxm"]
 [ext_resource type="PackedScene" uid="uid://bib6uplmvaxeu" path="res://objects/shop/item_shop_slot.tscn" id="2_op54n"]
-[ext_resource type="SpriteFrames" uid="uid://yqc5208gvb6w" path="res://entities/player/dwarf/dwarf_frames.tres" id="4_fgmcg"]
 [ext_resource type="Shader" uid="uid://0qd6bd0bt7ad" path="res://items/glyphs/glyph_rarity.gdshader" id="4_yq32o"]
 [ext_resource type="Texture2D" uid="uid://0j51kyfa86bi" path="res://ui/panels/panel.png" id="5_yq32o"]
 [ext_resource type="FontFile" uid="uid://bq8xnk2pxlmdf" path="res://ui/fonts/pixel_medium.fnt" id="6_i83tn"]
 [ext_resource type="PackedScene" uid="uid://d0m5w5k5yo3ge" path="res://ui/input_icons/input_prompt.tscn" id="7_prompt"]
+[ext_resource type="Texture2D" uid="uid://ep4qkmxo3qqm" path="res://entities/player/player_spritesheet_SW.png" id="8_yq32o"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6pmnr"]
 size = Vector2(66, 20)
@@ -80,6 +80,42 @@ shader_parameter/glow = 0.0
 shader_parameter/pulse = 0.0
 shader_parameter/tint = Color(1, 1, 1, 1)
 shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_i83tn"]
+atlas = ExtResource("8_yq32o")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p5e4m"]
+atlas = ExtResource("8_yq32o")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wu8gw"]
+atlas = ExtResource("8_yq32o")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aesy4"]
+atlas = ExtResource("8_yq32o")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_i6s34"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_i83tn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_p5e4m")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wu8gw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_aesy4")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]
 
 [node name="Shop" type="Node2D" unique_id=1347830140]
 script = ExtResource("1_xuxxm")
@@ -270,8 +306,6 @@ autowrap_mode = 2
 
 [node name="ShopKeeper" type="AnimatedSprite2D" parent="." unique_id=1401924866]
 unique_name_in_owner = true
-modulate = Color(1, 0.5921569, 1, 1)
 position = Vector2(44, 20)
-sprite_frames = ExtResource("4_fgmcg")
-animation = &"idle_sw"
-autoplay = "idle_sw"
+sprite_frames = SubResource("SpriteFrames_i6s34")
+frame_progress = 0.40133715

@@ -2,6 +2,7 @@ class_name ArenaCollapse
 extends Node2D
 
 ## Clockwise Bomberman-style arena shrink: red telegraph, then seal as world|wall.
+## Each later lap doubles speed (telegraph and step both halved).
 ## Orbs and enemies are pushed inward; players caught in a seal die. Orbs never die.
 
 signal cell_sealed(cell_rect: Rect2)
@@ -29,6 +30,8 @@ const SEALED_COLOR := Color(0.0, 0.0, 0.0, 1.0)
 
 var _running: bool = false
 var _path: Array[Vector2i] = []
+## Exclusive end index in `_path` for each lap (lap 0, then 1, …).
+var _lap_ends: Array[int] = []
 var _path_index: int = 0
 var _warning_poly: Polygon2D
 var _seals: Array[Node2D] = []
@@ -62,27 +65,39 @@ func _run_collapse(token: int) -> void:
 		if token != _run_token or not _running:
 			return
 
-	var wait_after_seal: float = maxf(0.0, step_seconds - telegraph_seconds)
-	while _running and token == _run_token and _path_index < _path.size():
-		var cell: Vector2i = _path[_path_index]
-		var cell_rect: Rect2 = _cell_rect(cell)
-		_show_warning(cell_rect)
-		await get_tree().create_timer(telegraph_seconds).timeout
-		if token != _run_token or not _running:
+	var cell_cursor: int = 0
+	for lap_index in _lap_ends.size():
+		if not _running or token != _run_token:
 			return
-		_clear_warning()
-		_seal_cell(cell, cell_rect)
-		_path_index += 1
-		if wait_after_seal > 0.0 and _path_index < _path.size():
-			await get_tree().create_timer(wait_after_seal).timeout
-			if token != _run_token or not _running:
-				return
+		var lap_end: int = _lap_ends[lap_index]
+		# Each lap doubles collapse speed: telegraph and step both halve.
+		var duration_scale: float = 1.0 / float(1 << lap_index)
+		var telegraph: float = telegraph_seconds * duration_scale
+		var step: float = step_seconds * duration_scale
+		var wait_after_seal: float = maxf(0.0, step - telegraph)
+		while _running and token == _run_token and cell_cursor < lap_end:
+			var cell: Vector2i = _path[cell_cursor]
+			var cell_rect: Rect2 = _cell_rect(cell)
+			_show_warning(cell_rect)
+			if telegraph > 0.0:
+				await get_tree().create_timer(telegraph).timeout
+				if token != _run_token or not _running:
+					return
+			_clear_warning()
+			_seal_cell(cell, cell_rect)
+			cell_cursor += 1
+			_path_index = cell_cursor
+			if wait_after_seal > 0.0 and cell_cursor < _path.size():
+				await get_tree().create_timer(wait_after_seal).timeout
+				if token != _run_token or not _running:
+					return
 
 	_running = false
 
 
 func _build_spiral_path(laps: int) -> Array[Vector2i]:
 	var path: Array[Vector2i] = []
+	_lap_ends.clear()
 	for lap in laps:
 		var left: int = lap
 		var right: int = COLS - 1 - lap
@@ -105,6 +120,7 @@ func _build_spiral_path(laps: int) -> Array[Vector2i]:
 		if left < right:
 			for r in range(bottom - 1, top, -1):
 				path.append(Vector2i(left, r))
+		_lap_ends.append(path.size())
 	return path
 
 
@@ -234,9 +250,39 @@ func _destroy_breakables_in_cell(cell_rect: Rect2) -> void:
 		if node == null or not is_instance_valid(node) or not (node is Node2D):
 			continue
 		var breakable: Node2D = node as Node2D
-		if not cell_rect.has_point(breakable.global_position):
+		if not _breakable_overlaps_cell(breakable, cell_rect):
 			continue
 		_destroy_via_component(breakable)
+
+
+func _breakable_overlaps_cell(node: Node2D, cell_rect: Rect2) -> bool:
+	var aabb: Rect2 = _breakable_world_aabb(node)
+	if aabb.size.x <= 0.0 or aabb.size.y <= 0.0:
+		return cell_rect.has_point(node.global_position)
+	return cell_rect.intersects(aabb)
+
+
+func _breakable_world_aabb(node: Node2D) -> Rect2:
+	var result := Rect2()
+	var has_shape: bool = false
+	for child in node.get_children():
+		if not (child is CollisionShape2D):
+			continue
+		var shape_node: CollisionShape2D = child as CollisionShape2D
+		if shape_node.disabled or not (shape_node.shape is RectangleShape2D):
+			continue
+		var rect_shape: RectangleShape2D = shape_node.shape as RectangleShape2D
+		var size: Vector2 = rect_shape.size * shape_node.global_scale.abs()
+		if size.x <= 0.0 or size.y <= 0.0:
+			continue
+		var center: Vector2 = shape_node.global_position
+		var shape_aabb := Rect2(center - size * 0.5, size)
+		if has_shape:
+			result = result.merge(shape_aabb)
+		else:
+			result = shape_aabb
+			has_shape = true
+	return result
 
 
 func _free_glyphs_in_cell(cell_rect: Rect2) -> void:

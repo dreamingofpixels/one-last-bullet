@@ -5,6 +5,8 @@ enum SlotPreference { ANY, FORWARD }
 const ENEMY_GROUP := &"enemies"
 const MOVE_SPEED_FOR_ANCHOR := 10.0
 const HEADING_SWING_RESET := TAU / 3.0 ## 120 degrees
+const THROUGH_PLAYER_DIST := 40.0
+const ARC_STEP := PI / 3.0 ## 60 degrees
 
 @export var movement_component: MovementComponent
 @export var knockback_component: KnockbackComponent
@@ -25,6 +27,10 @@ const HEADING_SWING_RESET := TAU / 3.0 ## 120 degrees
 @export var slot_stick_time: float = 1.5
 ## FORWARD prefers the cutoff slot ahead of the player's movement.
 @export var slot_preference: SlotPreference = SlotPreference.ANY
+## Far ring used while committing to a flank before closing to slot_radius.
+@export var approach_radius: float = 140.0
+## Reject flank corridors longer than this × shortest path to the player.
+@export var max_detour_ratio: float = 1.75
 
 ## player instance_id -> last pack refresh msec
 static var _pack_refresh_msec: Dictionary = {}
@@ -41,6 +47,8 @@ var _saved_avoidance: bool = true
 var _slot_index: int = -1
 var _slot_angle: float = 0.0
 var _slot_assigned_msec: int = 0
+var _slot_half_step: float = PI / 2.0
+var _closing_in: bool = false
 
 
 func set_chasing(enabled: bool) -> void:
@@ -132,7 +140,13 @@ func _desired_velocity() -> Vector2:
 			# Lone chase: close the last few px onto the player's feet.
 			target_position_to_use = goal
 			has_target_position = true
-		# Surround: navigation finished on the slot — hold position (zero velocity).
+		elif _has_slot() and not _is_at_close_slot(origin):
+			# Approach waypoint reached — close onto the ring slot (do not hold far out).
+			_closing_in = true
+			if goal.distance_squared_to(origin) > 0.0001:
+				target_position_to_use = goal
+				has_target_position = true
+		# Surround: navigation finished on the close slot — hold position (zero velocity).
 	elif _repath_cooldown > 0.0 and goal.distance_squared_to(origin) > 0.0001:
 		target_position_to_use = goal
 		has_target_position = true
@@ -227,18 +241,76 @@ func _has_slot() -> bool:
 	return _slot_index >= 0 and surround_enabled
 
 
+func _close_slot_position() -> Vector2:
+	return _target.global_position + Vector2.from_angle(_slot_angle) * slot_radius
+
+
+func _is_at_close_slot(origin: Vector2) -> bool:
+	if not _has_slot() or not is_instance_valid(_target):
+		return false
+	var arrive: float = maxf(path_desired_distance, 4.0)
+	return origin.distance_to(_close_slot_position()) <= arrive
+
+
+func _should_close_in(origin: Vector2) -> bool:
+	if _closing_in:
+		return true
+	if not _has_slot() or not is_instance_valid(_target):
+		return false
+	var player_pos: Vector2 = _target.global_position
+	var on_bearing: bool = absf(angle_difference(_angle_around(_target), _slot_angle)) <= _slot_half_step
+	var inside: bool = origin.distance_to(player_pos) <= approach_radius
+	if on_bearing and inside:
+		return true
+	var approach: Vector2 = _raw_approach_point()
+	var arrive: float = maxf(path_desired_distance, 8.0)
+	return origin.distance_to(approach) <= arrive
+
+
 func _goal_position() -> Vector2:
 	if not is_instance_valid(_target):
 		return Vector2.ZERO
-	if _has_slot():
-		return _target.global_position + Vector2.from_angle(_slot_angle) * slot_radius
-	return _target.global_position
+	if not _has_slot():
+		return _target.global_position
+	var origin: Vector2 = (owner as Node2D).global_position
+	if _should_close_in(origin):
+		_closing_in = true
+		return _snap_to_nav(_close_slot_position())
+	return _snap_to_nav(_approach_goal_position())
+
+
+func _raw_approach_point() -> Vector2:
+	return _target.global_position + Vector2.from_angle(_slot_angle) * approach_radius
+
+
+func _approach_goal_position() -> Vector2:
+	var player_pos: Vector2 = _target.global_position
+	var ideal: Vector2 = _raw_approach_point()
+	var origin: Vector2 = (owner as Node2D).global_position
+	if _segment_distance_to_point(origin, ideal, player_pos) > THROUGH_PLAYER_DIST:
+		return ideal
+	# Open ground: arc around the player instead of cutting through.
+	var cur: float = _angle_around(_target)
+	var diff: float = angle_difference(cur, _slot_angle)
+	var step: float = clampf(diff, -ARC_STEP, ARC_STEP)
+	if absf(step) < 0.001:
+		return ideal
+	return player_pos + Vector2.from_angle(cur + step) * approach_radius
+
+
+func _snap_to_nav(point: Vector2) -> Vector2:
+	var nav_map: RID = get_navigation_map()
+	if not nav_map.is_valid():
+		return point
+	return NavigationServer2D.map_get_closest_point(nav_map, point)
 
 
 func _clear_slot() -> void:
 	_slot_index = -1
 	_slot_angle = 0.0
 	_slot_assigned_msec = 0
+	_slot_half_step = PI / 2.0
+	_closing_in = false
 
 
 func _maybe_refresh_surround() -> void:
@@ -309,7 +381,7 @@ func _assign_pack_slots(player: Node2D) -> void:
 	var forward_assigned: bool = false
 	for nav in forward_claimers:
 		if nav._slot_index == 0 and _is_slot_sticky(nav, pack_size, now_msec):
-			_apply_slot(nav, 0, slot_angles[0], now_msec, true)
+			_apply_slot(nav, 0, slot_angles[0], now_msec, true, pack_size)
 			taken[0] = true
 			assigned[nav] = true
 			forward_assigned = true
@@ -324,7 +396,7 @@ func _assign_pack_slots(player: Node2D) -> void:
 				best_delta = delta_ang
 				best_forward = nav
 		if best_forward != null:
-			_apply_slot(best_forward, 0, slot_angles[0], now_msec, false)
+			_apply_slot(best_forward, 0, slot_angles[0], now_msec, false, pack_size)
 			taken[0] = true
 			assigned[best_forward] = true
 
@@ -339,30 +411,143 @@ func _assign_pack_slots(player: Node2D) -> void:
 			continue
 		if not _is_slot_sticky(nav, pack_size, now_msec):
 			continue
-		_apply_slot(nav, nav._slot_index, slot_angles[nav._slot_index], now_msec, true)
+		_apply_slot(nav, nav._slot_index, slot_angles[nav._slot_index], now_msec, true, pack_size)
 		taken[nav._slot_index] = true
 		assigned[nav] = true
 
-	# Remaining: nearest free slot by angle around the player.
+	# Remaining: flank by angular spread, then path length (within detour budget).
 	for nav in pack:
 		if assigned.has(nav):
 			continue
-		var enemy_angle: float = nav._angle_around(player)
-		var best_i: int = -1
-		var best_delta: float = INF
-		for i in pack_size:
-			if taken[i]:
-				continue
-			var delta_ang: float = absf(angle_difference(enemy_angle, slot_angles[i]))
-			if delta_ang < best_delta:
-				best_delta = delta_ang
-				best_i = i
+		var best_i: int = _pick_flank_slot(nav, player, slot_angles, taken, pack_size)
 		if best_i >= 0:
-			_apply_slot(nav, best_i, slot_angles[best_i], now_msec, false)
+			_apply_slot(nav, best_i, slot_angles[best_i], now_msec, false, pack_size)
 			taken[best_i] = true
 			assigned[nav] = true
 		else:
 			nav._clear_slot()
+
+
+func _pick_flank_slot(
+	nav: NavigationComponent,
+	player: Node2D,
+	slot_angles: PackedFloat32Array,
+	taken: Array[bool],
+	pack_size: int
+) -> int:
+	var nav_map: RID = nav.get_navigation_map()
+	var origin: Vector2 = (nav.owner as Node2D).global_position
+	var player_pos: Vector2 = player.global_position
+	var shortest_len: float = origin.distance_to(player_pos)
+	if nav_map.is_valid():
+		var from: Vector2 = NavigationServer2D.map_get_closest_point(nav_map, origin)
+		var to_player: Vector2 = NavigationServer2D.map_get_closest_point(nav_map, player_pos)
+		var shortest: PackedVector2Array = NavigationServer2D.map_get_path(
+			nav_map, from, to_player, true
+		)
+		var measured: float = _path_length(shortest)
+		if measured > 0.0:
+			shortest_len = measured
+
+	var best_valid_i: int = -1
+	var best_valid_gap: float = -INF
+	var best_valid_len: float = INF
+	var best_fallback_i: int = -1
+	var best_fallback_gap: float = -INF
+	var best_fallback_len: float = INF
+
+	for i in pack_size:
+		if taken[i]:
+			continue
+		var approach: Vector2 = player_pos + Vector2.from_angle(slot_angles[i]) * nav.approach_radius
+		var plen: float = origin.distance_to(approach)
+		var pierces: bool = _segment_distance_to_point(origin, approach, player_pos) <= THROUGH_PLAYER_DIST
+		if nav_map.is_valid():
+			var from: Vector2 = NavigationServer2D.map_get_closest_point(nav_map, origin)
+			var to: Vector2 = NavigationServer2D.map_get_closest_point(nav_map, approach)
+			var path: PackedVector2Array = NavigationServer2D.map_get_path(nav_map, from, to, true)
+			var measured: float = _path_length(path)
+			if measured > 0.0:
+				plen = measured
+			pierces = _path_near_point(path, player_pos, THROUGH_PLAYER_DIST, origin)
+
+		var gap: float = _min_taken_angle_gap(slot_angles[i], slot_angles, taken, pack_size)
+		if gap > best_fallback_gap or (is_equal_approx(gap, best_fallback_gap) and plen < best_fallback_len):
+			best_fallback_gap = gap
+			best_fallback_len = plen
+			best_fallback_i = i
+
+		var over_detour: bool = plen > shortest_len * nav.max_detour_ratio
+		if pierces or over_detour:
+			continue
+		if gap > best_valid_gap or (is_equal_approx(gap, best_valid_gap) and plen < best_valid_len):
+			best_valid_gap = gap
+			best_valid_len = plen
+			best_valid_i = i
+
+	if best_valid_i >= 0:
+		return best_valid_i
+	return best_fallback_i
+
+
+func _min_taken_angle_gap(
+	angle: float,
+	slot_angles: PackedFloat32Array,
+	taken: Array[bool],
+	pack_size: int
+) -> float:
+	var min_gap: float = TAU
+	var any_taken: bool = false
+	for i in pack_size:
+		if not taken[i]:
+			continue
+		any_taken = true
+		min_gap = minf(min_gap, absf(angle_difference(angle, slot_angles[i])))
+	if not any_taken:
+		return TAU
+	return min_gap
+
+
+func _path_length(path: PackedVector2Array) -> float:
+	if path.size() < 2:
+		return 0.0
+	var total: float = 0.0
+	for i in range(path.size() - 1):
+		total += path[i].distance_to(path[i + 1])
+	return total
+
+
+func _path_near_point(
+	path: PackedVector2Array,
+	point: Vector2,
+	dist: float,
+	skip_near: Vector2
+) -> bool:
+	if path.size() < 2:
+		return false
+	var skip_sq: float = dist * dist
+	for i in range(path.size() - 1):
+		var a: Vector2 = path[i]
+		var b: Vector2 = path[i + 1]
+		var closest: Vector2 = _closest_point_on_segment(a, b, point)
+		if closest.distance_squared_to(skip_near) <= skip_sq:
+			continue
+		if closest.distance_to(point) <= dist:
+			return true
+	return false
+
+
+func _segment_distance_to_point(a: Vector2, b: Vector2, p: Vector2) -> float:
+	return _closest_point_on_segment(a, b, p).distance_to(p)
+
+
+func _closest_point_on_segment(a: Vector2, b: Vector2, p: Vector2) -> Vector2:
+	var ab: Vector2 = b - a
+	var len_sq: float = ab.length_squared()
+	if len_sq < 0.0001:
+		return a
+	var t: float = clampf((p - a).dot(ab) / len_sq, 0.0, 1.0)
+	return a + ab * t
 
 
 func _is_slot_sticky(nav: NavigationComponent, pack_size: int, now_msec: int) -> bool:
@@ -377,12 +562,17 @@ func _apply_slot(
 	index: int,
 	angle: float,
 	now_msec: int,
-	keep_assign_time: bool
+	keep_assign_time: bool,
+	pack_size: int
 ) -> void:
+	var same_slot: bool = nav._slot_index == index
 	nav._slot_index = index
 	nav._slot_angle = angle
+	nav._slot_half_step = TAU / (2.0 * float(pack_size))
 	if not keep_assign_time or nav._slot_assigned_msec <= 0:
 		nav._slot_assigned_msec = now_msec
+	if not (keep_assign_time and same_slot):
+		nav._closing_in = false
 	nav._repath_cooldown = 0.0
 
 

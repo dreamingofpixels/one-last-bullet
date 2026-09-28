@@ -350,6 +350,10 @@ func is_carried() -> bool:
 	return _state == GlyphState.CARRIED
 
 
+func is_thrown() -> bool:
+	return not _deposited and _state == GlyphState.THROWN
+
+
 func get_carrier() -> Node2D:
 	return _carrier if is_instance_valid(_carrier) else null
 
@@ -416,7 +420,7 @@ func drop_at(world_pos: Vector2, level_root: Node) -> bool:
 	top_level = false
 
 	reparent(level_root, true)
-	global_position = world_pos
+	_set_rigid_world_position(world_pos)
 	sprite.position.y = _sprite_rest_y
 
 	_settle_grounded()
@@ -436,7 +440,9 @@ func throw_toward(direction: Vector2, level_root: Node, inherit_velocity: Vector
 	top_level = false
 
 	reparent(level_root, true)
-	global_position = throw_pos
+	# Scene transform followed the player while frozen; PhysicsServer may still hold the
+	# ground pickup pose — sync before unfreeze so the throw does not snap back.
+	_set_rigid_world_position(throw_pos)
 
 	body_collision.set_deferred("disabled", false)
 	collision_layer = PHYSICS_LAYER_ITEM
@@ -452,6 +458,15 @@ func throw_toward(direction: Vector2, level_root: Node, inherit_velocity: Vector
 	set_physics_process(true)
 	return true
 
+
+## Match PhysicsServer to the node pose (same pattern as ArenaCollapse orb shove).
+func _set_rigid_world_position(pos: Vector2) -> void:
+	PhysicsServer2D.body_set_state(
+		get_rid(),
+		PhysicsServer2D.BODY_STATE_TRANSFORM,
+		Transform2D(global_rotation, pos)
+	)
+	global_position = pos
 
 ## Toss from the current world position while grounded (e.g. shop purchase).
 ## `ignore_bodies` skips collision until settle (stall shelves block south tosses).

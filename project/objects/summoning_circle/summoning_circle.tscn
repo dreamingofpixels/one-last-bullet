@@ -21,6 +21,9 @@ radius = 22.0
 [sub_resource type="CircleShape2D" id="CircleShape2D_info"]
 radius = 64.0
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_socket_catch"]
+radius = 16.0
+
 [sub_resource type="LabelSettings" id="LabelSettings_6pmnr"]
 font = ExtResource("3_uicfy")
 font_size = 8
@@ -780,6 +783,16 @@ unique_name_in_owner = true
 position = Vector2(-31, -18)
 texture = ExtResource("6_pjoiy")
 
+[node name="SocketCatch1" type="Area2D" parent="GlyphSlots/GlyphSocket1"]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 32
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GlyphSlots/GlyphSocket1/SocketCatch1"]
+shape = SubResource("CircleShape2D_socket_catch")
+
 [node name="GlyphIcon1" type="Sprite2D" parent="GlyphSlots/GlyphSocket1" unique_id=1125159388]
 unique_name_in_owner = true
 visible = false
@@ -789,6 +802,16 @@ unique_name_in_owner = true
 position = Vector2(31, -18)
 texture = ExtResource("6_pjoiy")
 
+[node name="SocketCatch2" type="Area2D" parent="GlyphSlots/GlyphSocket2"]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 32
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GlyphSlots/GlyphSocket2/SocketCatch2"]
+shape = SubResource("CircleShape2D_socket_catch")
+
 [node name="GlyphIcon2" type="Sprite2D" parent="GlyphSlots/GlyphSocket2" unique_id=1161378583]
 unique_name_in_owner = true
 visible = false
@@ -797,6 +820,16 @@ visible = false
 unique_name_in_owner = true
 position = Vector2(0, 36)
 texture = ExtResource("6_pjoiy")
+
+[node name="SocketCatch3" type="Area2D" parent="GlyphSlots/GlyphSocket3"]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 32
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GlyphSlots/GlyphSocket3/SocketCatch3"]
+shape = SubResource("CircleShape2D_socket_catch")
 
 [node name="GlyphIcon3" type="Sprite2D" parent="GlyphSlots/GlyphSocket3" unique_id=1579701344]
 unique_name_in_owner = true

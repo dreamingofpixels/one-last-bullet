@@ -60,6 +60,7 @@ var _capture_grace_orbs: Dictionary = {}
 var _glyph_sockets: Array[Sprite2D] = []
 var _glyph_icons: Array[Sprite2D] = []
 var _glyph_icon_home: Array[Vector2] = []
+var _socket_catches: Array[Area2D] = []
 var _socket_notes: Array[SoundEvent] = []
 ## Attribute-row Fire/Water/Air/Earth hints — kept in the scene, hidden for now.
 var _hint_labels: Array[Label] = []
@@ -119,6 +120,9 @@ var _rite_board: RiteBoard = null
 @onready var glyph_icon_1: Sprite2D = %GlyphIcon1
 @onready var glyph_icon_2: Sprite2D = %GlyphIcon2
 @onready var glyph_icon_3: Sprite2D = %GlyphIcon3
+@onready var socket_catch_1: Area2D = %SocketCatch1
+@onready var socket_catch_2: Area2D = %SocketCatch2
+@onready var socket_catch_3: Area2D = %SocketCatch3
 @onready var prompt_stack: VBoxContainer = %PromptStack
 @onready var prompt_buy: InputPrompt = %PromptBuy
 @onready var prompt_activate: InputPrompt = %PromptActivate
@@ -133,10 +137,14 @@ func _ready() -> void:
 	_arcane_default_material = arcane_particles.process_material as ParticleProcessMaterial
 	_glyph_sockets = [glyph_socket_1, glyph_socket_2, glyph_socket_3]
 	_glyph_icons = [glyph_icon_1, glyph_icon_2, glyph_icon_3]
+	_socket_catches = [socket_catch_1, socket_catch_2, socket_catch_3]
 	_glyph_icon_home.clear()
 	for icon in _glyph_icons:
 		_glyph_icon_home.append(icon.position)
 	_socket_notes = [SOCKET_NOTE_D4, SOCKET_NOTE_FS4, SOCKET_NOTE_A4]
+	for i in _socket_catches.size():
+		_socket_catches[i].monitoring = false
+		_socket_catches[i].body_entered.connect(_on_socket_catch_body_entered.bind(i))
 	_hint_labels = [fire_hint, water_hint, air_hint, earth_hint]
 	_name_hint_labels = [hint_1, hint_2, hint_3, hint_4]
 	_rite_slots.clear()
@@ -342,19 +350,7 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 			return false
 		if orb.has_glyph_at(slot_index):
 			return false
-		var before: Dictionary = _displayed_stat_snapshot(orb)
-		var glyph_id: StringName = carried.glyph_id
-		var rarity: int = int(carried.rarity)
-		if not orb.apply_glyph_at(slot_index, glyph_id, rarity):
-			return false
-		if player.has_method("clear_carried_item"):
-			player.clear_carried_item(carried)
-		carried.queue_free()
-		_play_socket_note(slot_index)
-		_refresh_orb_info(true)
-		_flash_stat_deltas(before, _displayed_stat_snapshot(orb))
-		_update_ready_idle()
-		return true
+		return _socket_glyph_into_slot(orb, slot_index, carried, player)
 
 	if not orb.has_glyph_at(slot_index):
 		return false
@@ -375,6 +371,45 @@ func try_handle_ritual_pickup(player: Node) -> bool:
 	_flash_stat_deltas(before_remove, _displayed_stat_snapshot(orb))
 	_update_ready_idle()
 	return true
+
+
+## Place a free glyph into an empty ritual slot (carried button place or thrown overlap).
+func _socket_glyph_into_slot(orb: BlankOrb, slot_index: int, glyph: Glyph, carrier: Node = null) -> bool:
+	if orb == null or glyph == null or not is_instance_valid(glyph):
+		return false
+	if slot_index < 0 or orb.has_glyph_at(slot_index):
+		return false
+	var before: Dictionary = _displayed_stat_snapshot(orb)
+	var glyph_id: StringName = glyph.glyph_id
+	var rarity: int = int(glyph.rarity)
+	if not orb.apply_glyph_at(slot_index, glyph_id, rarity):
+		return false
+	if carrier != null and carrier.has_method("clear_carried_item"):
+		carrier.clear_carried_item(glyph)
+	glyph.queue_free()
+	_play_socket_note(slot_index)
+	_refresh_orb_info(true)
+	_flash_stat_deltas(before, _displayed_stat_snapshot(orb))
+	_update_ready_idle()
+	return true
+
+
+func _on_socket_catch_body_entered(body: Node2D, slot_index: int) -> void:
+	call_deferred("_try_socket_thrown_glyph", body, slot_index)
+
+
+func _try_socket_thrown_glyph(body: Node2D, slot_index: int) -> void:
+	if not _ritual_running or _commit_busy or not glyph_slots.visible:
+		return
+	var glyph: Glyph = _resolve_glyph(body) as Glyph
+	if glyph == null or not is_instance_valid(glyph):
+		return
+	if not glyph.is_thrown():
+		return
+	var orb: BlankOrb = get_captured_orb() as BlankOrb
+	if orb == null or orb.has_glyph_at(slot_index):
+		return
+	_socket_glyph_into_slot(orb, slot_index, glyph)
 
 
 func capture_orb(orb: RigidBody2D) -> void:
@@ -653,6 +688,7 @@ func _hide_all_glyph_icons() -> void:
 func _show_ritual_ui() -> void:
 	_orb_info_collapsed = false
 	glyph_slots.visible = true
+	_set_socket_catch_monitoring(true)
 	_update_ritual_ui_proximity()
 	_refresh_orb_info(true)
 	_update_ready_idle()
@@ -663,8 +699,14 @@ func _hide_ritual_ui() -> void:
 	_orb_info_collapsed = false
 	orb_info.visible = false
 	glyph_slots.visible = false
+	_set_socket_catch_monitoring(false)
 	_hide_hints()
 	_refresh_input_prompts()
+
+
+func _set_socket_catch_monitoring(enabled: bool) -> void:
+	for catch_area in _socket_catches:
+		catch_area.set_deferred("monitoring", enabled)
 
 
 ## OrbInfo (ritual) and input prompts only while a player is in InfoProximityArea.

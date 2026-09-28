@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bot4piyfgwe8v"
-path="res://.godot/imported/placeholder_rite.png-3749db5bf935001706fcc020c61c166e.ctex"
+uid="uid://bl7hjd16vj7ee"
+path="res://.godot/imported/tempered_rite.png-768e19cba10fff25ca52b9dea29968ee.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://ui/rites/placeholder_rite.png"
-dest_files=["res://.godot/imported/placeholder_rite.png-3749db5bf935001706fcc020c61c166e.ctex"]
+source_file="res://items/rites/tempered_rite.png"
+dest_files=["res://.godot/imported/tempered_rite.png-768e19cba10fff25ca52b9dea29968ee.ctex"]
 
 [params]
 

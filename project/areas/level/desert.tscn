@@ -360,7 +360,6 @@ source_geometry_group_name = &"navigation_source"
 [node name="Desert" type="Node2D" unique_id=1120075217]
 script = ExtResource("2_level")
 level_music = ExtResource("2_ynou2")
-glyph_drop_chance = 0.5
 bounce_orbs_off_entities = true
 run_start = ExtResource("17_runstart")
 

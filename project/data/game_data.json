@@ -834,6 +834,30 @@
       "active": null
     },
     {
+      "id": "rally",
+      "name": "Rally",
+      "effect": "Increases player speed by 20% and own damage by 40% if player is more then 400 range away",
+      "element_1": "Water",
+      "element_2": "Air",
+      "element_3": "Fire",
+      "unique?": "Yes",
+      "motion": null,
+      "damage": null,
+      "self_damage": null,
+      "crit_chance": null,
+      "crit_damage": null,
+      "speed": null,
+      "weight": null,
+      "splash": null,
+      "glyph_drop": null,
+      "burn": null,
+      "chill": null,
+      "shock": null,
+      "blight": null,
+      "scene_path": "res://entities/orbs/blank/rally_orb.tscn",
+      "active": null
+    },
+    {
       "id": "hunger",
       "name": "Hunger",
       "effect": "Every destroyed object increases weight by 1",
@@ -958,7 +982,7 @@
     {
       "id": "frostburn",
       "name": "Frostburn",
-      "desc": "Each time 3 or more stacks of Frost is inflicted, inflict 1 burn",
+      "desc": "Each time 3 or more stacks of Chill is inflicted, inflict 1 burn",
       "tag": "burn, chill",
       "png_path": "res://ui/rites/frostburn.png",
       "active": true,
@@ -1413,6 +1437,15 @@
       "png_path": "res://ui/rites/clearcut.png",
       "active": null,
       "prio": null
+    },
+    {
+      "id": "assistance",
+      "name": "Assistance",
+      "desc": "A breakable destroyed by an enemy has a 40% glyph drop chance",
+      "tag": "breakable, glyph",
+      "png_path": "res://ui/rites/assistance.png",
+      "active": null,
+      "prio": "1"
     }
   ]
 }

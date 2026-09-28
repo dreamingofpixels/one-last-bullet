@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dhu78mdcbwi35"
-path="res://.godot/imported/clash_rite.png-56e156d261870982b2d7f37339c866b6.ctex"
+uid="uid://bot4piyfgwe8v"
+path="res://.godot/imported/placeholder_rite.png-7c197f051b6efdd798d4c03f14ad8c80.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://ui/rites/clash_rite.png"
-dest_files=["res://.godot/imported/clash_rite.png-56e156d261870982b2d7f37339c866b6.ctex"]
+source_file="res://items/rites/placeholder_rite.png"
+dest_files=["res://.godot/imported/placeholder_rite.png-7c197f051b6efdd798d4c03f14ad8c80.ctex"]
 
 [params]
 

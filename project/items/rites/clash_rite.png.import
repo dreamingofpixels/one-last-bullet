@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bl7hjd16vj7ee"
-path="res://.godot/imported/tempered_rite.png-3b8090e9af37dd6397d43244a03d9c3a.ctex"
+uid="uid://dhu78mdcbwi35"
+path="res://.godot/imported/clash_rite.png-de9e66e276943ac91ea178cf7f2c4b29.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://ui/rites/tempered_rite.png"
-dest_files=["res://.godot/imported/tempered_rite.png-3b8090e9af37dd6397d43244a03d9c3a.ctex"]
+source_file="res://items/rites/clash_rite.png"
+dest_files=["res://.godot/imported/clash_rite.png-de9e66e276943ac91ea178cf7f2c4b29.ctex"]
 
 [params]
 

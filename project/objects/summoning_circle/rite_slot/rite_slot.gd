@@ -2,7 +2,7 @@
 class_name RiteSlot
 extends Sprite2D
 
-const PLACEHOLDER_TEXTURE: Texture2D = preload("res://ui/rites/placeholder_rite.png")
+const PLACEHOLDER_TEXTURE: Texture2D = preload("res://items/rites/placeholder_rite.png")
 
 @export var rite_id: StringName = &"":
 	set(value):
@@ -42,7 +42,7 @@ static func resolve_texture(id: StringName) -> Texture2D:
 	var id_s: String = String(id).strip_edges()
 	if id_s.is_empty():
 		return null
-	var named_path: String = "res://ui/rites/%s_rite.png" % id_s
+	var named_path: String = "res://items/rites/%s_rite.png" % id_s
 	if ResourceLoader.exists(named_path):
 		var named_tex: Texture2D = load(named_path) as Texture2D
 		if named_tex != null:

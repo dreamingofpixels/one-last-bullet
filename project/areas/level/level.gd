@@ -30,8 +30,6 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 ]
 
 @export var level_music: AudioStream
-## Chance (0–1) that a glyph spawns when an enemy dies (fallback when killer has no glyph_drop).
-@export var glyph_drop_chance: float = 0.25
 @export var glyph_rarity_weight_common: float = 70.0
 @export var glyph_rarity_weight_rare: float = 25.0
 @export var glyph_rarity_weight_unique: float = 5.0
@@ -408,10 +406,10 @@ func _on_enemy_died(enemy: Node = null) -> void:
 
 
 func _try_drop_glyph_at(pos: Vector2, source: Node = null) -> void:
-	var chance: float = glyph_drop_chance
-	if source is BlankOrb:
-		chance = (source as BlankOrb).glyph_drop
-	chance = clampf(chance, 0.0, 1.0)
+	# Glyphs only drop from orb kills; enemy-smashed props yield nothing.
+	if source == null or not is_instance_valid(source) or not (source is BlankOrb):
+		return
+	var chance: float = clampf((source as BlankOrb).glyph_drop, 0.0, 1.0)
 	if randf() > chance:
 		return
 

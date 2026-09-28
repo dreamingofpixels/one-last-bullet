@@ -24,6 +24,14 @@ const DWARF_HITBOX_HEIGHT := 16.0
 const DWARF_HITBOX_OFFSET := Vector2(0, 4)
 const WIZARD_FRAMES := preload("res://entities/player/player_frames.tres")
 const DWARF_FRAMES := preload("res://entities/player/dwarf/dwarf_frames.tres")
+## Soft DualShock 4 light-bar tints (P1 stays natural art). Index = player_index.
+const PLAYER_TINTS: Array[Color] = [
+	Color.WHITE,
+	Color.WHITE,
+	Color(1.0, 0.45, 0.45),
+	Color(0.45, 1.0, 0.55),
+	Color(1.0, 0.55, 0.85),
+]
 
 var COMPONENTS: Dictionary = {}
 
@@ -33,6 +41,7 @@ var COMPONENTS: Dictionary = {}
 @onready var dash_component: DashComponent = %DashComponent
 @onready var orb_tether_component: OrbTetherComponent = %OrbTetherComponent
 @onready var destroy_component: DestroyComponent = %DestroyComponent
+@onready var health_component: HealthComponent = %HealthComponent
 @onready var directional_sprite: DirectionalSpriteComponent = %DirectionalSpriteComponent
 @onready var player_sprite: AnimatedSprite2D = %PlayerSprite
 @onready var controls: Controls = %Controls
@@ -61,6 +70,7 @@ func _ready() -> void:
 	add_to_group("player")
 	controls.apply_player_index(player_index)
 	_apply_character()
+	_apply_player_tint()
 	player_sprite.visible = false
 	_set_spawn_inert(true)
 
@@ -216,6 +226,15 @@ func _apply_character() -> void:
 			orb_tether_component.orb_redirect_mode = OrbTetherComponent.OrbRedirectMode.DASH_VAULT
 			_apply_hitbox(WIZARD_HITBOX_HEIGHT, Vector2.ZERO)
 	directional_sprite.play(&"idle", true)
+
+
+## Tint joiners to match DualShock 4 light-bar colors (P2 red, P3 green, P4 pink).
+## Goes through HealthComponent so damage flash / i-frame blink restore the tint.
+func _apply_player_tint() -> void:
+	var tint: Color = Color.WHITE
+	if player_index >= 0 and player_index < PLAYER_TINTS.size():
+		tint = PLAYER_TINTS[player_index]
+	health_component.set_rest_modulate(tint)
 
 
 func _apply_editor_preview() -> void:

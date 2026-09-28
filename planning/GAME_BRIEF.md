@@ -60,7 +60,7 @@ Dodge your own orb while redirecting it at enemies (wizard vaults through it; dw
 - **Aim**: mouse for the keyboard player; right stick for gamepad players
 - **Pause / inspect**: Esc (keyboard) or Start (gamepad) opens the ritual UI in **view-only** mode — orb inventory + orb info (stats / sockets). Hover or controller-highlight an attribute to show its GameData `attribute.desc` in the effect text. Transform, recycle, buy, and glyph inventory are hidden. Esc / Start / Done closes without releasing any orb.
 - **Restart**: R
-- **Co-op**: up to 4 local players supported by the input system; P1 uses keyboard + mouse + gamepad device 0; **P2 is added automatically** when a second gamepad is connected (no join button) — instances `player.tscn` with `player_index = 2` and assembles in at the same time as P1; mid-level plug-in still hot-joins. P3/P4 action bindings not yet authored in project.godot. Run ends only when **all** players are dead.
+- **Co-op**: up to **4** local players; P1 uses keyboard + mouse + gamepad device 0; **P2–P4 join automatically** when pads on devices 1–3 are connected (no join button) — instances `player.tscn` with matching `player_index` and assembles in at the same time as P1; mid-level plug-in still hot-joins. Joiners use soft DualShock 4 light-bar tints (**red / green / pink**); P1 keeps natural art. Run ends only when **all** players are dead.
 
 ## Stage
 - **Different stages and environments**, with randomized enemies and obstacles (tavern is one possible setting, not the only one).

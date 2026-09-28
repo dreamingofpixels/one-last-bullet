@@ -5,20 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cs5k4bbqcwlan" path="res://entities/orbs/blank/blank_orb.tscn" id="3_fgehs"]
 [ext_resource type="Script" uid="uid://dtnltw0x0tgnq" path="res://areas/level/rite_entry_config.gd" id="4_pk5o5"]
 
-[sub_resource type="Resource" id="Resource_v7wur"]
-script = ExtResource("4_pk5o5")
-rite_id = &"clash"
-
-[sub_resource type="Resource" id="Resource_3ru8o"]
-script = ExtResource("4_pk5o5")
-rite_id = &"ward"
-
-[sub_resource type="Resource" id="Resource_kq4ox"]
-script = ExtResource("4_pk5o5")
-rite_id = &"tempered"
-
 [resource]
 script = ExtResource("1_script")
-starting_mana = 50.0
+starting_mana = 20.0
 starting_orbs = Array[PackedScene]([ExtResource("3_fgehs")])
-starting_rites = Array[ExtResource("4_pk5o5")]([SubResource("Resource_v7wur"), SubResource("Resource_3ru8o"), SubResource("Resource_kq4ox")])

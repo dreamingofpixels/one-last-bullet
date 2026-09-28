@@ -564,17 +564,17 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Per-player input: static action duplication + runtime suffix
 
-- **Decision**: P1 actions (`move_up`, `dash`, etc.) are authored in `project.godot` with keyboard/mouse + gamepad device 0. P2 duplicates (`move_up_2`, etc.) are hand-authored in `project.godot` with gamepad device 1 only. At runtime, `Controls.apply_player_index(n)` appends `""` / `"_2"` suffix to every `PlayerAction.action`. P3/P4 action sets (`_3`, `_4`) are added in the same pattern when needed.
+- **Decision**: P1 actions (`move_up`, `dash`, etc.) are authored in `project.godot` with keyboard/mouse + gamepad device 0. P2–P4 duplicates (`move_up_2` / `_3` / `_4`, etc.) are hand-authored in `project.godot` with gamepad devices 1 / 2 / 3 only. At runtime, `Controls.apply_player_index(n)` appends `""` / `"_2"` / `"_3"` / `"_4"` to every `PlayerAction.action`.
 - **Why**: No autoload needed; all bindings visible in Project Settings → Input Map; Godot's built-in action system handles device filtering.
 - **Alternatives**: Runtime duplication autoload (clone base actions to `_2/_3/_4` at startup) — adds an autoload and makes bindings invisible in Project Settings; plain `InputEvent.device` filtering in every script — more per-script boilerplate.
-- **Status**: decided (in-codebase); P1 + P2 authored; P3/P4 not yet authored
+- **Status**: decided (in-codebase); P1–P4 authored
 
 ### Hot-join local co-op via joypad connection
 
-- **Decision**: When **two or more** gamepads are connected (`Input.get_connected_joypads().size() >= 2`), `level.gd` instances `player.tscn` with `player_index = 2` immediately (no join button), places it near P1 on a physics-clear offset, and runs `begin_level()` **in parallel** with P1 so both reverse-assemble together. Mid-level plug-in still hot-joins via `Input.joy_connection_changed`. Cap is `MAX_PLAYERS = 2` until `_3`/`_4` actions exist. Scene reload (`R`) rescans pads so P2 returns without a PlayerManager autoload. Opening orb volley still uses P1 as instigator; all living players get `HealthComponent.start_invulnerability(1s)` so P2 is not instantly killed by the circle launch.
-- **Why**: Matches "plug in a second pad and play" arcade co-op; existing `_2` input map and `player_index` export already support it; assembling together keeps the intro beat shared instead of making P2 a late arrival.
-- **Alternatives**: Level-start-only scan — misses mid-session join; press-to-join on Attack/Start — extra UX step; wait until after P1 assembles before spawning P2 — previous, felt like a join prompt; PlayerManager autoload for restart persistence — unnecessary while reload rescans; spawn P2 instantly without assemble — pop-in and free hitbox risk.
-- **Status**: decided (in-codebase); P3/P4 deferred
+- **Decision**: For each connected joypad on devices **1–3**, `level.gd` instances `player.tscn` with `player_index = device + 1` (P2–P4) immediately (no join button), places it near P1 on a physics- and player-clear offset, and runs `begin_level()` **in parallel** with P1 so all reverse-assemble together. Mid-level plug-in still hot-joins via `Input.joy_connection_changed` (assembles only the new player). Cap is `MAX_PLAYERS = 4`. Each joiner gets a soft DualShock 4 light-bar sprite tint via `HealthComponent.set_rest_modulate` (**P2 red**, **P3 green**, **P4 pink**; P1 stays natural). Scene reload (`R`) rescans pads so joiners return without a PlayerManager autoload. Opening orb volley still uses P1 as instigator; all living players get `HealthComponent.start_invulnerability(1s)` so joiners are not instantly killed by the circle launch.
+- **Why**: Matches "plug in a pad and play" arcade co-op; existing `_2`/`_3`/`_4` input map and `player_index` export support it; assembling together keeps the intro beat shared instead of making joiners late arrivals; light-bar colors match the pads players already see.
+- **Alternatives**: Level-start-only scan — misses mid-session join; press-to-join on Attack/Start — extra UX step; wait until after P1 assembles before spawning joiners — previous, felt like a join prompt; PlayerManager autoload for restart persistence — unnecessary while reload rescans; spawn instantly without assemble — pop-in and free hitbox risk; cap at 2 until `_3`/`_4` existed — previous, now lifted; tint P1 blue to match DS4 P1 — rejected (P1 is often keyboard/mouse and should keep authored art).
+- **Status**: decided (in-codebase)
 
 ### Run ends when all players are dead
 

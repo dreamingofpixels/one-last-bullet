@@ -7,19 +7,21 @@ const GLYPH_SCENE := preload("res://items/glyphs/glyph.tscn")
 const BLANK_ORB_SCENE := preload("res://entities/orbs/blank/blank_orb.tscn")
 const SHOP_SCENE := preload("res://objects/shop/shop.tscn")
 const PLAYER_SCENE := preload("res://entities/player/player.tscn")
-const MAX_PLAYERS := 2
-## Shared i-frames for all living players when the opening volley launches (P2 has no orb instigator grace).
+const MAX_PLAYERS := 4
+## Shared i-frames for all living players when the opening volley launches (joiners have no orb instigator grace).
 const OPENING_PLAYER_INVULN_SECONDS := 1.0
 ## Brief mutual RigidBody exceptions so co-spawned opening orbs fan out before colliding.
 const OPENING_ORB_COLLISION_GRACE_SECONDS := 0.2
 const PHYSICS_LAYER_WORLD := 1
+## Minimum distance between a join spawn and any existing player.
+const JOIN_SPAWN_PLAYER_CLEARANCE := 24.0
 ## Shop origin so stalls sit roughly centered north of the summoning circle.
 const SHOP_SPAWN_POSITION := Vector2(280.0, 90.0)
 const DEPART_DWELL_SECONDS := 1.0
 const PROP_FALL_DURATION := 0.7
 const PROP_ASSEMBLE_DURATION := 2.0
 const ORB_RECALL_FALL_DURATION := 0.7
-const P2_SPAWN_OFFSETS: Array[Vector2] = [
+const JOIN_SPAWN_OFFSETS: Array[Vector2] = [
 	Vector2(40.0, 0.0),
 	Vector2(-40.0, 0.0),
 	Vector2(0.0, -40.0),
@@ -55,7 +57,7 @@ var _game_over: bool = false
 var _cleared: bool = false
 var _opening_orbs_spawned: bool = false
 var _level_intro_done: bool = false
-var _p2_spawn_shape: CircleShape2D
+var _join_spawn_shape: CircleShape2D
 var _stage: int = 1
 var _base_waves: Array[EnemyWave] = []
 var _orb_snapshots: Array[Dictionary] = []
@@ -96,8 +98,8 @@ func _ready() -> void:
 
 	if not await _await_physics_frame():
 		return
-	# P2 is instanced as soon as a second pad is already connected — no join button.
-	_try_add_player_2()
+	# Extra pads (devices 1–3 → P2–P4) join immediately — no join button.
+	_sync_joined_players()
 	navigation_region.bake_navigation_polygon(true)
 	await navigation_region.bake_finished
 	if not is_inside_tree():
@@ -228,38 +230,56 @@ func _connect_player_destroy(p: Node) -> void:
 		player_destroy.destroyed.connect(_on_player_died)
 
 
-func _has_second_controller() -> bool:
-	return Input.get_connected_joypads().size() >= 2
-
-
-func _on_joy_connection_changed(_device: int, connected: bool) -> void:
-	if not connected or not _has_second_controller():
+func _on_joy_connection_changed(device: int, connected: bool) -> void:
+	if not connected:
 		return
-	var p2: CharacterBody2D = _try_add_player_2()
-	if p2 == null:
+	var joined: Array[CharacterBody2D] = _sync_joined_players(device)
+	if joined.is_empty():
 		return
-	# Hot-join after intro: assemble the new player. During intro they are already in the roster.
-	if _level_intro_done:
-		await p2.begin_level()
+	# Hot-join after intro: assemble only the new player(s). During intro they are already in the roster.
+	if not _level_intro_done:
+		return
+	for p in joined:
+		if not is_instance_valid(p) or not p.is_inside_tree():
+			continue
+		await p.begin_level()
 		if not is_inside_tree() or _game_over or _cleared:
 			return
-		status_label.text = "Clear the room"
+	status_label.text = "Clear the room"
 
 
-func _try_add_player_2() -> CharacterBody2D:
+## Spawn missing P2–P4 for connected joypad devices 1–3. Optional `only_device` limits the scan
+## to one pad (hot-join). Returns players that were just added.
+func _sync_joined_players(only_device: int = -1) -> Array[CharacterBody2D]:
+	var added: Array[CharacterBody2D] = []
 	if not is_inside_tree() or _game_over or _cleared:
-		return null
-	if not _has_second_controller():
+		return added
+	for device_id in Input.get_connected_joypads():
+		if only_device >= 0 and int(device_id) != only_device:
+			continue
+		var player_index: int = int(device_id) + 1
+		# Device 0 is P1 (already in the scene). Extra pads are devices 1–3 → indices 2–4.
+		if player_index < 2 or player_index > MAX_PLAYERS:
+			continue
+		var p: CharacterBody2D = _try_add_player(player_index)
+		if p != null:
+			added.append(p)
+	return added
+
+
+func _try_add_player(player_index: int) -> CharacterBody2D:
+	if not is_inside_tree() or _game_over or _cleared:
 		return null
 	if Players.count(get_tree()) >= MAX_PLAYERS:
 		return null
-	if _has_player_index(2):
+	if _has_player_index(player_index):
 		return null
 
+	var spawn_pos: Vector2 = _pick_join_spawn_position()
 	var p: CharacterBody2D = PLAYER_SCENE.instantiate() as CharacterBody2D
-	p.player_index = 2
+	p.player_index = player_index
 	players_root.add_child(p)
-	p.global_position = _pick_join_spawn_position()
+	p.global_position = spawn_pos
 	_connect_player_destroy(p)
 	return p
 
@@ -275,7 +295,7 @@ func _assemble_all_players() -> void:
 		return
 
 	# Godot forbids calling async funcs without await; kick each begin_level off via a
-	# one-shot process_frame so both players assemble in the same intro beat.
+	# one-shot process_frame so all players assemble in the same intro beat.
 	var remaining: Array = [to_assemble.size()]
 	var starters: Array[Callable] = []
 	var tree := get_tree()
@@ -312,19 +332,27 @@ func _has_player_index(index: int) -> bool:
 
 func _pick_join_spawn_position() -> Vector2:
 	var anchor: Vector2 = player.global_position
-	for offset in P2_SPAWN_OFFSETS:
+	for offset in JOIN_SPAWN_OFFSETS:
 		var candidate: Vector2 = anchor + offset
-		if _is_spawn_physics_clear(candidate):
+		if _is_spawn_physics_clear(candidate) and _is_spawn_clear_of_players(candidate):
 			return candidate
-	return anchor + P2_SPAWN_OFFSETS[0]
+	return anchor + JOIN_SPAWN_OFFSETS[0]
+
+
+func _is_spawn_clear_of_players(pos: Vector2) -> bool:
+	var min_dist_sq: float = JOIN_SPAWN_PLAYER_CLEARANCE * JOIN_SPAWN_PLAYER_CLEARANCE
+	for p in Players.all(get_tree()):
+		if pos.distance_squared_to(p.global_position) < min_dist_sq:
+			return false
+	return true
 
 
 func _is_spawn_physics_clear(pos: Vector2) -> bool:
-	if _p2_spawn_shape == null:
-		_p2_spawn_shape = CircleShape2D.new()
-		_p2_spawn_shape.radius = 8.0
+	if _join_spawn_shape == null:
+		_join_spawn_shape = CircleShape2D.new()
+		_join_spawn_shape.radius = 8.0
 	var params := PhysicsShapeQueryParameters2D.new()
-	params.shape = _p2_spawn_shape
+	params.shape = _join_spawn_shape
 	params.transform = Transform2D(0.0, pos)
 	params.collision_mask = PHYSICS_LAYER_WORLD
 	params.collide_with_bodies = true

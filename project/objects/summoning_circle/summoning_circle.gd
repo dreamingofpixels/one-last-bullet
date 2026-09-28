@@ -76,6 +76,7 @@ var _rite_slots: Array[RiteSlot] = []
 var _focused_rite_slot: RiteSlot = null
 ## Slots reserved by in-flight shop rite purchases (instance_id → true).
 var _reserved_rite_slots: Dictionary = {}
+var _rite_board: RiteBoard = null
 
 @onready var deposit_area: Area2D = %DepositArea
 @onready var info_proximity_area: Area2D = %InfoProximityArea
@@ -142,6 +143,10 @@ func _ready() -> void:
 	for child in rite_slots_root.get_children():
 		if child is RiteSlot:
 			_rite_slots.append(child as RiteSlot)
+	_rite_board = RiteBoard.new()
+	_rite_board.name = "RiteBoard"
+	add_child(_rite_board)
+	_rite_board.sync_from_ids(get_owned_rite_ids())
 	orb_info.visible = false
 	rite_info.visible = false
 	glyph_slots.visible = false
@@ -164,8 +169,9 @@ func _process(_delta: float) -> void:
 	_refresh_input_prompts()
 
 
-## Apply editor-authored starting mana; starting glyphs convert straight to mana.
-func apply_start_config(mana: float, entries: Array) -> void:
+## Apply editor-authored starting mana and rites.
+## Starting glyphs convert straight to mana. Starting rites fill empty ring slots.
+func apply_start_config(mana: float, entries: Array, rites: Array = []) -> void:
 	mana_pool = maxf(mana, 0.0)
 	for entry_variant in entries:
 		var rarity: int = Glyph.Rarity.COMMON
@@ -176,9 +182,27 @@ func apply_start_config(mana: float, entries: Array) -> void:
 		else:
 			continue
 		mana_pool += float(MANA_BY_RARITY.get(rarity, 5.0))
+	_apply_starting_rites(rites)
 	_refresh_mana_label()
 	_refresh_input_prompts()
 	mana_deposited.emit(0.0, mana_pool)
+
+
+func _apply_starting_rites(rites: Array) -> void:
+	var owned: Dictionary = {}
+	for id in get_owned_rite_ids():
+		owned[id] = true
+	for rite_variant in rites:
+		if not (rite_variant is RiteEntryConfig):
+			continue
+		var rite_id: StringName = (rite_variant as RiteEntryConfig).rite_id
+		if String(rite_id).strip_edges().is_empty() or owned.has(rite_id):
+			continue
+		var slot: RiteSlot = reserve_next_rite_slot()
+		if slot == null:
+			return
+		fill_rite_slot(slot, rite_id)
+		owned[rite_id] = true
 
 
 func get_launch_origin() -> Vector2:
@@ -689,6 +713,8 @@ func fill_rite_slot(slot: RiteSlot, rite_id: StringName) -> void:
 		return
 	_reserved_rite_slots.erase(slot.get_instance_id())
 	slot.rite_id = rite_id
+	if _rite_board != null:
+		_rite_board.activate_rite(rite_id)
 
 
 ## Drop a reservation without filling (e.g. if a purchase flight is cancelled).

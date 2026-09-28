@@ -241,9 +241,10 @@ shape = SubResource("CircleShape2D_hitbox")
 [node name="EnemyAttackComponent" parent="Components" unique_id=2048123456 node_paths=PackedStringArray("animated_sprite", "movement_component", "navigation_component", "knockback_component", "status_component") instance=ExtResource("11_eattack")]
 unique_name_in_owner = true
 position = Vector2(-12, 1)
+collision_mask = 3
+damage = 10.0
 hold_duration = 0.2
 lunge_distance = 30.0
-hit_knockback_distance = null
 hitbox_size = Vector2(24, 24)
 attack_sound = ExtResource("12_asfx")
 animated_sprite = NodePath("../../Sprite2D")

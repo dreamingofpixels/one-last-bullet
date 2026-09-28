@@ -36,7 +36,7 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 @export var new_orb_cost: float = 20.0
 ## When true, flying orbs bounce off players/enemies; when false, they punch through.
 @export var bounce_orbs_off_entities: bool = false
-## Editor-authored starting mana, orbs, and circle glyph inventory.
+## Editor-authored starting mana, orbs, circle glyph seeds, and owned rites.
 @export var run_start: RunStartConfig
 
 @onready var navigation_region: NavigationRegion2D = %Navigation
@@ -49,6 +49,7 @@ const P2_SPAWN_OFFSETS: Array[Vector2] = [
 @onready var enemy_spawner: EnemySpawner = %EnemySpawner
 @onready var time_slow_overlay: TimeSlowOverlay = %TimeSlowOverlay
 @onready var ritual_menu: RitualMenu = %RitualMenu
+@onready var arena_collapse: ArenaCollapse = %ArenaCollapse
 
 var _game_over: bool = false
 var _cleared: bool = false
@@ -111,6 +112,7 @@ func _ready() -> void:
 		return
 	_level_intro_done = true
 	_launch_opening_orbs()
+	arena_collapse.start()
 	status_label.text = "Clear the room"
 
 
@@ -129,13 +131,15 @@ func _process(delta: float) -> void:
 func _apply_run_start_config() -> void:
 	var mana: float = 0.0
 	var glyphs: Array = []
+	var rites: Array = []
 	if run_start != null:
 		mana = run_start.starting_mana
 		glyphs = run_start.starting_glyphs
+		rites = run_start.starting_rites
 	else:
 		# Fallback matches the previous hardcoded seed.
 		glyphs = [{"id": "static", "rarity": Glyph.Rarity.COMMON}]
-	summoning_circle.apply_start_config(mana, glyphs)
+	summoning_circle.apply_start_config(mana, glyphs, rites)
 
 
 func _connect_orb_signals(orb: RigidBody2D) -> void:
@@ -456,7 +460,11 @@ func _get_damage_source(entity: Node) -> Node:
 	var comp = entity.get("COMPONENTS")
 	if comp == null or not comp.has(HealthComponent):
 		return null
-	return (comp[HealthComponent] as HealthComponent).last_damage_source
+	# Freed attackers leave a dangling Object; typed Node args reject those at the call site.
+	var source = (comp[HealthComponent] as HealthComponent).last_damage_source
+	if source == null or not is_instance_valid(source) or not (source is Node):
+		return null
+	return source as Node
 
 
 func _on_orb_deflected(_by: Node = null) -> void:
@@ -498,6 +506,7 @@ func _on_all_cleared() -> void:
 
 
 func _begin_intermission() -> void:
+	arena_collapse.stop_and_restore()
 	summoning_circle.set_intermission(true)
 	await _recall_and_destroy_orbs()
 	if not is_inside_tree() or _game_over:
@@ -650,6 +659,7 @@ func _run_next_stage() -> void:
 	summoning_circle.set_intermission(false)
 	enemy_spawner.set_waves(EnemySpawner.build_scaled_waves(_base_waves, _stage))
 	enemy_spawner.start()
+	arena_collapse.start()
 	_cleared = false
 	_starting_next_stage = false
 	status_label.text = "Stage %d — clear the room" % _stage

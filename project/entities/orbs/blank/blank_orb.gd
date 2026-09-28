@@ -1099,10 +1099,25 @@ func resolve_hitbox_damage(victim: Node) -> Dictionary:
 	if victim.is_in_group("enemies"):
 		amount *= _blight_incoming_multiplier(victim)
 
+	var blocked: bool = false
+	if victim.is_in_group("player") and RiteBoard.active != null:
+		var health: HealthComponent = null
+		var comp = victim.get("COMPONENTS")
+		if comp != null and comp.has(HealthComponent):
+			health = comp[HealthComponent] as HealthComponent
+		if health == null or not health.is_invulnerable():
+			var ctx := RiteContext.new()
+			ctx.victim = victim
+			ctx.source = self
+			ctx.position = global_position
+			amount = RiteBoard.active.resolve(&"self_damage", amount, ctx)
+			blocked = ctx.blocked
+
 	var result: Dictionary = {
 		"amount": amount,
 		"kind": kind,
 		"pre_blight_amount": pre_blight_amount,
+		"blocked": blocked,
 	}
 	_resolved_hit_cache[victim_id] = result
 	return result
@@ -1672,8 +1687,11 @@ func _on_body_entered(body: Node) -> void:
 	# Bounce direction is owned by _integrate_forces (world / orb body contacts).
 	# World solids (walls / rocks / breakables) take body-contact damage.
 	# Player / enemies bounce + damage via hurtbox poll (skip body path).
-	# Other orbs bounce but deal no damage to each other.
-	if body.is_in_group("player") or body.is_in_group("enemies") or body.is_in_group("orb"):
+	# Other orbs bounce but deal no damage to each other; rites may react (Clash).
+	if body.is_in_group("orb"):
+		_notify_orb_orb_contact(body)
+		return
+	if body.is_in_group("player") or body.is_in_group("enemies"):
 		return
 	var victim_root: Node = _resolve_entity_root(body)
 	if victim_root != null:
@@ -1682,8 +1700,28 @@ func _on_body_entered(body: Node) -> void:
 			or victim_root.is_in_group("enemies")
 			or victim_root.is_in_group("orb")
 		):
+			if victim_root.is_in_group("orb"):
+				_notify_orb_orb_contact(victim_root)
 			return
 		_try_apply_orb_damage(victim_root)
+
+
+func _notify_orb_orb_contact(other: Node) -> void:
+	if RiteBoard.active == null:
+		return
+	if other == null or not is_instance_valid(other):
+		return
+	if not (other is BlankOrb):
+		return
+	var other_orb: BlankOrb = other as BlankOrb
+	if other_orb.state != OrbState.FLYING:
+		return
+	var ctx := RiteContext.new()
+	ctx.victim = self
+	ctx.other = other_orb
+	ctx.source = self
+	ctx.position = (global_position + other_orb.global_position) * 0.5
+	RiteBoard.active.notify(&"orb_orb_contact", ctx)
 
 
 func _load_stats_from_gamedata() -> void:
@@ -1770,6 +1808,18 @@ func _apply_splash(direct_victim: Node, resolved: Dictionary) -> void:
 		var kind: HealthComponent.DamageKind = HealthComponent.DamageKind.STANDARD
 		if victim_root.is_in_group("player"):
 			amount = splash * self_damage
+			if RiteBoard.active != null:
+				var health: HealthComponent = null
+				if comp.has(HealthComponent):
+					health = comp[HealthComponent] as HealthComponent
+				if health == null or not health.is_invulnerable():
+					var ctx := RiteContext.new()
+					ctx.victim = victim_root
+					ctx.source = self
+					ctx.position = global_position
+					amount = RiteBoard.active.resolve(&"self_damage", amount, ctx)
+					if ctx.blocked:
+						continue
 		elif victim_root.is_in_group("enemies"):
 			amount *= _blight_incoming_multiplier(victim_root)
 		(comp[HealthComponent] as HealthComponent).take_damage(amount, kind, self)

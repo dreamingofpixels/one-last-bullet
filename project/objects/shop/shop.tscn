@@ -83,6 +83,8 @@ shader_parameter/tint_dark = Color(0.741, 0.741, 0.741, 1)
 
 [node name="Shop" type="Node2D" unique_id=1347830140]
 script = ExtResource("1_xuxxm")
+rite_cost = 30.0
+glyph_cost_multiplier = 1.5
 
 [node name="RiteStall" type="Sprite2D" parent="." unique_id=1350451740]
 unique_name_in_owner = true

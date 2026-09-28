@@ -89,22 +89,27 @@ func _poll_attacker(attacker: Node, attacker_id: int, frame: int, now_msec: int)
 
 		var resolved_amount: float = dc.damage
 		var resolved_kind: HealthComponent.DamageKind = dc.damage_kind
+		var resolved_blocked: bool = false
 		if attacker.has_method("resolve_hitbox_damage"):
 			var resolved: Variant = attacker.resolve_hitbox_damage(owner)
 			if typeof(resolved) == TYPE_DICTIONARY:
 				var resolved_dict: Dictionary = resolved
 				resolved_amount = float(resolved_dict.get("amount", dc.damage))
 				resolved_kind = int(resolved_dict.get("kind", dc.damage_kind))
+				resolved_blocked = bool(resolved_dict.get("blocked", false))
 
 		var applied := false
-		if apply_hp and health_component:
+		if resolved_blocked:
+			# Ward (and similar) cancelled the hit — no HP, flash, labels, or i-frames.
+			applied = true
+		elif apply_hp and health_component:
 			applied = health_component.take_damage(resolved_amount, resolved_kind, attacker)
 		elif not apply_hp:
 			# Typed orbs (e.g. Shadow) may skip HP but still count as a hit.
 			applied = true
 
 		if applied:
-			if attacker.has_method("on_hitbox_hit"):
+			if not resolved_blocked and attacker.has_method("on_hitbox_hit"):
 				attacker.on_hitbox_hit(owner)
 			# Zero interval = single hit per continuous overlap; >0 = contact tick.
 			var interval_msec: int = int(dc.contact_damage_interval * 1000.0)

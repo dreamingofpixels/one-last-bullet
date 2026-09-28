@@ -68,7 +68,7 @@ func _ready() -> void:
 	set_physics_process(true)
 
 
-func add_stacks(id: StatusId, amount: int, source: Node = null) -> void:
+func add_stacks(id: StatusId, amount: int, source: Node = null, from_rite: bool = false) -> void:
 	if amount <= 0:
 		return
 	if source != null and is_instance_valid(source):
@@ -86,6 +86,7 @@ func add_stacks(id: StatusId, amount: int, source: Node = null) -> void:
 			else:
 				_refresh_particle(StatusId.SHOCK)
 				statuses_changed.emit()
+			_notify_status_applied(id, amount, source, from_rite)
 			return
 		StatusId.BURN:
 			var was_zero: bool = _burn_stacks <= 0
@@ -104,6 +105,25 @@ func add_stacks(id: StatusId, amount: int, source: Node = null) -> void:
 				_apply_disease_tint()
 				_push_icon(ICON_DISEASE)
 	statuses_changed.emit()
+	_notify_status_applied(id, amount, source, from_rite)
+
+
+func _notify_status_applied(
+	id: StatusId,
+	amount: int,
+	source: Node,
+	from_rite: bool
+) -> void:
+	if from_rite:
+		return
+	if RiteBoard.active == null:
+		return
+	var ctx := RiteContext.new()
+	ctx.status_id = id
+	ctx.stacks = amount
+	ctx.source = source
+	ctx.victim = owner
+	RiteBoard.active.notify(&"status_applied", ctx)
 
 
 func get_stacks(id: StatusId) -> int:

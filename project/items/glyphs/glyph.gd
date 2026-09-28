@@ -222,6 +222,8 @@ var _deposit_tween: Tween
 var _sprite_rest_y: float = 0.0
 ## Temporary collision exceptions (e.g. shop stalls during a purchase toss).
 var _temp_collision_exceptions: Array[PhysicsBody2D] = []
+## Scene-authored HealthComponent.max_health before rite modify (Tempered doubles from this).
+var _authored_max_health: float = 20.0
 
 
 func _ready() -> void:
@@ -243,6 +245,29 @@ func _ready() -> void:
 	var destroy_comp: DestroyComponent = COMPONENTS.get(DestroyComponent)
 	if destroy_comp and not destroy_comp.destroyed.is_connected(_on_destroyed):
 		destroy_comp.destroyed.connect(_on_destroyed)
+
+	var health: HealthComponent = COMPONENTS.get(HealthComponent) as HealthComponent
+	if health != null:
+		_authored_max_health = health.max_health
+	call_deferred("apply_rite_max_health")
+
+
+## Recompute max HP from authored value through the rite board (idempotent vs authored).
+func apply_rite_max_health() -> void:
+	var health: HealthComponent = COMPONENTS.get(HealthComponent) as HealthComponent
+	if health == null:
+		return
+	var new_max: float = _authored_max_health
+	if RiteBoard.active != null:
+		new_max = RiteBoard.active.modify(&"glyph_max_health", _authored_max_health, self)
+	if is_equal_approx(health.max_health, new_max):
+		return
+	var ratio: float = 1.0
+	if health.max_health > 0.0:
+		ratio = health.health / health.max_health
+	health.max_health = new_max
+	health.health = new_max * ratio
+	health.health_changed.emit(health.health, health.max_health)
 
 
 func setup(id: StringName, r: Rarity) -> void:

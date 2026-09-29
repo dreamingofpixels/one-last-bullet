@@ -339,12 +339,12 @@ metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
 [sub_resource type="Resource" id="Resource_3qshg"]
 script = ExtResource("9_v5loy")
 enemy_scene = ExtResource("10_4ykq2")
-count = 6
+count = 4
 metadata/_custom_type_script = "uid://b68fxg5v7nmgm"
 
 [sub_resource type="Resource" id="Resource_rnks7"]
 script = ExtResource("8_igk5d")
-delay_before = 5.0
+delay_before = 7.0
 entries = Array[ExtResource("9_v5loy")]([SubResource("Resource_3qshg")])
 metadata/_custom_type_script = "uid://b51sqf0cf8bcy"
 
@@ -361,6 +361,7 @@ source_geometry_group_name = &"navigation_source"
 [node name="Desert" type="Node2D" unique_id=1120075217]
 script = ExtResource("2_level")
 level_music = ExtResource("2_ynou2")
+new_orb_cost = 15.0
 bounce_orbs_off_entities = true
 run_start = ExtResource("17_runstart")
 

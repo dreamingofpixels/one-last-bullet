@@ -578,9 +578,9 @@ This is a living log of decisions that shape the game and codebase. Add entries 
 
 ### Run ends when all players are dead
 
-- **Decision**: `_on_player_died` drops that player's carried crystal and only sets game-over when `Players.count()` reaches 0. A downed player stays out for the rest of the level (no revive). Status label shows "P# down — N left" while survivors remain. On wipe, `EnemySpawner.stop()` also stands remaining enemies down: cancel melee, `set_chasing(false)`, play `idle`. Navigation / attack / stun will not resume chase with no living players.
-- **Why**: Co-op should not end the run on the first death; matches local arcade "last player standing" feel without adding a revive system yet. Enemies jogging or finishing a slam after the wipe reads as the room still being in combat.
-- **Alternatives**: Any player dying ends the run (previous single-player behavior) — too harsh for two players; downed/revive by partner — deferred until co-op is proven; leave enemies chasing after wipe — previous, looked busy after game-over.
+- **Decision**: `_on_player_died` drops that player's carried crystal and only sets game-over when `Players.count()` reaches 0. A downed player's identity (`player_index`, `character`, `dash_end_redirect`) is recorded for the stage; their body stays out for the rest of combat (pad reconnect cannot re-add that index). On room clear with at least one survivor, those players reassemble at full HP beside the summoning circle (outside the depart pad) via `begin_level()`, then shop and depart with everyone. Status label shows "P# down — N left" while survivors remain. On wipe, the downed list clears, `EnemySpawner.stop()` stands remaining enemies down: cancel melee, `set_chasing(false)`, play `idle`. Navigation / attack / stun will not resume chase with no living players.
+- **Why**: Co-op should not end the run on the first death; clear-time revive lets a downed player rejoin the shop and next stage without mid-fight partner revive complexity.
+- **Alternatives**: Any player dying ends the run (previous single-player behavior) — too harsh for two players; downed stays out for the rest of the run — rejected (too punishing after a clear); revive only when the next stage starts — skips the shop visit; downed/revive by partner mid-fight — deferred; leave enemies chasing after wipe — previous, looked busy after game-over.
 - **Status**: decided (in-codebase)
 
 ### Main scene is desert level; AudioManager is the first autoload

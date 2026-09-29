@@ -30,6 +30,17 @@ const JOIN_SPAWN_OFFSETS: Array[Vector2] = [
 	Vector2(56.0, 0.0),
 	Vector2(-56.0, 0.0),
 ]
+## Offsets from the circle launch origin for clear-time revives (outside the 22 px depart pad).
+const REVIVE_SPAWN_OFFSETS: Array[Vector2] = [
+	Vector2(40.0, 0.0),
+	Vector2(-40.0, 0.0),
+	Vector2(0.0, 40.0),
+	Vector2(0.0, -40.0),
+	Vector2(40.0, 40.0),
+	Vector2(-40.0, 40.0),
+	Vector2(40.0, -40.0),
+	Vector2(-40.0, -40.0),
+]
 
 @export var level_music: AudioStream
 @export var glyph_rarity_weight_common: float = 70.0
@@ -67,6 +78,8 @@ var _depart_timer: float = 0.0
 var _starting_next_stage: bool = false
 ## Breakables hidden for the shop visit (not freed) so they can assemble back.
 var _stashed_breakables: Array[Dictionary] = []
+## Players who died this stage: {player_index, character, dash_end_redirect}. Cleared on revive or wipe.
+var _downed_players: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -274,6 +287,9 @@ func _try_add_player(player_index: int) -> CharacterBody2D:
 		return null
 	if _has_player_index(player_index):
 		return null
+	# Downed this stage: wait for room clear revive (pad reconnect must not skip).
+	if _is_downed_player_index(player_index):
+		return null
 
 	var spawn_pos: Vector2 = _pick_join_spawn_position()
 	var p: CharacterBody2D = PLAYER_SCENE.instantiate() as CharacterBody2D
@@ -330,13 +346,42 @@ func _has_player_index(index: int) -> bool:
 	return false
 
 
+func _is_downed_player_index(index: int) -> bool:
+	for entry in _downed_players:
+		if int(entry.get("player_index", 0)) == index:
+			return true
+	return false
+
+
+func _record_downed_player(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var player_index: int = int(node.get("player_index"))
+	if player_index <= 0 or _is_downed_player_index(player_index):
+		return
+	_downed_players.append({
+		"player_index": player_index,
+		"character": int(node.get("character")),
+		"dash_end_redirect": bool(node.get("dash_end_redirect")),
+	})
+
+
 func _pick_join_spawn_position() -> Vector2:
-	var anchor: Vector2 = player.global_position
+	var anchor: Vector2 = player.global_position if is_instance_valid(player) else summoning_circle.get_launch_origin()
 	for offset in JOIN_SPAWN_OFFSETS:
 		var candidate: Vector2 = anchor + offset
 		if _is_spawn_physics_clear(candidate) and _is_spawn_clear_of_players(candidate):
 			return candidate
 	return anchor + JOIN_SPAWN_OFFSETS[0]
+
+
+func _pick_revive_spawn_position() -> Vector2:
+	var origin: Vector2 = summoning_circle.get_launch_origin()
+	for offset in REVIVE_SPAWN_OFFSETS:
+		var candidate: Vector2 = origin + offset
+		if _is_spawn_physics_clear(candidate) and _is_spawn_clear_of_players(candidate):
+			return candidate
+	return origin + REVIVE_SPAWN_OFFSETS[0]
 
 
 func _is_spawn_clear_of_players(pos: Vector2) -> bool:
@@ -536,7 +581,8 @@ func _on_all_cleared() -> void:
 func _begin_intermission() -> void:
 	arena_collapse.stop_and_restore()
 	summoning_circle.set_intermission(true)
-	await _recall_and_destroy_orbs()
+	# Orbs go inert at recall start; revive in parallel so bodies are not hit by the suck-in.
+	await _recall_and_destroy_orbs_and_revive()
 	if not is_inside_tree() or _game_over:
 		return
 	await _stash_breakables()
@@ -548,6 +594,78 @@ func _begin_intermission() -> void:
 		return
 	_intermission_ready = true
 	status_label.text = "Shop — stand in the circle to continue"
+
+
+## Run orb recall and downed-player revive together (both await their own FX).
+func _recall_and_destroy_orbs_and_revive() -> void:
+	var remaining: Array = [2]
+	var tree := get_tree()
+	var start_recall := func() -> void:
+		await _recall_and_destroy_orbs()
+		remaining[0] -= 1
+	var start_revive := func() -> void:
+		await _revive_downed_players()
+		remaining[0] -= 1
+	tree.process_frame.connect(start_recall, CONNECT_ONE_SHOT)
+	tree.process_frame.connect(start_revive, CONNECT_ONE_SHOT)
+	while remaining[0] > 0:
+		if not await _await_process_frame():
+			return
+
+
+func _revive_downed_players() -> void:
+	if _downed_players.is_empty():
+		return
+	if Players.count(get_tree()) <= 0:
+		_downed_players.clear()
+		return
+
+	var to_assemble: Array[Node2D] = []
+	var pending: Array[Dictionary] = _downed_players.duplicate()
+	_downed_players.clear()
+	for entry in pending:
+		var player_index: int = int(entry.get("player_index", 0))
+		if player_index <= 0 or _has_player_index(player_index):
+			continue
+		var spawn_pos: Vector2 = _pick_revive_spawn_position()
+		var p: CharacterBody2D = PLAYER_SCENE.instantiate() as CharacterBody2D
+		p.player_index = player_index
+		p.character = int(entry.get("character", 0))
+		p.dash_end_redirect = bool(entry.get("dash_end_redirect", true))
+		players_root.add_child(p)
+		p.global_position = spawn_pos
+		_connect_player_destroy(p)
+		if player_index == 1 or not is_instance_valid(player):
+			player = p
+		to_assemble.append(p)
+
+	if to_assemble.is_empty():
+		return
+
+	var remaining: Array = [to_assemble.size()]
+	var starters: Array[Callable] = []
+	var tree := get_tree()
+	for p in to_assemble:
+		var player_ref: Node2D = p
+		var start_assemble := func() -> void:
+			if not is_instance_valid(player_ref) or not player_ref.is_inside_tree():
+				remaining[0] -= 1
+				return
+			await player_ref.begin_level()
+			remaining[0] -= 1
+		starters.append(start_assemble)
+		tree.process_frame.connect(start_assemble, CONNECT_ONE_SHOT)
+
+	var drop_starters := func() -> void:
+		for starter in starters:
+			if tree.process_frame.is_connected(starter):
+				tree.process_frame.disconnect(starter)
+		remaining[0] = 0
+	tree_exiting.connect(drop_starters, CONNECT_ONE_SHOT)
+
+	while remaining[0] > 0:
+		if not await _await_process_frame():
+			return
 
 
 func _recall_and_destroy_orbs() -> void:
@@ -773,6 +891,7 @@ func _on_player_died(node: Node = null) -> void:
 	var downed_index: int = 0
 	if node != null and is_instance_valid(node):
 		downed_index = int(node.get("player_index"))
+		_record_downed_player(node)
 
 	_drop_carried_item_on_death(node)
 
@@ -784,6 +903,10 @@ func _on_player_died(node: Node = null) -> void:
 
 	var remaining: int = Players.count(get_tree())
 	if remaining > 0:
+		if not is_instance_valid(player):
+			var living: Array[Node2D] = Players.all(get_tree())
+			if not living.is_empty():
+				player = living[0] as CharacterBody2D
 		if downed_index > 0:
 			status_label.text = "P%d down — %d left" % [downed_index, remaining]
 		else:
@@ -791,6 +914,7 @@ func _on_player_died(node: Node = null) -> void:
 		return
 
 	_game_over = true
+	_downed_players.clear()
 	enemy_spawner.stop()
 	time_slow_overlay.end()
 	status_label.text = "You died. Press R to restart"
